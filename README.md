@@ -37,3 +37,7 @@ Setting up java FX can be tricky, you can follow [this](https://www.youtube.com/
 
 ## Skills
 Java, Java FX, Object Oriented Programming, Deep understanding of how the original gameboy processed and executed ROM files.
+
+## Authors
+- [Gianni Lodetti](https://github.com/Gianniii)
+- [Omid Karimi](https://github.com/Omidou)
