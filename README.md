@@ -12,6 +12,8 @@ All the material provided aswell as the project assignment and weekly assignment
 
 This repository contains an emulator coded in java of the original gameboy released in 1989 by Nintendo.
 
+The emulator is able to run ROM files of games designed for the origina gameboy.
+
 ## How to get started
 Executing the java program in ```GamebojProject\src\ch\epfl\gameboj\gui\Main.java``` will open a Menu window, where it is possible to observe and change the key bindings/controls and review screenshots taken in the game.
 The menu also contains a list of pre-downloaded .gb ROM files of original gameboy games you can select and play by clicking on them.
@@ -28,8 +30,8 @@ The workspace contains two folders by default, where:
 Meanwhile, the compiled output files will be generated in the `bin` folder by default.
 
 ## Dependencies
-Java SDK 11 or above
-Java FX for java sdk 11 or above
+- Java SDK 11 or above
+- Java FX for java sdk 11 or above
 
 Setting up java FX can be tricky, you can follow [this](https://www.youtube.com/watch?v=H67COH9F718&t=317s) youtube tutorial if you are using visual studio code on windows.
 
