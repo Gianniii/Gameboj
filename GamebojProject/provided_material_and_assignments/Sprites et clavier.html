@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<!-- saved from url=(0049)https://cs108.epfl.ch/archive/18/p/10_joypad.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-05-01 Mar 13:15 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprites et clavier</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Sprites et clavier_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Sprites et clavier_files/github.min.css">
+<script src="./Sprites et clavier_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Sprites et clavier
+<br>
+<span class="subtitle">Gameboj – Étape 10</span>
+</h1>
+
+<div id="outline-container-org7283426" class="outline-2">
+<h2 id="org7283426"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Le but de cette étape est d'une part de terminer le composant simulant le contrôleur LCD, afin de lui ajouter la gestion des <i>sprites</i>, et d'autre part d'écrire le composant simulant le clavier du Game Boy.
+</p>
+
+<p>
+Comme cela a déjà été dit à plusieurs reprises, un <a href="https://fr.wikipedia.org/wiki/Sprite_(jeu_vid%C3%A9o)"><b>sprite</b></a> — parfois appelé <b>lutin</b> en français — est une petite image qui peut être placée n'importe où à l'écran et qui est utilisée pour les éléments mobiles des jeux : personnages, projectiles, etc. Le contrôleur LCD du Game Boy peut gérer un total de 40 <i>sprites</i> de 8×8 ou 8×16 pixels, dont les caractéristiques sont stockées dans une mémoire dédiée, décrite ci-dessous.
+</p>
+</div>
+
+<div id="outline-container-org77ccdfc" class="outline-3">
+<h3 id="org77ccdfc"><span class="section-number-3">1.1</span> Mémoire d'attributs d'objets</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+En plus de la mémoire vidéo présentée à l'étape précédente, le contrôleur LCD possède une seconde mémoire vive, nommée <b>mémoire d'attributs d'objets</b> (<i>object attribute memory</i> ou <i>OAM</i>). Le nom de cette mémoire provient du fait que la documentation officielle du Game Boy nomme les <i>sprites</i> des <b>objets</b> (<i>objects</i>). Autant que possible, nous utiliserons ici le terme de <i>sprite</i>, d'une part car il est plus standard, et d'autre part car il prête moins à confusion.
+</p>
+</div>
+
+<div id="outline-container-org9dc3823" class="outline-4">
+<h4 id="org9dc3823"><span class="section-number-4">1.1.1</span> Contenu</h4>
+<div class="outline-text-4" id="text-1-1-1">
+<p>
+La mémoire d'attributs d'objets contient 160 octets, visibles sur le bus entre les adresses FE00<sub>16</sub> et FEA0<sub>16</sub> (exclu). Ces 160 octets permettent de stocker les attributs de 40 <i>sprites</i>, numérotés de 0 à 39. Les attributs d'un <i>sprite</i> sont donc constitués de 4 octets qui, dans l'ordre dans lequel ils apparaissent en mémoire, sont :
+</p>
+
+<ul class="org-ul">
+<li>la coordonnée <i>y</i> du <i>sprite</i> à l'écran,</li>
+<li>la coordonnée <i>x</i> du <i>sprite</i> à l'écran,</li>
+<li>l'index de la tuile à utiliser pour l'image du <i>sprite</i>,</li>
+<li>un octet contenant quatre caractéristiques binaires, décrites plus bas.</li>
+</ul>
+
+<p>
+Les coordonnées du <i>sprite</i> sont stockées avec un décalage, de sorte que pour obtenir la coordonnée à l'écran du pixel haut-gauche du <i>sprite</i>, il faut soustraire 8 de la coordonnée <i>x</i> donnée, et 16 de la coordonnée <i>y</i>. Cette convention peut paraître étrange mais elle garantit que toutes les coordonnées sont positives, même lorsque les <i>sprites</i> ne sont que partiellement visibles à l'écran, ce qui évite d'avoir à se préoccuper de problèmes de signe.
+</p>
+
+<p>
+L'index de la tuile désigne toujours une des 256 tuiles situées dans la plage comprise entre les adresses 8000<sub>16</sub> et 9000<sub>16</sub> (exclu). L'index 0 correspond à la tuile dont l'image commence à l'adresse 8000<sub>16</sub>, l'index 1 à la tuile dont l'image commence à l'adresse 8010<sub>16</sub>, et ainsi de suite. En d'autres termes, cet index est interprété exactement comme celui des tuiles composant l'image de fond et la fenêtre lorsque le bit <code>TILE_SOURCE</code> du registre <code>LCDC</code> vaut 1. Dès lors, les 128 tuiles dont l'image se trouve dans la plage comprise entre les adresses 9000<sub>16</sub> et 9800<sub>16</sub> (exclu) ne sont pas utilisables pour les <i>sprites</i>.
+</p>
+
+<p>
+Le dernier octet des attributs ne contient que 4 bits utiles, qui décrivent différentes caractéristiques du <i>sprite</i>. Leur signification est résumée dans la table suivante :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">Bit</th>
+<th scope="col" class="org-left">Nom</th>
+<th scope="col" class="org-left">Signification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">4</td>
+<td class="org-left"><code>PALETTE</code></td>
+<td class="org-left">Palette à utiliser pour le <i>sprite</i> (<code>OBP0</code> ou <code>OBP1</code>)</td>
+</tr>
+
+<tr>
+<td class="org-right">5</td>
+<td class="org-left"><code>FLIP_H</code></td>
+<td class="org-left">Inversion horizontale de l'image du <i>sprite</i></td>
+</tr>
+
+<tr>
+<td class="org-right">6</td>
+<td class="org-left"><code>FLIP_V</code></td>
+<td class="org-left">Inversion verticale de l'image du <i>sprite</i></td>
+</tr>
+
+<tr>
+<td class="org-right">7</td>
+<td class="org-left"><code>BEHIND_BG</code></td>
+<td class="org-left">Plan auquel appartient le <i>sprite</i> (arrière ou avant)</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Les quatre bits de poids faible, d'index 0 à 3, sont inutilisés.
+</p>
+
+<p>
+Le bit <code>PALETTE</code> indique la palette à utiliser pour transformer les couleurs du <i>sprite</i>. S'il vaut 0, alors la palette contenue dans le registre <code>OBP0</code> du contrôleur LCD est utilisée, sinon c'est celle contenue dans le registre <code>OBP1</code> qui l'est.
+</p>
+
+<p>
+Les bits <code>FLIP_H</code> et <code>FLIP_V</code> indiquent respectivement si l'image du <i>sprite</i> doit être inversée horizontalement ou verticalement. Si un de ces bits vaut 1, alors l'image est inversée dans la direction correspondante, sinon elle ne l'est pas.
+</p>
+
+<p>
+Finalement, si le bit <code>BEHIND_BG</code> vaut 1, le <i>sprite</i> est à l'arrière-plan, c-à-d que son image apparaît derrière celle de l'image de fond. Les autres <i>sprites</i> sont à l'avant-plan, et leur image apparaît devant celle de fond.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgab2285f" class="outline-4">
+<h4 id="orgab2285f"><span class="section-number-4">1.1.2</span> Copie rapide</h4>
+<div class="outline-text-4" id="text-1-1-2">
+<p>
+Pour afficher des <i>sprites</i> à l'écran, il est nécessaire de remplir la mémoire d'attributs d'objets avec les données leur correspondant. Ce remplissage peut se faire de différentes manières, entre autres en copiant une zone de 160 octets depuis une mémoire quelconque — p.ex. la mémoire morte de la cartouche — vers la mémoire d'attributs d'objets.
+</p>
+
+<p>
+Une telle copie peut bien entendu être faite par le programme exécuté par le processeur, au moyen d'une boucle copiant les octets les uns après les autres. Toutefois, une boucle de ce type nécessite plus de 10 cycles par octet copié, ce qui est coûteux.
+</p>
+
+<p>
+Pour accélérer une telle copie, les concepteurs du Game Boy ont donc intégré au contrôleur LCD un mécanisme dédié à la copie rapide de 160 octets depuis une adresse (presque) quelconque vers la mémoire d'attributs d'objets. Ce mécanisme peut copier un octet par cycle et est donc plus de 10 fois plus rapide qu'une boucle équivalente exécutée par le processeur.
+</p>
+
+<p>
+Afin obtenir ces excellentes performances, le contrôleur LCD accède directement à la mémoire — au bus, en réalité —, pour y lire les données à copier. Pour cette raison, on nomme ce mécanisme un <b>accès direct à la mémoire</b> (<i>direct memory access</i> ou <i>DMA</i>).
+</p>
+
+<p>
+Pour demander au contrôleur LCD de démarrer une copie par accès direct à la mémoire, il suffit d'écrire une valeur dans son registre <code>DMA</code>. Cette valeur donne les 8 bits de poids fort de l'adresse depuis laquelle les données doivent être copiées, les 8 bits de poids faible valant implicitement 0. Le contrôleur LCD copie alors 1 octet par cycle jusqu'à ce qu'il en ait copié 160 et rempli ainsi totalement la mémoire d'attributs d'objets.
+</p>
+
+<p>
+Par exemple, si à un cycle donné, la valeur 41<sub>16</sub> est écrite dans le registre <code>DMA</code>, alors le contrôleur LCD va copier les 160 octets compris entre l'adresse 4100<sub>16</sub> et 41A0<sub>16</sub> (exclu) dans la mémoire d'attributs d'objets, c-à-d aux adresses FE00<sub>16</sub> à FEA0<sub>16</sub>.
+</p>
+
+<p>
+Il faut noter que sur le Game Boy réel le bus est totalement monopolisé par le contrôleur LCD lorsqu'une telle copie est en cours, et le processeur n'y a plus accès. Il ne peut donc même plus lire les instructions qu'il doit exécuter, <i>sauf</i> si celles-ci proviennent de sa mémoire haute, car il peut accéder à cette dernière sans passer par le bus. Les programmes utilisant le DMA pour effectuer des copies exécutent donc durant ce temps un programme placé dans la mémoire haute et qui ne fait généralement rien d'autre qu'attendre durant 160 cycles.
+</p>
+
+<p>
+Cette limitation de l'accès au bus n'a aucune influence sur notre simulation, et nous ne tenterons donc pas de la reproduire.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org3cb9ce3" class="outline-3">
+<h3 id="org3cb9ce3"><span class="section-number-3">1.2</span> Dessin des <i>sprites</i></h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Comme nous l'avons vu, le contrôleur LCD calcule l'image à afficher à l'écran ligne par ligne. Le contenu de chaque ligne est déterminé en composant l'image de fond, la fenêtre et les <i>sprites</i>. Chacune de ces composantes peut être activée ou non par un bit dans le registre <code>LCDC</code>, qui dans le cas des <i>sprites</i> est le bit <code>OBJ</code> (1).
+</p>
+
+<p>
+Pour comprendre la manière dont les <i>sprites</i> sont dessinés puis combinés avec l'image de fond et la fenêtre, il est bon de considérer que chaque ligne affichée est le résultat de la superposition de trois lignes calculées indépendamment :
+</p>
+
+<ol class="org-ol">
+<li>la ligne des <i>sprites</i> d'arrière-plan,</li>
+<li>la ligne de l'image de fond et de la fenêtre,</li>
+<li>la ligne des <i>sprites</i> d'avant-plan.</li>
+</ol>
+
+<p>
+La manière dont la ligne de l'image de fond et la fenêtre est calculée a été décrite à l'étape précédente ; la manière dont les lignes de <i>sprites</i> le sont est décrite ci-dessous.
+</p>
+
+<p>
+Avant d'examiner le calcul des lignes de <i>sprite</i>, il faut toutefois noter qu'en raison d'une limitation matérielle, un maximum de 10 images de <i>sprites</i> peuvent être combinées pour une ligne donnée. Dès lors, s'il y a plus de 10 <i>sprites</i> dont l'image intersecte une ligne, seuls les 10 premiers — dans l'ordre de leur index, et indépendamment du fait qu'ils soient à l'arrière- ou à l'avant-plan — sont pris en compte.
+</p>
+</div>
+
+<div id="outline-container-org1605b3b" class="outline-4">
+<h4 id="org1605b3b"><span class="section-number-4">1.2.1</span> Calcul des lignes de <i>sprites</i></h4>
+<div class="outline-text-4" id="text-1-2-1">
+<p>
+La ligne des <i>sprites</i> d'un plan donné — arrière- ou avant-plan — est calculée par superposition des images de tous les <i>sprites</i> de ce plan. Bien entendu, avant d'être superposées, les images des <i>sprites</i> sont placées horizontalement sur la ligne en fonction de leur coordonnée <i>x</i>, et la palette spécifique au <i>sprite</i> — <code>OBP0</code> ou <code>OBP1</code>, en fonction du bit <code>PALETTE</code> — est appliquée à leurs couleurs. Cela fait, elles sont empilées selon l'ordre donné par :
+</p>
+
+<ol class="org-ol">
+<li>la coordonnée <i>x</i> du <i>sprite</i>, puis, en cas d'égalité,</li>
+<li>l'index du <i>sprite</i>,</li>
+</ol>
+
+<p>
+la première se trouvant au <i>sommet</i> de la pile, c-à-d devant les autres.
+</p>
+
+<p>
+Par exemple, admettons que les images des sprites d'index 0 à 15 aient une intersection avec la ligne à dessiner. En raison de la limitation susmentionnée, seuls les 10 premiers sont pris en compte, c-à-d ceux ayant les index 0 à 9 (inclus). Admettons maintenant que ces 10 <i>sprites</i> aient les caractéristiques suivantes — où le type est soit B (<i>background</i>) pour les <i>sprites</i> d'arrière-plan, soit F (<i>foreground</i>) pour ceux d'avant-plan :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<tbody>
+<tr>
+<td class="org-right">index</td>
+<td class="org-right">0</td>
+<td class="org-right">1</td>
+<td class="org-right">2</td>
+<td class="org-right">3</td>
+<td class="org-right">4</td>
+<td class="org-right">5</td>
+<td class="org-right">6</td>
+<td class="org-right">7</td>
+<td class="org-right">8</td>
+<td class="org-right">9</td>
+</tr>
+
+<tr>
+<td class="org-right">coordonnée <i>x</i></td>
+<td class="org-right">50</td>
+<td class="org-right">40</td>
+<td class="org-right">30</td>
+<td class="org-right">20</td>
+<td class="org-right">20</td>
+<td class="org-right">30</td>
+<td class="org-right">40</td>
+<td class="org-right">50</td>
+<td class="org-right">20</td>
+<td class="org-right">20</td>
+</tr>
+
+<tr>
+<td class="org-right">type</td>
+<td class="org-right">B</td>
+<td class="org-right">F</td>
+<td class="org-right">F</td>
+<td class="org-right">B</td>
+<td class="org-right">B</td>
+<td class="org-right">F</td>
+<td class="org-right">F</td>
+<td class="org-right">F</td>
+<td class="org-right">B</td>
+<td class="org-right">B</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+En triant ces <i>sprites</i> selon l'ordre décrit ci-dessus — coordonnée <i>x</i> d'abord, index ensuite — on obtient les index : 3, 4, 8, 9, 2, 5, 1, 6, 0, 7. Une fois ordonnés, ces index peuvent être séparés en deux listes ordonnées contenant :
+</p>
+
+<ol class="org-ol">
+<li>les index de <i>sprites</i> d'arrière-plan : 3, 4, 8, 9, 0,</li>
+<li>les index de <i>sprites</i> d'avant-plan : 2, 5, 1, 6, 7.</li>
+</ol>
+
+<p>
+Le <i>sprite</i> d'index 3 est donc celui qui est au sommet de la pile des <i>sprites</i> d'arrière-plan, c-à-d que son image se trouve devant celle des autres <i>sprites</i> de ce plan. Sous cette image se trouve celle du <i>sprite</i> d'index 4, et ainsi de suite. Pour les <i>sprites</i> d'avant-plan, celui d'index 2 est au sommet de la pile, donc devant les autres, et ainsi de suite.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org06c9c2a" class="outline-4">
+<h4 id="sec:bg-sprites"><a id="org06c9c2a"></a><span class="section-number-4">1.2.2</span> <i>Sprites</i> d'arrière-plan</h4>
+<div class="outline-text-4" id="text-sec:bg-sprites">
+<p>
+La manière dont la ligne des <i>sprites</i> d'arrière plan est combinée avec celle de l'image de fond est subtile et mérite d'être détaillée.
+</p>
+
+<p>
+Jusqu'à présent, nous avions (implicitement) supposé que tous les pixels de l'image de fond/fenêtre étaient opaques, car aucune autre image ne pouvait être affichée derrière elle. Or les <i>sprites</i> d'arrière-plan changent la donne, puisqu'ils sont justement derrière l'image de fond.
+</p>
+
+<p>
+La question se pose donc de savoir comment composer l'image de fond et les <i>sprites</i> d'arrière-plan, en particulier dans le cas où les deux contiennent des pixels transparents superposés.
+</p>
+
+<p>
+La règle utilisée sur le Game Boy est la suivante : les pixels opaques des <i>sprites</i> d'arrière-plan (et eux seuls) sont visibles à travers les pixels transparents de l'image de fond. En d'autres termes, les pixels transparents de l'image de fond ne le sont réellement que si au moins un pixel opaque d'un <i>sprite</i> d'arrière-plan se trouve derrière eux, sans quoi ils sont opaques.
+</p>
+
+<p>
+Par exemple, admettons qu'un pixel de l'image de fond ait, avant application de la palette, la couleur 0. Comme nous l'avons vu à <a href="https://cs108.epfl.ch/archive/18/p/08_lcd-image.html">l'étape 8</a>, ces pixels sont toujours ceux qui sont considérés transparents sur le Game Boy. Si derrière un tel pixel se trouve un pixel opaque d'un <i>sprite</i> d'arrière plan, disons de couleur 2, alors le pixel résultant de leur combinaison aura la couleur 2, qui sera celle visible à l'écran. Par contre, si derrière ce pixel transparent de l'image de fond ne se trouve aucun pixel opaque d'un <i>sprite</i> d'arrière-plan, alors le pixel résultant de leur combinaison sera celui de l'image de fond, considéré opaque ! Sa couleur finale sera donc celle résultant de la transformation de la couleur 0 par la palette de l'image de fond.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgfe3a427" class="outline-4">
+<h4 id="orgfe3a427"><span class="section-number-4">1.2.3</span> Hauteur des <i>sprites</i></h4>
+<div class="outline-text-4" id="text-1-2-3">
+<p>
+Les images des <i>sprites</i> du Game Boy font généralement 8×8 pixels, mais il est aussi possible de faire en sorte qu'elles aient une taille de 8×16 pixels, en mettant à 1 le bit <code>OBJ_SIZE</code> du registre <code>LCDC</code>.
+</p>
+
+<p>
+Lorsque les <i>sprites</i> font 16 pixels de haut, leur image est constituée de deux tuiles superposées : celle du haut est celle dont l'index est donné dans les attributs du <i>sprite</i>, qui doit être pair, celle du bas est celle d'index suivant.
+</p>
+
+<p>
+Par exemple, si le bit <code>OBJ_SIZE</code> du registre <code>LCDC</code> vaut 1 et qu'un <i>sprite</i> utilise la tuile d'index 20, alors la partie supérieure de son image est celle de la tuile 20, tandis que sa partie inférieure est celle de la tuile 21.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgad22827" class="outline-3">
+<h3 id="orgad22827"><span class="section-number-3">1.3</span> Clavier</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+Le clavier du Game Boy, nommé <i>joypad</i> en anglais, est très simple et composé de 8 boutons :
+</p>
+
+<ul class="org-ul">
+<li>quatre boutons de direction (haut, bas, gauche et droite), organisés en une <a href="https://fr.wikipedia.org/wiki/Croix_directionnelle">croix directionnelle</a>,</li>
+<li>deux boutons d'action nommés A et B,</li>
+<li>deux boutons nommés <i>Select</i> et <i>Start</i>.</li>
+</ul>
+
+<p>
+Au niveau électronique, ces boutons sont organisés en une matrice de deux lignes de quatre boutons chacune, de la manière suivante :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">&nbsp;</th>
+<th scope="col" class="org-left">0</th>
+<th scope="col" class="org-left">1</th>
+<th scope="col" class="org-left">2</th>
+<th scope="col" class="org-left">3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><b>0</b></td>
+<td class="org-left">droite</td>
+<td class="org-left">gauche</td>
+<td class="org-left">haut</td>
+<td class="org-left">bas</td>
+</tr>
+
+<tr>
+<td class="org-left"><b>1</b></td>
+<td class="org-left">A</td>
+<td class="org-left">B</td>
+<td class="org-left"><i>Select</i></td>
+<td class="org-left"><i>Start</i></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Cette organisation influence la manière dont l'état du clavier — c-à-d les boutons qui sont actuellement pressés — peut être lu par le programme s'exécutant sur le Game Boy, comme décrit ci-après.
+</p>
+
+<p>
+L'état du clavier est encodé sous la forme d'un octet, stocké dans un registre nommé <code>P1</code> et visible sur le bus à l'adresse FF00<sub>16</sub>. Les différents bits de ce registre ont la signification suivante :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">Bit</th>
+<th scope="col" class="org-left">Signification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">0</td>
+<td class="org-left">État de la colonne 0</td>
+</tr>
+
+<tr>
+<td class="org-right">1</td>
+<td class="org-left">État de la colonne 1</td>
+</tr>
+
+<tr>
+<td class="org-right">2</td>
+<td class="org-left">État de la colonne 2</td>
+</tr>
+
+<tr>
+<td class="org-right">3</td>
+<td class="org-left">État de la colonne 3</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-right">4</td>
+<td class="org-left">Sélection de la ligne 0</td>
+</tr>
+
+<tr>
+<td class="org-right">5</td>
+<td class="org-left">Sélection de la ligne 1</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-right">6</td>
+<td class="org-left"><i>aucune, vaut toujours 1</i></td>
+</tr>
+
+<tr>
+<td class="org-right">7</td>
+<td class="org-left"><i>aucune, vaut toujours 1</i></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Notez que tous les bits de ce registre ont une signification inversée par rapport aux conventions habituelles, comme nous allons le voir ci-dessous. Cela signifie que ce qui est généralement représenté par un 1 l'est par un 0 dans ce registre, et inversément.
+</p>
+
+<p>
+Les bits d'état (0 à 3) sont accessibles en lecture seule depuis le bus, c-à-d que leur valeur est préservée lors d'une écriture à l'adresse du registre <code>P1</code>. 
+</p>
+
+<p>
+Les bits de sélection (4 et 5) sont accessibles en lecture et en écriture depuis le bus, et déterminent la ou les lignes dont les boutons influencent les bits d'état.
+</p>
+
+<p>
+Lorsque le bit de sélection d'une ligne vaut 0, la ligne en question est sélectionnée et les 4 touches appartenant à cette ligne influencent chacune le bit d'état correspondant à sa colonne : celui-ci vaut 0 si la touche en question est pressée, 1 sinon.
+</p>
+
+<p>
+Lorsque les deux bits de sélection valent 0, les deux lignes sont sélectionnées et deux touches influencent alors le même bit d'état. Si au moins l'une d'entre elles est pressée, alors ce bit vaut 0, sinon il vaut 1.
+</p>
+
+<p>
+Finalement, si aucun bit de sélection ne vaut 0, alors aucune ligne n'est sélectionnée, et tous les bits d'état valent 1.
+</p>
+
+<p>
+Par exemple, admettons qu'à un moment donné les touches A et <i>haut</i> sont pressées, et que le bit de sélection de la ligne 0 (bit 4) vaut 1 tandis que celui de la ligne 1 (bit 5) vaut 0. Comme seule la ligne 1 est sélectionnée, seule la touche A influence les bits d'état, qui valent alors <code>1110</code> (du poids fort au poids faible). Le contenu complet du registre est donc <code>11011110</code>.
+</p>
+
+<p>
+Lorsque, suite à la pression d'une touche, l'un des bits d'état (bits 0 à 3) passe de 1 à 0, alors le clavier lève l'interruption <code>JOYPAD</code> (4) du processeur.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgef57a5c" class="outline-2">
+<h2 id="orgef57a5c"><span class="section-number-2">2</span> Mise en œuvre Java</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+La mise en œuvre Java de cette étape consiste à terminer la classe <code>LcdController</code>, écrire la classe <code>Joypad</code> représentant le clavier et finalement compléter la classe <code>GameBoy</code>.
+</p>
+</div>
+
+<div id="outline-container-orgf6cd1a4" class="outline-3">
+<h3 id="orgf6cd1a4"><span class="section-number-3">2.1</span> Classe <code>LcdController</code></h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+Les ajouts à effectuer à la classe <code>LcdController</code> sont en gros au nombre de quatre :
+</p>
+
+<ol class="org-ol">
+<li>La méthode <code>attachTo</code> doit être redéfinie comme celle de la classe <code>Cpu</code>, afin que le contrôleur LCD ait la possibilité d'effectuer des lectures depuis le bus, nécessaires lorsqu'une copie par accès direct à la mémoire (DMA) est en cours.</li>
+
+<li>Les méthodes <code>read</code> et <code>write</code> doivent être augmentées afin de donner accès à la mémoire d'attributs d'objets. Comme toujours, l'interface <code>AddressMap</code> contient des constantes désignant l'adresse de début (<code>OAM_START</code>), l'adresse de fin (exclue, <code>OAM_END</code>) et la taille (<code>OAM_RAM_SIZE</code>) de cette mémoire. Notez que <code>write</code> doit également démarrer le processus de copie si une écriture est faite dans le registre <code>DMA</code>.</li>
+
+<li>La méthode <code>cycle</code> doit être augmentée pour copier le prochain octet vers la mémoire d'attributs d'objets lorsqu'une copie par accès direct à la mémoire est en cours.</li>
+
+<li>La méthode <code>computeLine</code> (ou équivalent) doit être augmentée afin de calculer les lignes de <i>sprite</i> d'arrière-plan et d'avant-plan, et de les combiner à la ligne de l'image de fond déjà calculée.</li>
+</ol>
+
+<p>
+Les trois premiers ajouts ne devraient pas poser de problème particulier, le quatrième mérite quelques conseils, donnés ci-après.
+</p>
+</div>
+
+<div id="outline-container-org7b80191" class="outline-4">
+<h4 id="org7b80191"><span class="section-number-4">2.1.1</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-1-1">
+<p>
+Avant de donner des conseils spécifiques, nous vous rendons attentifs au fait que le code — pas totalement trivial — permettant d'obtenir l'octet correspondant aux 8 bits de poids fort ou faible d'une ligne donnée d'une tuile donnée est quasi-identique pour l'image de fond, la fenêtre et les <i>sprites</i>. Il paraît donc raisonnable de l'extraire dans une méthode séparée.
+</p>
+</div>
+
+<ol class="org-ol">
+<li><a id="orgca3ae94"></a>Calcul des <i>sprites</i> à afficher<br>
+<div class="outline-text-5" id="text-2-1-1-1">
+<p>
+Le calcul des <i>sprites</i> à afficher sur une ligne donnée pourra être confié à une méthode spécifique, nommée p.ex. <code>spritesIntersectingLine</code> et retournant un tableau contenant les index des (au plus 10) <i>sprites</i> dont l'image intersecte la ligne donnée, triés selon l'ordre d'empilement.
+</p>
+
+<p>
+Une manière relativement simple et rapide de calculer ce tableau consiste à construire un premier tableau de 10 éléments de type <code>int</code>. Chacun de ces éléments contient deux informations empaquetées : dans les bits de poids fort, la coordonnée <i>x</i> du <i>sprite</i>, dans les bits de poids faible son index. Ce tableau est rempli avec les informations correspondant aux (au plus 10) premiers <i>sprites</i> ayant une intersection avec la ligne donnée. Ensuite, il est trié en ordre croissant ce qui, étant donné la technique d'empaquetage choisie, équivaut à le trier selon l'ordre d'empilement décrit plus haut. Finalement, un nouveau tableau contenant uniquement les index des <i>sprites</i>, dans l'ordre donné par le tri, est retourné.
+</p>
+
+<p>
+Pour effectuer le tri, notez que la classe <code>Arrays</code> offre <a href="https://docs.oracle.com/javase/9/docs/api/java/util/Arrays.html#sort-int:A-int-int-">une méthode permettant de trier seulement une partie d'un tableau d'entiers</a>.
+</p>
+</div>
+</li>
+
+<li><a id="orgd4d9bc9"></a>Calcul de la ligne d'un <i>sprite</i> individuel<br>
+<div class="outline-text-5" id="text-2-1-1-2">
+<p>
+Le calcul de la ligne correspondant à un <i>sprite</i> unique peut se faire très facilement en utilisant de manière judicieuse les méthodes de la classe <code>LcdImageLine</code>. L'idée de base est la suivante :
+</p>
+
+<ul class="org-ul">
+<li>construire une ligne de 160 pixels de long ayant l'image du <i>sprite</i> dans son premier octet — c-à-d positionnée tout à gauche de la ligne —, tous les autres bits valant 0,</li>
+<li>décaler cette ligne pour placer correctement l'image du <i>sprite</i> dans la ligne, en pensant bien au sens dans lequel effectuer ce décalage (!),</li>
+<li>transformer les couleurs de la ligne au moyen de la palette appropriée.</li>
+</ul>
+
+<p>
+Cette ligne correspondant à un <i>sprite</i> individuelle peut ensuite être superposée à celles des autres <i>sprites</i> appartenant au même plan, dans le bon ordre, afin d'obtenir la ligne correspondant à ce plan-là.
+</p>
+</div>
+</li>
+
+<li><a id="org31a540f"></a>Composition de la ligne des <i>sprites</i> d'arrière-plan<br>
+<div class="outline-text-5" id="text-2-1-1-3">
+<p>
+La manière dont la ligne des <i>sprites</i> d'arrière-plan est composée avec celle de l'image de fond a été décrite à la §<a href="https://cs108.epfl.ch/archive/18/p/10_joypad.html#sec:bg-sprites">1.2.2</a> et peut sembler complexe. En réalité, elle est très simple à mettre en œuvre si on se rappelle qu'un pixel de la ligne de l'image de fond n'est réellement transparent que si :
+</p>
+
+<ul class="org-ul">
+<li>il l'est « à l'origine » (c-à-d son opacité est fausse), <b>et</b></li>
+<li>le pixel de la ligne des <i>sprites</i> d'arrière-plan correspondant est opaque.</li>
+</ul>
+
+<p>
+Cette condition s'exprime très facilement au moyen d'opérations bit à bit sur les vecteurs de bits représentant l'opacité des deux lignes en question, qui permettent de calculer l'opacité à utiliser pour effectuer leur superposition. Une fois ce vecteur d'opacité calculé, il suffit de le passer à la variante de la méthode <code>below</code> de la classe <code>LcdImageLine</code> prenant explictement une opacité en argument.
+</p>
+</div>
+</li>
+
+<li><a id="orgf4a7c40"></a>Taille des <i>sprites</i><br>
+<div class="outline-text-5" id="text-2-1-1-4">
+<p>
+La gestion des <i>sprites</i> de 16 pixels de haut peut sembler difficile à première vue, mais il n'en est rien. En effet, étant donné la manière dont les images des tuiles sont organisées en mémoire, la première ligne de l'image d'une tuile peut aussi être vue comme la neuvième ligne de la tuile précédente, la seconde comme la dixième de la tuile précédente, et ainsi de suite.
+</p>
+
+<p>
+En conséquence, les deux seuls moments auxquels il est nécessaire de tenir compte de la hauteur des <i>sprites</i> dans le code sont :
+</p>
+
+<ol class="org-ol">
+<li>lors du calcul de l'ensemble des <i>sprites</i> dont l'image intersecte la ligne en cours de dessin,</li>
+
+<li>lors de la gestion du retournement vertical des <i>sprites</i>.</li>
+</ol>
+</div>
+</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-orgbb19fc9" class="outline-3">
+<h3 id="orgbb19fc9"><span class="section-number-3">2.2</span> Classe <code>Joypad</code></h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+La classe <code>Joypad</code> (ou équivalent), du paquetage <code>ch.epfl.gameboj.component</code>, représente le clavier. Etant donné que cette classe simule un composant attaché au bus, elle implémente l'interface <code>Component</code>. Son constructeur prend en argument le processeur du Game Boy auquel le clavier appartient, dont elle a besoin pour lever des interruptions.
+</p>
+
+<p>
+Les méthodes <code>read</code> et <code>write</code> ne font rien d'autre que donner accès au registre <code>P1</code> dont la valeur est déterminée de la manière décrite plus haut. Notez que l'adresse de ce registre est comme d'habitude définie par une constante de l'interface <code>AddressMap</code>, dans ce cas <code>REG_P1</code>.
+</p>
+
+<p>
+En plus de ces méthodes <code>read</code> et <code>write</code>, la classe <code>Joypad</code> offre deux méthodes publiques, nommées p.ex. <code>keyPressed</code> et <code>keyReleased</code> et permettant à ses utilisateurs de simuler la pression et le relâchement d'une touche. Chacune prend en argument la touche concernée, représentée par un élément d'une énumération publique imbriquée dans la classe <code>Joypad</code>, nommée p.ex. <code>Key</code> et contenant un élément par touche (<code>RIGHT</code>, <code>LEFT</code>, <code>UP</code>, <code>DOWN</code>, <code>A</code>, <code>B</code>, <code>SELECT</code> et <code>START</code>).
+</p>
+</div>
+
+<div id="outline-container-org2cca8f0" class="outline-4">
+<h4 id="org2cca8f0"><span class="section-number-4">2.2.1</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-2-1">
+<p>
+Le fait que les bits du registre <code>P1</code> aient la signification inverse de la signification habituelle peut rendre le code difficile à comprendre. Une manière simple de résoudre ce problème consiste à l'ignorer dans la plupart du code, et à inverser (au moyen de <code>Bits.complement8</code>) les bits de la valeur lue/écrite sur le bus.
+</p>
+
+<p>
+D'autre part, il faut noter que, d'une manière ou d'une autre, il est nécessaire de stocker l'ensemble des touches pressées dans un ou plusieurs attributs de la classe <code>Joypad</code>, car le contenu du registre <code>P1</code> ne suffit pas à lui tout seul pour savoir quelles touches sont pressées. Une manière simple de représenter cet ensemble consiste à avoir un entier de type <code>int</code> pour chaque ligne de touches, dans lequel un bit est à 1 si et seulement si la touche dont la colonne correspondante est pressée. La valeur du registre <code>P1</code> peut très facilement en être déduite.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org3f2bd05" class="outline-3">
+<h3 id="org3f2bd05"><span class="section-number-3">2.3</span> Classe <code>GameBoy</code></h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+La classe <code>GameBoy</code> doit être complétée pour ajouter un clavier (c-à-d une instance de <code>JoyPad</code>) au système. Cela implique de :
+</p>
+
+<ul class="org-ul">
+<li>créer une instance de <code>Joypad</code> dans le constructeur et l'attacher au bus,</li>
+
+<li>ajouter une méthode d'accès permettant d'obtenir cette instance de <code>Joypad</code>.</li>
+</ul>
+
+<p>
+De plus, afin de terminer totalement la classe <code>GameBoy</code>, deux attributs publiques, statiques et finaux doivent y être ajoutés :
+</p>
+
+<ol class="org-ol">
+<li>le premier de type <code>long</code> donnant le nombre de cycles exécutés par seconde, qui pour mémoire vaut 2<sup>20</sup>,</li>
+<li>le second de type <code>double</code> donnant le nombre de cycles exécutés par <a href="https://fr.wikipedia.org/wiki/Seconde_(temps)#/Multiples_et_sous-multiples">nanoseconde</a>.</li>
+</ol>
+
+<p>
+Cela fait, la classe <code>GameBoy</code> est enfin complète, et ne changera plus jusqu'à la fin du projet.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org7b44340" class="outline-3">
+<h3 id="org7b44340"><span class="section-number-3">2.4</span> Tests</h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+Pour tester votre code, vous pouvez utiliser une version modifiée du programme de test de l'étape précédente. Nous vous en proposons une ci-après, libre à vous de l'adapter à vos besoins.
+</p>
+
+<p>
+Le programme ci-dessous attend un seul argument sur la ligne de commande, qui est le fichier ROM à utiliser. Il simule d'abord 30 millions de cycles, puis poursuit la simulation durant une seconde avec la touche A pressée, et une dernière seconde sans la touche A pressée. Ce petit scénario convient bien aux deux tests proposés plus bas.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-class"><span class="hljs-keyword"><span class="hljs-class"><span class="hljs-keyword">class</span></span></span><span class="hljs-class"> </span><span class="hljs-title"><span class="hljs-class"><span class="hljs-title">DebugMain3</span></span></span><span class="hljs-class"> </span></span>{
+  <span class="hljs-keyword"><span class="hljs-keyword">private</span></span> <span class="hljs-keyword"><span class="hljs-keyword">static</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-keyword"><span class="hljs-keyword">int</span></span>[] COLOR_MAP = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> <span class="hljs-keyword"><span class="hljs-keyword">int</span></span>[] {
+    <span class="hljs-number"><span class="hljs-number">0xFF_FF_FF</span></span>, <span class="hljs-number"><span class="hljs-number">0xD3_D3_D3</span></span>, <span class="hljs-number"><span class="hljs-number">0xA9_A9_A9</span></span>, <span class="hljs-number"><span class="hljs-number">0x00_00_00</span></span>
+  };
+
+  <span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">static</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">void</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">main</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(String[] args)</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">throws</span></span></span><span class="hljs-function"> IOException </span></span>{
+    File romFile = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> File(args[<span class="hljs-number"><span class="hljs-number">0</span></span>]);
+    <span class="hljs-keyword"><span class="hljs-keyword">long</span></span> cycles = <span class="hljs-number"><span class="hljs-number">30_000_000</span></span>;
+
+    GameBoy gb = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> GameBoy(Cartridge.ofFile(romFile));
+    gb.runUntil(cycles);
+    gb.joypad().keyPressed(Key.A);
+    gb.runUntil(cycles + (<span class="hljs-number"><span class="hljs-number">1L</span></span> &lt;&lt; <span class="hljs-number"><span class="hljs-number">20</span></span>));
+    gb.joypad().keyReleased(Key.A);
+    gb.runUntil(cycles + <span class="hljs-number"><span class="hljs-number">2</span></span> * (<span class="hljs-number"><span class="hljs-number">1L</span></span> &lt;&lt; <span class="hljs-number"><span class="hljs-number">20</span></span>));
+
+    LcdImage li = gb.lcdController().currentImage();
+    BufferedImage i =
+      <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> BufferedImage(li.width(),
+			li.height(),
+			BufferedImage.TYPE_INT_RGB);
+    <span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (<span class="hljs-keyword"><span class="hljs-keyword">int</span></span> y = <span class="hljs-number"><span class="hljs-number">0</span></span>; y &lt; li.height(); ++y)
+      <span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (<span class="hljs-keyword"><span class="hljs-keyword">int</span></span> x = <span class="hljs-number"><span class="hljs-number">0</span></span>; x &lt; li.width(); ++x)
+	i.setRGB(x, y, COLOR_MAP[li.get(x, y)]);
+    ImageIO.write(i, <span class="hljs-string"><span class="hljs-string">"png"</span></span>, <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> File(<span class="hljs-string"><span class="hljs-string">"gb.png"</span></span>));
+  }
+}
+</pre>
+</div>
+
+<p>
+En exécutant ce programme de test en lui passant le fichier ROM de Flappy Boy, vous devriez voir l'image ci-dessous, sur laquelle plusieurs <i>sprites</i> sont utilisés pour représenter l'oiseau volant au milieu de l'image :
+</p>
+
+
+<div class="figure">
+<p><img src="./Sprites et clavier_files/flappyboy-sprite.png" alt="flappyboy-sprite.png" class="shadowed">
+</p>
+<p><span class="figure-number">Figure&nbsp;1&nbsp;: </span>Flappy Boy</p>
+</div>
+
+<p>
+En plus de cela, nous mettons à votre disposition <a href="https://cs108.epfl.ch/archive/18/p/f/sprite-priority.zip">une archive Zip</a> contenant une ROM de test provenant du projet <a href="https://github.com/Gekkio/mooneye-gb">mooneye-gb</a> de Joonas Javanainen. Le programme qu'elle contient, visible <a href="https://github.com/Gekkio/mooneye-gb/blob/94a8685627d774fb7f565cd5f0e555e48a1a4b59/tests/manual-only/sprite_priority.s">sur github</a>, vérifie que les <i>sprites</i> sont dessinés dans le bon ordre. Avec le programme ci-dessus, vous devriez obtenir l'image suivante :
+</p>
+
+
+<div class="figure">
+<p><img src="./Sprites et clavier_files/sprite-priority.png" alt="sprite-priority.png" class="shadowed">
+</p>
+<p><span class="figure-number">Figure&nbsp;2&nbsp;: </span>Test de l'ordre de dessin des <i>sprites</i></p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga0da0c7" class="outline-2">
+<h2 id="orga0da0c7"><span class="section-number-2">3</span> Résumé</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Pour cette étape, vous devez :
+</p>
+
+<ul class="org-ul">
+<li>écrire la classe <code>Joypad</code> (ou équivalent) et terminer les classes <code>LcdController</code> et <code>GameBoy</code> en fonction des indications données plus haut,</li>
+
+<li>tester votre code,</li>
+
+<li>documenter la totalité des entités publiques que vous avez définies.</li>
+</ul>
+
+<p>
+Aucun rendu n'est à faire pour cette étape avant le rendu final. N'oubliez pas de faire régulièrement des copies de sauvegarde de votre travail en suivant <a href="https://cs108.epfl.ch/archive/18/g/backups.html">nos indications à ce sujet</a>.
+</p>
+</div>
+</div>
+</div>
+
+
+</body></html>

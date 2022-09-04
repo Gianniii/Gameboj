@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<!-- saved from url=(0055)https://cs108.epfl.ch/archive/18/p/00_introduction.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-02-19 Lun 08:09 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projet Gameboj</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Projet Gameboj_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Projet Gameboj_files/github.min.css">
+<script src="./Projet Gameboj_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Projet Gameboj</h1>
+
+<div id="outline-container-org32a39b0" class="outline-2">
+<h2 id="org32a39b0">Introduction</h2>
+<div class="outline-text-2" id="text-org32a39b0">
+<p>
+Le but du projet de cette année, nommé <i>Gameboj</i>, est d'écrire un programme simulant la célèbre console de jeu <a href="https://fr.wikipedia.org/wiki/Game_Boy">Game Boy</a>, créée en 1989 par Nintendo et visible ci-dessous.
+</p>
+
+
+<div class="figure">
+<p><img src="./Projet Gameboj_files/game-boy.png" alt="game-boy.png">
+</p>
+<p><span class="figure-number">Figure&nbsp;1&nbsp;: </span>La version originale du Game Boy</p>
+</div>
+
+<p>
+Le Game Boy a été extrêmement populaire et s'est vendu au niveau mondial à presque 120 millions d'exemplaires. Plusieurs versions du Game Boy ont existé, mais celle que nous simulerons ici est la première, dont la caractéristique principale est d'être doté d'un écran monochrome n'offrant que quatre teintes de gris.
+</p>
+
+<p>
+Comparées à celles des consoles de jeu modernes, les caractéristiques techniques du Game Boy d'origine font pâle figure, comme la table ci-dessous l'illustre. Y sont comparées certaines caractéristiques techniques du Game Boy et de la <a href="https://fr.wikipedia.org/wiki/Nintendo_Switch">Switch</a>, la console portable la plus récente produite par Nintendo. La dernière colonne donne le rapport entre la Switch et le Game Boy, et montre bien l'impressionnante évolution des composants électroniques durant les presque 30 ans qui séparent les deux consoles.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">Caractéristique</th>
+<th scope="col" class="org-right">Game Boy</th>
+<th scope="col" class="org-right">Switch</th>
+<th scope="col" class="org-right">S/GB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">Nombre de processeurs</td>
+<td class="org-right">1</td>
+<td class="org-right">8</td>
+<td class="org-right">8</td>
+</tr>
+
+<tr>
+<td class="org-right">Fréquence processeur</td>
+<td class="org-right">4 MiHz</td>
+<td class="org-right">1 GiHz</td>
+<td class="org-right">256</td>
+</tr>
+
+<tr>
+<td class="org-right">Mémoire vive (RAM)</td>
+<td class="org-right">8 Kio</td>
+<td class="org-right">4 Gio</td>
+<td class="org-right">524 288</td>
+</tr>
+
+<tr>
+<td class="org-right">Pixels de l'écran</td>
+<td class="org-right">23 040</td>
+<td class="org-right">921 600</td>
+<td class="org-right">40</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Cela dit, ces caractéristiques techniques modestes n'empêchent pas le Game Boy de posséder un très grand nombre de jeux d'excellente qualité.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org7157835" class="outline-2">
+<h2 id="org7157835">Vue d'ensemble du projet</h2>
+<div class="outline-text-2" id="text-org7157835">
+<p>
+Comme toute console de jeu, le Game Boy est un petit ordinateur, constitué d'un ensemble de composants électroniques interconnectés. Dans le cas du Game Boy, les composants principaux sont :
+</p>
+
+<ul class="org-ul">
+<li>le processeur,</li>
+<li>le clavier, comportant un total de huit boutons :
+<ul class="org-ul">
+<li>quatre boutons de direction (haut, bas, gauche, droite), organisés en une croix directionnelle,</li>
+<li>deux boutons d'action nommés A et B,</li>
+<li>deux boutons nommés <i>Select</i> et <i>Start</i>,</li>
+</ul></li>
+<li>l'écran à cristaux liquides et son contrôleur, un processeur graphique simple,</li>
+<li>un synthétiseur sonore.</li>
+</ul>
+
+<p>
+Le Game Boy ne contient — à une petite exception près — aucun programme. Dès lors, les jeux sont distribués sous la forme de « cartouches », qui sont  des étuis en plastique ne contenant pas grand-chose d'autre qu'une mémoire morte dans laquelle se trouve le programme du jeu ainsi que ses données (graphiques, sons, etc.). Lorsqu'une cartouche est enfilée dans le Game Boy, sa mémoire morte se trouve physiquement connectée au reste du système, et le jeu qu'elle contient est exécuté dès l'allumage de la console.
+</p>
+
+<p>
+L'architecture du programme Gameboj suivra, dans les grandes lignes, l'architecture matérielle du Game Boy. Ainsi, chacun des composants mentionnés ci-dessus — exception faite du synthétiseur sonore qui, faute de temps, ne sera pas simulé — sera modélisé par une classe Java.
+</p>
+
+<p>
+Un problème qui se pose toujours lorsqu'on désire simuler le comportement d'une entité quelconque est de savoir à quel niveau d'abstraction faire la simulation. 
+</p>
+
+<p>
+Dans le cas du Game Boy, une possibilité assez extrême serait de simuler chacun des composants au niveau électronique. La simulation obtenue serait très fidèle, mais d'une part extrêmement complexe à mettre en œuvre et d'autre part très lente à exécuter, beaucoup trop pour qu'il soit possible de jouer à un jeu sur le simulateur.
+</p>
+
+<p>
+Une autre solution serait de faire une simulation « fonctionnelle », qui ne se charge de simuler fidèlement que les aspects du Game Boy qui sont explicitement décrits dans la documentation officielle de Nintendo. Malheureusement, cette simulation a le problème inverse de la précédente : comme certaines caractéristiques du Game Boy réel ne sont pas décrites dans cette documentation, mais que les programmeurs de certains jeux en ont néanmoins tiré parti, il ne serait pas possible de faire fonctionner ces jeux sur un tel simulateur.
+</p>
+
+<p>
+Tout l'art de la simulation consiste donc à choisir où se placer entre ces deux extrêmes. Pour ce projet, nous simulerons le Game Boy à un niveau d'abstraction relativement élevé, donc proche de son comportement officiel et documenté. En conséquence, certains jeux, heureusement minoritaires, ne fonctionneront pas correctement sur notre simulateur.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org558a8bc" class="outline-2">
+<h2 id="org558a8bc">Organisation</h2>
+<div class="outline-text-2" id="text-org558a8bc">
+<p>
+Le projet se fait par groupes de 2 personnes au maximum. La formation de ces groupes est libre et peut changer au cours du semestre, pour peu que les directives concernant le plagiat soient respectées. En particulier, si deux personnes ayant travaillé en commun se séparent, elles doivent se partager le code et ne peuvent chacune l'emporter en totalité de leur côté.
+</p>
+
+<p>
+La mise en œuvre du projet est découpée en 12 étapes hebdomadaires, regroupées en trois parties :
+</p>
+
+<ol class="org-ol">
+<li>la première partie est composée des étapes 1 à 6,</li>
+
+<li>la seconde partie est composée des étapes 7 à 11,</li>
+
+<li>la troisième partie est composée de l'étape 12, qui est une étape bonus optionnelle et (presque) totalement libre.</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org7bf3ec1" class="outline-2">
+<h2 id="org7bf3ec1">Notation</h2>
+<div class="outline-text-2" id="text-org7bf3ec1">
+<p>
+Un total de 500 points est attribué durant le semestre, répartis ainsi :
+</p>
+
+<ul class="org-ul">
+<li>examen intermédiaire : 75 points,</li>
+<li>examen final : 125 points,</li>
+<li>projet : 300 points.</li>
+</ul>
+
+<p>
+Les 300 points attribués au projet sont répartis de la manière suivante :
+</p>
+
+<ul class="org-ul">
+<li>rendus testés : 90 points (18 points par rendu),</li>
+<li>rendu intermédiaire : 80 points,</li>
+<li>rendu final : 110 points,</li>
+<li>test final : 20 points.</li>
+</ul>
+
+<p>
+Un rendu testé est un rendu qui est évalué automatiquement au moyen de tests unitaires. Il y a 5 rendus testés au cours du semestre, un pour chacune des étapes 2 à 6. Le nombre de points obtenus à un rendu testé est proportionnel au nombre de tests passés avec succès.
+</p>
+
+<p>
+Le rendu intermédiaire, qui concerne les étapes 1 à 6, et le rendu final, qui concerne les étape 7 à 11, sont quant à eux évalués par des correcteurs, et les points attribués en fonction de la qualité du programme. L'efficacité, la concision et l'élégance du code sont pris en compte dans cette évaluation.
+</p>
+
+<p>
+Le test final consiste en un test non automatisé (contrairement aux tests unitaires) du bon fonctionnement du projet complet.
+</p>
+</div>
+</div>
+</div>
+
+
+</body></html>

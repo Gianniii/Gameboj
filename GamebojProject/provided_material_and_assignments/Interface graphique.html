@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<!-- saved from url=(0046)https://cs108.epfl.ch/archive/18/p/11_gui.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-05-07 Lun 09:24 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interface graphique</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Interface graphique_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Interface graphique_files/github.min.css">
+<script src="./Interface graphique_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Interface graphique
+<br>
+<span class="subtitle">Gameboj – Étape 11</span>
+</h1>
+
+<div id="outline-container-orgc2a5b4d" class="outline-2">
+<h2 id="orgc2a5b4d"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Le but de cette étape est de terminer le projet Gameboj en écrivant l'interface utilisateur graphique permettant d'interagir avec le simulateur.
+</p>
+</div>
+
+<div id="outline-container-org66be483" class="outline-3">
+<h3 id="org66be483"><span class="section-number-3">1.1</span> Interface graphique</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+L'interface graphique de Gameboj est minimaliste et consiste en une simple fenêtre montrant l'image affichée sur l'écran du Game Boy, agrandie d'un facteur 2 pour compenser la faible résolution de ce dernier. La copie d'écran ci-dessous montre cette interface sur macOS, lorsque Gameboj exécute le jeu Bomberman.
+</p>
+
+
+<div class="figure">
+<p><img src="./Interface graphique_files/gameboj-gui.png" alt="gameboj-gui.png" class="shadowed">
+</p>
+<p><span class="figure-number">Figure&nbsp;1&nbsp;: </span>Gameboj durant la séquence d'introduction de Bomberman</p>
+</div>
+
+<p>
+L'interaction avec le simulateur se fait au moyen du clavier uniquement. Les huit touches du Game Boy sont assignées à huit touches du clavier de l'ordinateur hôte — celui exécutant Gameboj — selon la correspondance suivante :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Game Boy</th>
+<th scope="col" class="org-left">Gameboj</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">haut</td>
+<td class="org-left">curseur haut</td>
+</tr>
+
+<tr>
+<td class="org-left">bas</td>
+<td class="org-left">curseur bas</td>
+</tr>
+
+<tr>
+<td class="org-left">gauche</td>
+<td class="org-left">curseur gauche</td>
+</tr>
+
+<tr>
+<td class="org-left">droite</td>
+<td class="org-left">curseur droite</td>
+</tr>
+
+<tr>
+<td class="org-left">A</td>
+<td class="org-left">a</td>
+</tr>
+
+<tr>
+<td class="org-left">B</td>
+<td class="org-left">b</td>
+</tr>
+
+<tr>
+<td class="org-left"><i>Start</i></td>
+<td class="org-left">s</td>
+</tr>
+
+<tr>
+<td class="org-left"><i>Select</i></td>
+<td class="org-left">barre d'espacement</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-org67c8598" class="outline-3">
+<h3 id="org67c8598"><span class="section-number-3">1.2</span> Synchronisation de la simulation</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Dans sa version actuelle, le simulateur simule un Game Boy aussi vite que possible sur l'ordinateur hôte, sans tenter de respecter la vitesse d'exécution d'un Game Boy réel. Ce comportement est utile dans certaines situations, p.ex. lorsqu'on désire exécuter des tests rapidement, mais n'est bien entendu pas acceptable lorsqu'on désire jouer à un jeu.
+</p>
+
+<p>
+Dit autrement, le simulateur possède une notion de temps qui lui est propre, exprimée en terme de cycles écoulés depuis le début de la simulation, et ce <b>temps simulé</b> n'est pour l'instant pas lié au <b>temps réel</b>. Or lorsqu'un être humain interagit avec le Game Boy simulé, il est important que les deux soient liés afin que les jeux s'exécutent à la bonne vitesse.
+</p>
+
+<p>
+Sachant qu'un Game Boy exécute 2<sup>20</sup> cycles par seconde, il faut trouver un moyen pour faire en sorte que le simulateur simule, en moyenne en tout cas, ce même nombre de cycles par seconde de temps réel.
+</p>
+
+<p>
+La technique que nous utiliserons, fréquemment employée dans les jeux<sup><a id="fnr.1" class="footref" href="https://cs108.epfl.ch/archive/18/p/11_gui.html#fn.1">1</a></sup>, consiste à faire avancer la simulation par petits pas, de manière à ce que le temps simulé rattrape à chaque pas le temps réel. L'idée est d'effectuer en boucle les actions suivantes :
+</p>
+
+<ol class="org-ol">
+<li>déterminer le nombre de secondes de temps réel écoulées depuis le début de la simulation,</li>
+<li>déterminer le nombre de cycles du Game Boy correspondant, en multipliant cetta valeur par 2<sup>20</sup>,</li>
+<li>faire avancer la simulation jusqu'à ce nombre de cycles,</li>
+<li>obtenir du simulateur l'image actuellement affichée à l'écran du Game Boy et l'afficher à l'écran de l'ordinateur hôte.</li>
+</ol>
+
+<p>
+En supposant que le simulateur soit plus rapide qu'un Game Boy réel, cette technique garantit que la simulation ne s'effectue jamais trop rapidement. En effet, le simulateur est toujours en léger retard par rapport au temps réel.
+</p>
+
+<p>
+Telle quelle, cette solution a néanmoins le défaut d'afficher potentiellement un nombre bien trop important d'images à l'écran de l'ordinateur hôte. Par exemple, si on admet que les 4 actions décrites ci-dessus prennent un cinq-centième de seconde à s'exécuter, alors l'image affichée à l'écran de l'ordinateur hôte sera changée 500 fois par secondes. Cela est clairement inutile, sachant d'une part que l'image affichée à l'écran du Game Boy ne change au mieux que 60 fois par secondes, et d'autre part que les êtres humains ne peuvent généralement pas percevoir plus d'une soixantaine d'images par secondes.
+</p>
+
+<p>
+Dès lors, la technique ci-dessus peut encore être améliorée en introduisant une étape d'attente, calibrée de manière à ce que la boucle décrite s'exécute environ 60 fois par secondes. Comme nous le verrons, JavaFX offre une manière très simple de faire cela.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7b833df" class="outline-2">
+<h2 id="org7b833df"><span class="section-number-2">2</span> Mise en œuvre Java</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+Les classes à écrire pour cette étape font toutes partie du paquetage <code>ch.epfl.gameboj.gui</code>, réservé à l'interface graphique (<i>GUI</i> est le sigle de <i>Graphical User Interface</i>).
+</p>
+</div>
+
+<div id="outline-container-orgb830368" class="outline-3">
+<h3 id="orgb830368"><span class="section-number-3">2.1</span> Classe <code>ImageConverter</code></h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+La classe <code>ImageConverter</code> est un convertisseur d'image Game Boy en image JavaFX. Elle n'offre qu'une seule méthode, publique et statique, nommée p.ex. <code>convert</code>, prenant en argument une image de type <code>LcdImage</code> et retournant une image de type <a href="https://docs.oracle.com/javase/9/docs/api/java/javafx/scene/image/Image.html"><code>javafx.scene.image.Image</code></a>.
+</p>
+
+<p>
+Notez que cette image doit avoir la même taille que l'écran du Game Boy, c-à-d 160 par 144 pixels. Le redimensionnement de l'image avant l'affichage est fait par JavaFX, comme expliqué plus bas.
+</p>
+
+<p>
+Les couleurs des pixels des images JavaFX possèdent quatre composantes comprises entre 0 et 255 (inclus) : la composante rouge, la composante verte, la composante bleue, et la composante dite <i>alpha</i> qui n'est rien d'autre que l'opacité de la couleur. La correspondance entre les couleurs du Game Boy et les couleurs JavaFX à utiliser pour ce projet sont données par la table ci-dessous, dans laquelle les composantes JavaFX sont données en hexadécimal :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Couleur</th>
+<th scope="col" class="org-left">Alpha</th>
+<th scope="col" class="org-left">Rouge</th>
+<th scope="col" class="org-left">Vert</th>
+<th scope="col" class="org-left">Bleu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><span style="background-color: #FFFFFF; color: #FFFFFF">:-)</span> 0</td>
+<td class="org-left"><code>FF</code></td>
+<td class="org-left"><code>FF</code></td>
+<td class="org-left"><code>FF</code></td>
+<td class="org-left"><code>FF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><span style="background-color: #D3D3D3; color: #D3D3D3">:-)</span> 1</td>
+<td class="org-left"><code>FF</code></td>
+<td class="org-left"><code>D3</code></td>
+<td class="org-left"><code>D3</code></td>
+<td class="org-left"><code>D3</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><span style="background-color: #A9A9A9; color: #A9A9A9">:-)</span> 2</td>
+<td class="org-left"><code>FF</code></td>
+<td class="org-left"><code>A9</code></td>
+<td class="org-left"><code>A9</code></td>
+<td class="org-left"><code>A9</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><span style="background-color: #000000; color: #000000">:-)</span> 3</td>
+<td class="org-left"><code>FF</code></td>
+<td class="org-left"><code>00</code></td>
+<td class="org-left"><code>00</code></td>
+<td class="org-left"><code>00</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div id="outline-container-orgd9a784c" class="outline-4">
+<h4 id="orgd9a784c"><span class="section-number-4">2.1.1</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-1-1">
+<p>
+Pour créer une image JavaFX, il faut tout d'abord créer une instance de <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/image/WritableImage.html"><code>WritableImage</code></a> de la bonne dimension, puis obtenir un « écrivain de pixels » de type <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/image/PixelWriter.html"><code>PixelWriter</code></a> permettant de modifier la couleur des pixels de cette image. Au moyen de la méthode <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/image/PixelWriter.html#setArgb-int-int-int-"><code>setArgb</code></a> de ce dernier, il est facile de construire l'image pixel par pixel.
+</p>
+
+<p>
+N'hésitez pas à vous inspirer du code de la méthode <code>main</code> de la classe <code>DebugMain2</code> de l'étape 9, en notant toutefois qu'il construit une image Swing, de type <code>BufferedImage</code>, et pas une image JavaFX.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgcf41aa3" class="outline-3">
+<h3 id="orgcf41aa3"><span class="section-number-3">2.2</span> Classe <code>Main</code></h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+La classe <code>Main</code> du paquetage <code>ch.epfl.gameboj.gui</code> est la classe contenant le programme principal du simulateur. Ce programme accepte un seul argument, qui est un nom de fichier ROM, et simule un Game Boy dans lequel on aurait inséré une cartouche contenant la ROM correspondante.
+</p>
+
+<div class="cs108warning">
+<p>
+Attention : la classe <code>Main</code> est la classe principale de votre programme, et il est donc capital qu'elle porte effectivement le nom <code>Main</code> et qu'elle se trouve dans le paquetage <code>ch.epfl.gameboj.gui</code>. Notre système de rendu refusera votre projet s'il ne contient pas une classe portant ce nom-là.
+</p>
+
+</div>
+
+<p>
+Comme toute classe principale d'une application JavaFX, la classe <code>Main</code> hérite de la classe <a href="https://docs.oracle.com/javase/9/docs/api/javafx/application/Application.html"><code>Application</code></a>. Elle définit une méthode <code>main</code> qui ne fait rien d'autre qu'appeler la méthode <a href="https://docs.oracle.com/javase/9/docs/api/javafx/application/Application.html#launch-java.lang.String...-"><code>launch</code></a> de <code>Application</code>, en lui passant les arguments reçus, ainsi :
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">static</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">void</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">main</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(String[] args)</span></span></span><span class="hljs-function"> </span></span>{
+  Application.launch(args);
+}
+</pre>
+</div>
+
+<p>
+Le reste du code du simulateur se trouve dans la redéfinition de la méthode <a href="https://docs.oracle.com/javase/9/docs/api/javafx/application/Application.html#start-javafx.stage.Stage-"><code>start</code></a> héritée de <code>Application</code>. Ce code se charge de :
+</p>
+
+<ol class="org-ol">
+<li>vérifier qu'un seul argument a été passé au programme — le nom du fichier ROM — et terminer l'exécution dans le cas contraire,</li>
+
+<li>créer un Game Boy dont la cartouche est obtenue à partir du fichier ROM passé en argument,</li>
+
+<li>créer l'interface graphique puis l'afficher à l'écran,</li>
+
+<li>simuler le Game Boy en mettant périodiquement à jour l'image affichée à l'écran et en réagissant à la pression des touches correspondant à celles du Game Boy.</li>
+</ol>
+</div>
+
+<div id="outline-container-org68570ae" class="outline-4">
+<h4 id="org68570ae"><span class="section-number-4">2.2.1</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-2-1">
+</div>
+<ol class="org-ol">
+<li><a id="org12e7c85"></a>Validation des arguments<br>
+<div class="outline-text-5" id="text-2-2-1-1">
+<p>
+Dans une application JavaFX, les arguments passés au programme peuvent être obtenus au moyen de la méthode <a href="https://docs.oracle.com/javase/9/docs/api/javafx/application/Application.html#getParameters--"><code>getParameters</code></a>, et la méthode <a href="http://docs.oracle.com/javase/9/docs/api/javafx/application/Application.Parameters.html#getRaw--"><code>getRaw</code></a> permet de les obtenir sous forme de liste de chaîne de caractères.
+</p>
+</div>
+</li>
+
+<li><a id="org5c5a4a9"></a>Terminaison de l'exécution<br>
+<div class="outline-text-5" id="text-2-2-1-2">
+<p>
+Pour terminer immédiatement l'exécution d'un programme, p.ex. après avoir constaté que les arguments reçus sont invalides, il suffit d'appeler la méthode <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/System.html#exit-int-"><code>exit</code></a> de <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/System.html"><code>System</code></a> en lui passant 1 comme argument pour signaler qu'un problème s'est produit.
+</p>
+</div>
+</li>
+
+<li><a id="orgc316328"></a>Construction de l'interface graphique<br>
+<div class="outline-text-5" id="text-2-2-1-3">
+<p>
+L'image de l'écran du Game Boy peut être affichée à l'écran de l'ordinateur hôte au moyen d'un composant JavaFX de type <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/image/ImageView.html"><code>ImageView</code></a>. Les méthodes <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/image/ImageView.html#setFitWidth-double-"><code>setFitWidth</code></a> et <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/image/ImageView.html#setHeight-double-"><code>setFitHeight</code></a> permettent de redimensionner l'image pour qu'elle soit deux fois plus grande qu'en réalité, comme demandé. La méthode <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/image/ImageView.html#setImage-javafx.scene.image.Image-"><code>setImage</code></a> permet de changer l'image affichée.
+</p>
+
+<p>
+Ce composant <code>ImageView</code> peut être placé à l'intérieur d'un composant <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/layout/BorderPane.html"><code>BorderPane</code></a>, placé lui-même à la racine de la scène.
+</p>
+
+<p>
+Les gestionnaires d'événements permettant de gérer la pression et le relâchement des touches doivent être attachés au composant <code>ImageView</code> au moyen des méthodes <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/Node.html#setOnKeyPressed-javafx.event.EventHandler-"><code>setOnKeyPressed</code></a> et <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/Node.html#setOnKeyReleased-javafx.event.EventHandler-"><code>setOnKeyReleased</code></a>. Ces gestionnaires, de type <a href="https://docs.oracle.com/javase/9/docs/api/javafx/event/EventHandler.html"><code>EventHandler&lt;KeyEvent&gt;</code></a>, reçoivent en argument un événement de type <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/input/KeyEvent.html"><code>KeyEvent</code></a>. Les méthodes <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/input/KeyEvent.html#getCode--"><code>getCode</code></a> et <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/input/KeyEvent.html#getText--"><code>getText</code></a> permettent respectivement d'obtenir le code et le texte associé à la touche pressée ou relâchée. Les deux sont utiles car :
+</p>
+
+<ul class="org-ul">
+<li>les touches textuelles (<code>a</code>, <code>b</code>, <code>s</code> et espace) ont à la fois un code et un texte qui leur est attaché, mais le code correspond toujours à un clavier américain et est donc incorrect pour certaines touches sur les autres claviers (suisse-romands ou français, p.ex.),</li>
+
+<li>les touches de curseur n'ont pas de texte associé, il faut donc utiliser leur code (<code>KeyCode.LEFT</code>, <code>KeyCode.RIGHT</code>, <code>KeyCode.UP</code> et <code>KeyCode.DOWN</code>).</li>
+</ul>
+
+<p>
+Notez qu'une table associative convient très bien pour associer les touches de l'ordinateur hôte à celles du Game Boy.
+</p>
+
+<p>
+Finalement, sachez que pour que les pressions des touches provoquent l'envoi des événements associés au composant <code>ImageView</code>, il faut impérativement appeler sa méthode <a href="https://docs.oracle.com/javase/9/docs/api/javafx/scene/Node.html#requestFocus--"><code>requestFocus</code></a> juste <i>après</i> avoir appelé la méthode <a href="https://docs.oracle.com/javase/9/docs/api/javafx/stage/Stage.html#show--"><code>show</code></a> de la scène principale (<i>primary stage</i>).
+</p>
+</div>
+</li>
+
+<li><a id="org9cdd120"></a>Avancement de la simulation<br>
+<div class="outline-text-5" id="text-2-2-1-4">
+<p>
+Pour faire avancer la simulation, nous utiliserons un minuteur d'animation JavaFX, de type <a href="https://docs.oracle.com/javase/9/docs/api/javafx/animation/AnimationTimer.html"><code>AnimationTimer</code></a>. Un tel minuteur possède une méthode nommée <a href="https://docs.oracle.com/javase/9/docs/api/javafx/animation/AnimationTimer.html#handle-long-"><code>handle</code></a>, que JavaFX appelle environ 60 fois par secondes dès que le minuteur a été démarré au moyen de sa méthode <a href="https://docs.oracle.com/javase/9/docs/api/javafx/animation/AnimationTimer.html#start--"><code>start</code></a>. Cette méthode reçoit en argument le temps actuel, donné en nombre de nanosecondes écoulées depuis un instant d'origine arbitraire.
+</p>
+
+<p>
+Ce temps actuel en nanosecondes peut également être obtenu au moyen de la méthode <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/System.html#nanoTime--"><code>nanoTime</code></a> de la classe <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/System.html"><code>System</code></a>. Dès lors, il est facile de mémoriser le temps du début de la simulation avant de démarrer le minuteur, puis ensuite de déterminer à chaque appel de la méthode <code>handle</code> le temps écoulé depuis le début de la simulation.
+</p>
+
+<p>
+Le programme d'exemple ci-dessous illustre cela en utilisant un minuteur d'animation JavaFX pour afficher sur la console le temps écoulé depuis le début du programme.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-class"><span class="hljs-keyword"><span class="hljs-class"><span class="hljs-keyword">class</span></span></span><span class="hljs-class"> </span><span class="hljs-title"><span class="hljs-class"><span class="hljs-title">Example</span></span></span><span class="hljs-class"> </span><span class="hljs-keyword"><span class="hljs-class"><span class="hljs-keyword">extends</span></span></span><span class="hljs-class"> </span><span class="hljs-title"><span class="hljs-class"><span class="hljs-title">Application</span></span></span><span class="hljs-class"> </span></span>{
+  <span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">static</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">void</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">main</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(String[] args)</span></span></span><span class="hljs-function"> </span></span>{
+    Application.launch(args);
+  }
+
+  <span class="hljs-meta"><span class="hljs-meta">@Override</span></span>
+  <span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">void</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">start</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(Stage primaryStage)</span></span></span><span class="hljs-function"> </span></span>{
+    <span class="hljs-keyword"><span class="hljs-keyword">long</span></span> start = System.nanoTime();
+    AnimationTimer timer = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> AnimationTimer() {
+	<span class="hljs-meta"><span class="hljs-meta">@Override</span></span>
+	<span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">void</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">handle</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(</span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">long</span></span></span></span><span class="hljs-function"><span class="hljs-params"> now)</span></span></span><span class="hljs-function"> </span></span>{
+	  <span class="hljs-keyword"><span class="hljs-keyword">long</span></span> elapsed = now - start;
+	  System.out.printf(<span class="hljs-string"><span class="hljs-string">"Temps écoulé : %.2f s%n"</span></span>,
+			    elapsed / <span class="hljs-number"><span class="hljs-number">1e9</span></span>);
+	}
+      };
+    timer.start();
+  }
+}
+</pre>
+</div>
+
+<p>
+En l'exécutant, vous devriez obtenir un affichage ressemblant initialement à ceci, mais avec des valeurs légèrement différentes :
+</p>
+
+<pre class="example">Temps écoulé : 0,02 s
+Temps écoulé : 0,19 s
+Temps écoulé : 0,20 s
+Temps écoulé : 0,21 s
+Temps écoulé : 0,23 s
+Temps écoulé : 0,25 s
+Temps écoulé : 0,26 s
+Temps écoulé : 0,28 s
+Temps écoulé : 0,30 s
+Temps écoulé : 0,31 s
+…
+</pre>
+</div>
+</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org340cbd5" class="outline-3">
+<h3 id="org340cbd5"><span class="section-number-3">2.3</span> Classes <code>MBC1</code> et <code>Cartridge</code></h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+Pour vous permettre de tester votre simulateur avec des jeux utilisant un autre type de contrôleur de banque mémoire que celui de type 0 écrit à <a href="https://cs108.epfl.ch/archive/18/p/06_cartridge_timer.html">l'étape 6</a>, nous mettons à votre disposition <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_mbc1.zip">une archive Zip</a> contenant la classe <code>MBC1</code>, modélisant un contrôleur de type 1.
+</p>
+
+<p>
+Une fois cette classe importée dans votre projet, vous devez l'utiliser dans votre classe <code>Cartridge</code> pour créer une instance de <code>MBC1</code> au lieu d'une instance de <code>MBC0</code> lorsque l'octet identifiant le type de MBC (d'index 147<sub>16</sub>) contient la valeur 1, 2 ou 3. La raison pour laquelle il existe trois octets identifiant le même type de MBC est qu'il en existe trois variantes qui sont :
+</p>
+
+<ol class="org-ol">
+<li>une première variante, identifiée par la valeur 1, donnant uniquement accès à une mémoire morte,</li>
+
+<li>une seconde variante, identifiée par la valeur 2, donnant accès à une mémoire morte et à une mémoire vive volatile,</li>
+
+<li>une troisième variante, identifiée par la valeur 3, donnant accès à une mémoire morte et à une mémoire vive non volatile.</li>
+</ol>
+
+<p>
+Les cartouches contenant la troisième variante incluent une petite pile, qui permet au contenu de la mémoire vive de ne pas disparaître même lorsque la cartouche est enlevée du Game Boy. Les jeux l'utilisent pour sauvegarder l'état de la partie en cours, ou les meilleurs scores obtenus. La classe <code>MBC1</code> fournie considère toutefois que toutes les mémoires sont volatiles.
+</p>
+
+<p>
+Etant donné que les cartouches dotées d'un contrôleur de banque mémoire de type&nbsp;1 incluent parfois de la mémoire vive, le constructeur de la classe <code>MBC1</code> prend un second argument qui est la taille de cette mémoire, en octets. Pour la déterminer, il suffit de consulter la valeur de l'octet d'index 149<sub>16</sub> de la cartouche, nommé <code>RAM_SIZE</code>, qui peut prendre une valeur allant de 0 à 3 (inclus). La taille de la mémoire volatile correspondant à chacune de ces quatre valeurs est donnée par la table ci-dessous :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right"><code>RAM_SIZE</code></th>
+<th scope="col" class="org-right">Taille RAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+</tr>
+
+<tr>
+<td class="org-right">1</td>
+<td class="org-right">2 048</td>
+</tr>
+
+<tr>
+<td class="org-right">2</td>
+<td class="org-right">8 192</td>
+</tr>
+
+<tr>
+<td class="org-right">3</td>
+<td class="org-right">32 768</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-org40bc448" class="outline-3">
+<h3 id="org40bc448"><span class="section-number-3">2.4</span> Tests</h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+La manière la plus simple — et la plus agréable — de tester votre simulateur consiste à essayer de jouer à différents jeux. En plus de Flappy Boy, nous mettons à votre disposition les fichiers ROM de deux autres jeux simples (et libres) qui sont :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Titre</th>
+<th scope="col" class="org-right">MBC</th>
+<th scope="col" class="org-left">Note</th>
+<th scope="col" class="org-left">Liens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">2048</td>
+<td class="org-right">0</td>
+<td class="org-left">N'utilise ni <i>sprite</i>, ni fenêtre</td>
+<td class="org-left"><a href="https://cs108.epfl.ch/archive/18/p/f/2048.gb">ROM</a>, <a href="https://github.com/Sanqui/2048-gb">site Web</a></td>
+</tr>
+
+<tr>
+<td class="org-left">Snake</td>
+<td class="org-right">0</td>
+<td class="org-left">N'utilise ni <i>sprite</i>, ni fenêtre</td>
+<td class="org-left"><a href="https://cs108.epfl.ch/archive/18/p/f/snake.gb">ROM</a>, <a href="https://bitbucket.org/Sanqui/snake">site Web</a></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+De plus, le site LoveROMs contient un très grand nombre de jeux. Toutefois, il faut bien noter que certains d'entre eux ne fonctionnent pas correctement sur notre simulateur en raison d'approximations que nous avons faites. Ceux de la table ci-dessous fonctionnent néanmoins, et sont de plus d'excellents jeux.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Titre</th>
+<th scope="col" class="org-right">MBC</th>
+<th scope="col" class="org-left">Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><a href="https://www.loveroms.com/download/gameboy/super-mario-land-jue-v11-/66858">Super Mario Land</a></td>
+<td class="org-right">1</td>
+<td class="org-left">Utilise la fenêtre en pause (touche <i>Start</i>)</td>
+</tr>
+
+<tr>
+<td class="org-left"><a href="https://www.loveroms.com/download/gameboy/super-mario-land-2-6-golden-coins-ue-v12-/66704">Super Mario Land 2</a></td>
+<td class="org-right">1</td>
+<td class="org-left">Très bon jeu</td>
+</tr>
+
+<tr>
+<td class="org-left"><a href="https://www.loveroms.com/download/gameboy/donkey-kong-ju-v11-/67248">Donkey Kong</a></td>
+<td class="org-right">1</td>
+<td class="org-left">Utilise des <i>sprites</i> de 8×16 pixels</td>
+</tr>
+
+<tr>
+<td class="org-left"><a href="https://www.loveroms.com/download/gameboy/bomberman-gb-u-/67424">Bomberman</a></td>
+<td class="org-right">1</td>
+<td class="org-left">Bon test pour la fenêtre</td>
+</tr>
+
+<tr>
+<td class="org-left"><a href="https://www.loveroms.com/download/gameboy/legend-of-zelda-the-links-awakening-u-v12-/67146">The Legend of Zelda</a></td>
+<td class="org-right">1</td>
+<td class="org-left">Très belle séquence d'introduction</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Comme précédemment, les personnes ne possédant pas les cartouches de ces jeux doivent être conscientes du fait qu'il n'est pas forcément légal de télécharger les fichiers ROM correspondants.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga128473" class="outline-2">
+<h2 id="orga128473"><span class="section-number-2">3</span> Résumé</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Pour cette étape, vous devez :
+</p>
+
+<ul class="org-ul">
+<li>écrire les classes <code>ImageConverter</code> (ou équivalent) et <code>Main</code>, selon les indications données plus haut,</li>
+
+<li>intégrer la classe <code>MBC1</code> fournie à votre projet, et modifier la classe <code>Cartridge</code> pour permettre le chargement de fichiers ROM utilisant ce type de contrôleur de banque mémoire,</li>
+
+<li>tester votre programme,</li>
+
+<li>rendre votre projet dans le cadre du rendu final anticipé, si vous désirez tenter d'obtenir un bonus, ou dans le cadre du rendu final normal sinon ; les instructions concernant ces rendus seront publiées ultérieurement.</li>
+</ul>
+</div>
+</div>
+<div id="footnotes">  <h2 class="footnotes">Notes de bas de page</h2>  <div id="text-footnotes">
+<div class="footdef"><sup><a id="fn.1" class="footnum" href="https://cs108.epfl.ch/archive/18/p/11_gui.html#fnr.1">1</a></sup> <div class="footpara"><p class="footpara">
+Cette idée est p.ex. décrite par le patron <a href="https://gameprogrammingpatterns.com/game-loop.html"><i>Game Loop</i></a> dans le livre <a href="https://gameprogrammingpatterns.com/"><i>Game Programming Patterns</i></a> de Robert Nystrom.
+</p></div></div>
+
+</div></div></div>
+
+
+</body></html>

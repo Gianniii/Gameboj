@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)https://cs108.epfl.ch/archive/18/p/06_cartridge_timer.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-03-19 Lun 09:47 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cartouche et minuteur</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Cartouche et minuteur_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Cartouche et minuteur_files/github.min.css">
+<script src="./Cartouche et minuteur_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Cartouche et minuteur
+<br>
+<span class="subtitle">Gameboj – Étape 6</span>
+</h1>
+
+<div id="outline-container-org4c549a5" class="outline-2">
+<h2 id="org4c549a5"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Le but de cette étape est de compléter votre simulateur en lui ajoutant les éléments suivants :
+</p>
+
+<ul class="org-ul">
+<li>la mémoire de démarrage, qui contient un programme chargé d'initialiser le Game Boy,</li>
+
+<li>les cartouches, qui contiennent le code et les données (p.ex. graphiques) des jeux et autres programmes Game Boy,</li>
+
+<li>le minuteur, qui permet de mesurer le passage du temps.</li>
+</ul>
+
+<p>
+Une fois cette étape terminée, il ne manquera à votre simulateur « que » la gestion de l'écran et du clavier, qui feront l'objet des étapes 7 à 11. Toutefois, comme vous le verrez, la gestion de l'écran est relativement complexe et justifie qu'on y consacre plusieurs étapes.
+</p>
+
+<div class="cs108warning">
+<p>
+Notez que cette étape devra être rendue deux fois :
+</p>
+
+<ol class="org-ol">
+<li>pour le rendu testé habituel (délai : 6 avril, 16h30),</li>
+<li>pour le rendu intermédiaire (délai : 13 avril, 16h30).</li>
+</ol>
+
+<p>
+Le deuxième de ces rendus sera corrigé par lecture de votre code pour les étapes 1 à 6, et il vous faudra donc soigner sa qualité et sa documentation.
+</p>
+
+</div>
+</div>
+
+<div id="outline-container-orgd26bbea" class="outline-3">
+<h3 id="orgd26bbea"><span class="section-number-3">1.1</span> Mémoire de démarrage</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Comme nous l'avons vu, lorsque le processeur du Game Boy démarre, il commence à exécuter le code se trouvant à l'adresse 0. La question se pose donc de savoir quel programme s'y trouve à l'allumage du système.
+</p>
+
+<p>
+Sur le Game Boy, on trouve à l'adresse 0 ce que l'on nomme le <b>programme de démarrage</b> (<i>boot program</i>), dont le but principal est d'initialiser les différents composants du système. Ce programme est stocké dans une petite mémoire morte de 256 octets appelée la <b>mémoire de démarrage</b> (<i>boot ROM</i>) et occupant la plage d'adresses allant de 0 à FF<sub>16</sub>.
+</p>
+
+<p>
+Après avoir initialisé les différents composants du Game Boy, le programme de démarrage fait défiler à l'écran le logo de Nintendo et joue deux notes. Une vidéo montrant cette animation est disponible <a href="https://youtu.be/fZy08NsG2FM">sur YouTube</a>.
+</p>
+
+<p>
+Une fois les notes jouées, le programme de démarrage cède le contrôle au programme stocké sur la cartouche actuellement présente dans le Game Boy, en commençant à exécuter le code se trouvant à l'adresse 100<sub>16</sub>. Cette adresse fait référence à la mémoire morte se trouvant sur la cartouche, comme on peut le voir sur la carte mémoire présentée à <a href="https://cs108.epfl.ch/archive/18/p/01_bus_memories_bits.html">l'étape 1</a>.
+</p>
+
+<p>
+Toutefois, juste avant de céder le contrôle, le programme de démarrage s'arrange pour faire disparaître la mémoire de démarrage du bus ! En d'autres termes, dès que le programme se trouvant sur la cartouche commence à s'exécuter, la plage d'adresses 0 à FF<sub>16</sub> n'est plus attribuée à la mémoire de démarrage, mais aux 256 premiers octets de la mémoire de la cartouche. C'est pourquoi la carte mémoire de l'étape 1 montre que la plage 0 à FF<sub>16</sub> est attribuée à la fois à la mémoire de démarrage et à la mémoire de la cartouche.
+</p>
+
+<p>
+La raison pour laquelle il est important que la mémoire de démarrage disparaisse ainsi du bus est qu'elle occupe une plage d'adresses qui est aussi utilisées par les gestionnaires d'interruption et les fonctions appelées par les instructions <code>RST</code>. Or il est capital que le programme se trouvant sur la cartouche puisse, par exemple, définir ses propres gestionnaires d'interruption, ce qui serait impossible si la mémoire de démarrage occupait la plage 0 à FF<sub>16</sub> de manière permanente.
+</p>
+
+<p>
+Reste à savoir comment le programme de démarrage peut faire disparaître du bus la mémoire qui le contient ! La technique utilisée par Nintendo consiste à réserver une adresse particulière, FF50<sub>16</sub>, pour cette désactivation. Dès qu'une écriture est effectuée à cette adresse, et quelle que soit la valeur écrite, la mémoire de démarrage disparaît du bus et les accès à la plage 0 à FF<sub>16</sub> sont transmis à la cartouche. Le programme de démarrage se termine donc par l'instruction suivante :
+</p>
+<div class="org-src-container">
+<pre class="src src-asm hljs">LD [$FF00 + $50], A
+</pre>
+</div>
+<p>
+Cette instruction s'encode en deux octets (E0<sub>16</sub> 50<sub>16</sub>) qui sont les deux derniers du programme de démarrage, placés aux adresses FE<sub>16</sub> et FF<sub>16</sub>. Dès lors, lorsque le processeur exécute cette instruction, la mémoire de démarrage disparaît du bus, et la prochaine instruction exécutée est celle qui suit, à l'adresse 100<sub>16</sub>.
+</p>
+
+<p target="_blank">
+Notez que la disparition de la mémoire de démarrage est permanente, et dure tant et aussi longtemps que le Game Boy est allumé. En conséquence, il est impossible pour un programme se trouvant sur une cartouche de lire le contenu de la mémoire de démarrage ! Son contenu exact est donc resté secret durant de nombreuses années, et a finalement été obtenu en photographiant la mémoire au microscope et en y lisant son contenu bit à bit. La photo ci-dessous, provenant du <a href="http://www.neviksti.com/DMG/" target="_blank">site de la personne ayant effectué ces retranscriptions</a>, donne une idée de la difficulté de la tâche — et de l'aspect d'une ROM vue au microscope.
+</p>
+
+
+<div class="figure">
+<p><img src="./Cartouche et minuteur_files/DMG_ROM_3.jpg" alt="DMG_ROM_3.jpg" class="shadowed">
+</p>
+<p><span class="figure-number">Figure&nbsp;1&nbsp;: </span>Photo d'une partie de la mémoire de démarrage du Game Boy</p>
+</div>
+
+<p target="_blank">
+Pour différentes raisons, nous n'utiliserons pas dans ce projet le programme de démarrage original de Nintendo. Au lieu de cela, nous utiliserons celui développé dans le contexte du projet SameBoy, et qui vous est fourni plus bas sous une forme facile à intégrer dans votre code. Les personnes intéressées par la version assembleur de ce programme de démarrage peuvent la consulter <a href="https://github.com/LIJI32/SameBoy/blob/029c6852688f343bdb752254581156b396dd3ede/BootROMs/dmg_boot.asm" target="_blank">sur github</a>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgdfa29d8" class="outline-3">
+<h3 id="orgdfa29d8"><span class="section-number-3">1.2</span> Cartouche</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Comme cela a déjà été dit, les différents programmes Game Boy — des jeux, principalement — étaient vendus sous la forme de <b>cartouches</b> (<i>cartridges</i>) à enfiler dans le Game Boy. Toutes les cartouches contiennent au moins une mémoire morte dans laquelle se trouve aussi bien le code que les données du jeu. En plus de cette mémoire morte, certaines cartouches contiennent également une mémoire vive, souvent non volatile, sur laquelle des informations comme les meilleurs scores sont sauvegardés.
+</p>
+
+<p>
+Dans le cadre de ce projet, nous ne simulerons dans un premier temps que les cartouches les plus simples, composées de :
+</p>
+
+<ul class="org-ul">
+<li>une mémoire morte (ROM) de 32 768 octets,</li>
+
+<li>un contrôleur pour cette mémoire morte.</li>
+</ul>
+
+<p>
+La raison pour laquelle la mémoire morte fait 32 768 octets est que la plage d'adresses allant de 0 à 8000<sub>16</sub> (exclue) est réservée à la mémoire morte de la cartouche dans la carte mémoire du Game Boy, or 8000<sub>16</sub> = 32 768.
+</p>
+</div>
+
+<div id="outline-container-orgdd20a79" class="outline-4">
+<h4 id="orgdd20a79"><span class="section-number-4">1.2.1</span> Contrôleur de banque mémoire</h4>
+<div class="outline-text-4" id="text-1-2-1">
+<p>
+La principale différence existant entre les types de cartouches est la taille de la mémoire morte et la complexité du contrôleur mémoire, les deux étant liés.
+</p>
+
+<p>
+Dans les cartouches les plus simples, comme celles que nous simulerons, le contrôleur mémoire est très simple car il y a une correspondance directe entre les adresses de la plage 0 à 7FFF<sub>16</sub> et les octets de la mémoire morte.
+</p>
+
+<p>
+Dans les cartouches plus complexes, le contrôleur mémoire permet d'accéder à une mémoire morte de plus de 32 768 octets en rendant visible différentes tranches de la mémoire dans la plage allant de 4000<sub>16</sub> à 7FFF<sub>16</sub>, en fonction de commandes qu'on lui transmet. On dit alors que la mémoire morte est organisée en <b>banques</b> (<i>banks</i>).
+</p>
+
+<p>
+Pour cette raison, le contrôleur de la mémoire morte de la cartouche est généralement appelé <b>contrôleur de banque mémoire</b> (<i>memory bank controller</i> ou <i>MBC</i>) et pas simplement « contrôleur mémoire ». Nous conserverons cette terminologie ici, même si notre « contrôleur de banque mémoire » n'a en réalité aucune notion de banque.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org85fc994" class="outline-4">
+<h4 id="org85fc994"><span class="section-number-4">1.2.2</span> En-tête de la cartouche</h4>
+<div class="outline-text-4" id="text-1-2-2">
+<p>
+Une particularité de la mémoire morte stockée sur la cartouche est qu'elle ne contient pas seulement le code et les données du jeu, mais également un en-tête situé entre les adresses 104<sub>16</sub> et 150<sub>16</sub> (exclus). Cet en-tête contient différentes informations sur le jeu contenu dans la cartouche. La table ci-dessous résume les parties les plus intéressantes (pour nous) de cet en-tête, une description plus complète étant disponible sur <a href="http://gbdev.gg8.se/wiki/articles/The_Cartridge_Header">ce site Web</a>.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Adresses</th>
+<th scope="col" class="org-left">Contenu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">134<sub>16</sub> à 143<sub>16</sub></td>
+<td class="org-left">Titre du jeu (encodé en ASCII)</td>
+</tr>
+
+<tr>
+<td class="org-left">147<sub>16</sub></td>
+<td class="org-left">Type de la cartouche</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Pour l'instant, seul l'octet à l'adresse 147<sub>16</sub> nous intéresse, car il décrit le type de cartouche, donc le type de contrôleur mémoire qu'elle contient. La seule valeur que notre simulateur acceptera à cette adresse est 0, qui représente une cartouche dotée d'une mémoire de 32 768 octets.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org0a6bdf6" class="outline-4">
+<h4 id="org0a6bdf6"><span class="section-number-4">1.2.3</span> Fichiers ROM</h4>
+<div class="outline-text-4" id="text-1-2-3">
+<p>
+Le simulateur Game Boy développé dans le cadre de ce projet étant un programme, il n'est bien entendu pas possible de lui donner une cartouche physique en paramètre.
+</p>
+
+<p>
+Au lieu de cela, on lui fournira un <b>fichier ROM</b> (<i>ROM file</i>). Comme son nom l'indique, un fichier ROM contient les données de la mémoire morte d'une cartouche. Nous mettrons à votre disposition différents fichiers ROM au fil des étapes, afin que vous puissiez tester votre simulateur. Certains sont d'ailleurs fournis à la fin de cette étape-ci.
+</p>
+
+<p>
+Pour illustrer la structure d'un fichier ROM, les 352 premiers octets de celui contenant le jeu Tetris sont présentés ci-dessous. Chaque ligne donne d'abord la position dans le fichier du premier octet de la ligne, puis la valeur des 16 octets suivants, et finalement leur représentation textuelle lorsqu'on les décode avec l'encodage ASCII — les caractères de contrôle ou invalides étant remplacés par des points. Notez que toutes les valeurs sont en base 16.
+</p>
+
+<p>
+<small>
+</small></p><small>
+<pre class="example">000  c3 0c 02 00 00 00 00 00  c3 0c 02 ff ff ff ff ff  |................|
+010  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+020  ff ff ff ff ff ff ff ff  87 e1 5f 16 00 19 5e 23  |.........._...^#|
+030  56 d5 e1 e9 ff ff ff ff  ff ff ff ff ff ff ff ff  |V...............|
+040  c3 7e 01 ff ff ff ff ff  c3 be 26 ff ff ff ff ff  |.~........&amp;.....|
+050  c3 be 26 ff ff ff ff ff  c3 5b 00 f5 e5 d5 c5 cd  |..&amp;......[......|
+060  6b 00 3e 01 e0 cc c1 d1  e1 f1 d9 f0 cd ef 78 00  |k.&gt;...........x.|
+070  9f 00 a4 00 ba 00 ea 27  f0 e1 fe 07 28 08 fe 06  |.......'....(...|
+080  c8 3e 06 e0 e1 c9 f0 01  fe 55 20 08 3e 29 e0 cb  |.&gt;.......U .&gt;)..|
+090  3e 01 18 08 fe 29 c0 3e  55 e0 cb af e0 02 c9 f0  |&gt;....).&gt;U.......|
+0a0  01 e0 d0 c9 f0 01 e0 d0  f0 cb fe 29 c8 f0 cf e0  |...........)....|
+0b0  01 3e ff e0 cf 3e 80 e0  02 c9 f0 01 e0 d0 f0 cb  |.&gt;...&gt;..........|
+0c0  fe 29 c8 f0 cf e0 01 fb  cd 98 0a 3e 80 e0 02 c9  |.).........&gt;....|
+0d0  f0 cd fe 02 c0 af e0 0f  fb c9 ff ff ff ff ff ff  |................|
+0e0  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+0f0  ff ff ff ff ff ff ff ff  ff ff ff ff ff ff ff ff  |................|
+100  00 c3 50 01 ce ed 66 66  cc 0d 00 0b 03 73 00 83  |..P...ff.....s..|
+110  00 0c 00 0d 00 08 11 1f  88 89 00 0e dc cc 6e e6  |..............n.|
+120  dd dd d9 99 bb bb 67 63  6e 0e ec cc dd dc 99 9f  |......gcn.......|
+130  bb b9 33 3e 54 45 54 52  49 53 00 00 00 00 00 00  |..3&gt;TETRIS......|
+140  00 00 00 00 00 00 00 00  00 00 00 01 01 0a 16 bf  |................|
+150  c3 0c 02 cd e3 29 f0 41  e6 03 20 fa 46 f0 41 e6  |.....).A.. .F.A.|
+</pre>
+</small><p><small>
+</small>
+</p>
+
+<p>
+En examinant ce fichier, on constate qu'à la position 147<sub>16</sub> — qui correspond à la même adresse dans l'espace d'adressage du Game Boy — se trouve la valeur 0, indiquant qu'il s'agit d'une cartouche simple ne comportant rien d'autre qu'une mémoire morte de 32 768 octets. Bien évidemment, le fichier ROM lui-même fait également cette taille.
+</p>
+
+<p>
+D'autre part, entre la position 134<sub>16</sub> et 143<sub>16</sub>, on trouve les octets
+</p>
+<pre class="example">54 45 54 52 49 53 00 00 00 00 00 00 00 00 00 00
+</pre>
+<p>
+qui représentent la chaîne de caractères <code>TETRIS</code> encodée en <a href="https://asciitable.tips/">ASCII</a>, visible dans la colonne de droite, suivie de 10 octets nuls.
+</p>
+
+<p>
+Finalement, à la position 40<sub>16</sub> — adresse du gestionnaire d'interruption 0 (<code>VBLANK</code>) — on trouve les octets
+</p>
+<pre class="example">c3 7e 01
+</pre>
+<p>
+qui ne sont rien d'autre que l'encodage de l'instruction <code>JP 17E</code>. Cela signifie que le code chargé de gérer l'interruption <code>VBLANK</code> de Tetris se trouve à l'adresse 17E<sub>16</sub>. Et ainsi de suite.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org2a11cd3" class="outline-3">
+<h3 id="org2a11cd3"><span class="section-number-3">1.3</span> Minuteur</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+En électronique, un <b>minuteur</b> (<i>timer</i> en anglais) est un composant permettant de mesurer le passage du temps. En général, les minuteurs ne sont rien d'autre que des compteurs incrémentés par l'horloge.
+</p>
+</div>
+
+<div id="outline-container-orgc23544a" class="outline-4">
+<h4 id="orgc23544a"><span class="section-number-4">1.3.1</span> Comportement général</h4>
+<div class="outline-text-4" id="text-1-3-1">
+<p>
+Le minuteur du Game Boy n'échappe pas à cette règle puisque sa composante principale est un compteur 16 bits dont la valeur est incrémentée de 1 unité à chaque battement d'horloge, donc de 4 unités à chaque cycle. Ce compteur « boucle » une fois la valeur maximale atteinte. Cela signifie que si sa valeur vaut FFFF<sub>16</sub> à un battement d'horloge donné, elle vaudra 0 au suivant. Etant donné que l'horloge du Game Boy a une fréquence de 2<sup>22</sup> Hz, le compteur du minuteur revient à zéro 64 fois par secondes (2<sup>6</sup>).
+</p>
+
+<p>
+En plus de ce compteur 16 bits, appelé ci-après <i>compteur principal</i>, le minuteur du Game Boy possède un compteur secondaire nommé <code>TIMA</code>. Il s'agit cette fois d'un compteur 8 bits, dont la valeur est déterminée selon une logique plus complexe que celle utilisée pour le compteur principal.
+</p>
+
+<p>
+En gros, l'idée est que le compteur secondaire est incrémenté chaque fois qu'un bit donné du compteur principal passe de 1 à 0. Le bit du compteur principal utilisé dépend d'une configuration, et peut être celui d'index 3, 5, 7 ou 9. Par exemple, si le bit 3 est utilisé, alors le compteur secondaire est incrémenté chaque fois que les 4 bits de poids faible du compteur principal passent de <code>1111</code> à <code>0000</code>, ce qui se produit tous les 16 coups d'horloge, donc tous les 4 cycles. Si le bit 5 est utilisé, alors le compteur secondaire est incrémenté chaque fois que les 6 bits de poids faible du compteur principal passent de <code>111111</code> à <code>000000</code>, ce qui se produit tous les 64 coups d'horloge, donc tous les 16 cycles. Et ainsi de suite.
+</p>
+
+<p>
+Lorsque le compteur secondaire est à sa valeur maximale (FF<sub>16</sub>) et qu'il est incrémenté, deux choses se passent :
+</p>
+
+<ul class="org-ul">
+<li>le minuteur lève l'interruption <code>TIMER</code> du processeur,</li>
+<li>plutôt que d'être réinitialisé à 0 comme le compteur principal, le compteur secondaire est réinitialisé à la valeur stockée dans un de ses registres, nommé <code>TMA</code>.</li>
+</ul>
+
+<p>
+Ce comportement peut paraître compliqué et arbitraire, mais il permet au programme utilisant le minuteur de configurer assez finement la fréquence à laquelle l'interruption <code>TIMER</code> est levée, en choisissant judicieusement le bit du compteur principal utilisé pour incrémenter le secondaire, ainsi que la valeur de <code>TMA</code>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orga8d126e" class="outline-4">
+<h4 id="orga8d126e"><span class="section-number-4">1.3.2</span> Registres</h4>
+<div class="outline-text-4" id="text-1-3-2">
+<p>
+Le minuteur du Game Boy possède un total de quatre registres qui sont tous au moins partiellement « mappés en mémoire », c-à-d exposés sur le bus :
+</p>
+
+<ol class="org-ol">
+<li>le compteur principal, 16 bits, dont les 8 bits de poids <i>fort</i> uniquement sont exposés à l'adresse FF04<sub>16</sub>,</li>
+<li>le compteur secondaire, 8 bits, nommé <code>TIMA</code> et exposé à l'adresse FF05<sub>16</sub>,</li>
+<li>la valeur de réinitialisation du compteur secondaire, nommée <code>TMA</code> et exposée à l'adresse FF06<sub>16</sub>,</li>
+<li>la configuration du minuteur, nommée <code>TAC</code> et exposée à l'adresse FF07<sub>16</sub>.</li>
+</ol>
+
+<p>
+Seuls les 3 bits de poids faible du registre <code>TAC</code> sont utilisés pour configurer le minuteur. Le bit d'index 2 détermine si le minuteur est activé (lorsqu'il vaut 1) ou désactivé (lorsqu'il vaut 0). Les deux bits de poids faible, d'index 1 et 0, déterminent quant à eux quel bit du compteur principal est utilisé pour savoir quand incrémenter le secondaire, selon la table suivante :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right"><code>TAC</code>[1:0]</th>
+<th scope="col" class="org-right">Bit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right"><code>00</code></td>
+<td class="org-right">9</td>
+</tr>
+
+<tr>
+<td class="org-right"><code>01</code></td>
+<td class="org-right">3</td>
+</tr>
+
+<tr>
+<td class="org-right"><code>10</code></td>
+<td class="org-right">5</td>
+</tr>
+
+<tr>
+<td class="org-right"><code>11</code></td>
+<td class="org-right">7</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Ces registres peuvent à la fois être lus <i>et</i> écrits via le bus. Notez que l'écriture d'une valeur <i>quelconque</i> à l'adresse FF04<sub>16</sub> provoque la remise à zéro de la totalité des bits du compteur principal.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orge976bf0" class="outline-4">
+<h4 id="orge976bf0"><span class="section-number-4">1.3.3</span> Comportement précis</h4>
+<div class="outline-text-4" id="text-1-3-3">
+<p>
+La manière dont le compteur secondaire est incrémenté est en réalité légèrement plus complexe que celle décrite ci-dessus.
+</p>
+
+<p>
+Pour la décrire, appelons l'<i>état</i> du minuteur la conjonction (<i>et</i>) logique entre :
+</p>
+
+<ol class="org-ol">
+<li>le bit 2 du registre <code>TAC</code> (qui [dés]active le minuteur), et</li>
+<li>le bit du compteur principal désigné par les 2 bits de poids faible du registre <code>TAC</code>.</li>
+</ol>
+
+<p>
+L'état est une valeur booléenne qui peut changer pour différentes raisons : 
+soit parce que l'un des 3 bits de poids faible du registre <code>TAC</code> change, soit parce que le bit du compteur désigné par les 2 bits de poids faible de <code>TAC</code> change. Et c'est justement lorsque cet état passe de vrai à faux que le compteur secondaire est incrémenté.
+</p>
+
+<p>
+Notez que cela implique le comportement simplifié décrit plus haut. Par exemple, admettons que les 4 bits du compteur principal valent <code>1111</code> et que les 3 bits de poids faible du registre <code>TAC</code> valent <code>101</code>. A ce moment, l'état du minuteur est vrai (car le bit 2 de <code>TAC</code> est vrai, de même que le bit 3 du compteur). Lorsque le compteur est incrémenté, ses 4 bits de poids faible deviennent <code>0000</code>, et l'état passe alors à faux. En raison de cette transition de vrai à faux, le compteur secondaire est incrémenté.
+</p>
+
+<p>
+Toutefois, il existe aussi des cas dans lesquels le compteur secondaire est incrémenté mais qui ne sont pas couverts par la description simplifiée plus haut. Par exemple, admettons que les 4 bits du compteur principal valent <code>1000</code> et les 3 bits de poids faible de <code>TAC</code> valent <code>101</code>. A ce moment, l'état du minuteur est vrai, pour les mêmes raisons que celles décrites plus haut. Or si la valeur de <code>TAC</code> est changée à ce moment, via une écriture sur le bus, pour faire passer ses 3 bits de poids faible à <code>001</code>, alors l'état du minuteur devient faux et le compteur secondaire est également incrémenté !
+</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgea5853a" class="outline-2">
+<h2 id="orgea5853a"><span class="section-number-2">2</span> Mise en œuvre Java</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+Les classes à écrire dans le cadre de cette étape se trouvent toutes dans le paquetage <code>ch.epfl.gameboj.component</code> ou l'un de ses sous-paquetages. En particulier, un nouveau sous-paquetage nommé <code>cartridge</code> est à créer afin d'y placer les classes liées à la cartouche.
+</p>
+</div>
+
+<div id="outline-container-org7732e26" class="outline-3">
+<h3 id="org7732e26"><span class="section-number-3">2.1</span> Classe <code>MBC0</code></h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+La classe <code>MBC0</code> du paquetage <code>ch.epfl.gameboj.component.cartridge</code>, publique et finale, représente un contrôleur de banque mémoire de type 0, c-à-d doté uniquement d'une mémoire morte de 32 768 octets. Elle implémente l'interface <code>Component</code>, malgré le fait qu'elle n'ait pas pour but d'être connectée directement au bus ! Ce choix a été fait dans un soucis de simplicité, mais il aurait également été possible de définir une interface séparée pour représenter les contrôleurs de banque mémoire.
+</p>
+
+<p>
+La classe <code>MBC0</code> offre un unique constructeur public :
+</p>
+
+<ul class="org-ul">
+<li><code>MBC0(Rom rom)</code>, qui construit un contrôleur de type 0 pour la mémoire donnée ; lève l'exception <code>NullPointerException</code> si la mémoire est nulle, et <code>IllegalArgumentException</code> si elle ne contient pas exactement 32 768 octets.</li>
+</ul>
+
+<p>
+En dehors de ce constructeur, la classe <code>MBC0</code> ne contient rien d'autre qu'une mise en œuvre des méthodes <code>read</code> et <code>write</code> de <code>Component</code>. Notez que <code>write</code> est triviale, étant donné qu'il est impossible d'écrire quoi que ce soit dans une mémoire morte.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org2dfa297" class="outline-3">
+<h3 id="org2dfa297"><span class="section-number-3">2.2</span> Classe <code>Cartridge</code></h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+La classe <code>Cartridge</code> du paquetage <code>ch.epfl.gameboj.component.cartridge</code>, publique et finale, représente une cartouche. Elle implémente l'interface <code>Component</code> même si, comme nous le verrons ci-dessous, elle n'est pas non plus connectée directement au bus du Game Boy.
+</p>
+
+<p>
+La classe <code>Cartridge</code> est dotée d'un unique constructeur <i>privé</i> prenant en argument un contrôleur de banque mémoire (de type <code>Component</code>) et construisant une cartouche contenant ce contrôleur et la mémoire morte qui lui est attachée. Ce constructeur étant privé, il ne peut être utilisé de l'extérieur, et une méthode de construction séparée est donc fournie. Elle est bien entendu publique et statique :
+</p>
+
+<ul class="org-ul">
+<li><code>Cartridge ofFile(File romFile)</code>, qui retourne une cartouche dont la mémoire morte contient les octets du fichier donné ; lève l'exception <code>IOException</code> en cas d'erreur d'entrée-sortie, y compris si le fichier donné n'existe pas, et l'exception <code>IllegalArgumentException</code> si le fichier en question ne contient pas 0 à la position 147<sub>16</sub>.</li>
+</ul>
+
+<p>
+En dehors de cette méthode de construction, la classe <code>Cartridge</code> n'offre rien d'autre qu'une mise en œuvre des méthodes <code>read</code> et <code>write</code> de l'interface <code>Component</code>. Ces méthodes se contentent de valider leurs arguments puis d'appeler les méthodes correspondantes du contrôleur de banque mémoire.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org1727539" class="outline-3">
+<h3 id="org1727539"><span class="section-number-3">2.3</span> Classe <code>BootRomController</code></h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+La classe <code>BootRomController</code> du paquetage <code>ch.epfl.gameboj.component.memory</code>, publique et finale, représente le contrôleur de la mémoire morte de démarrage. Etant donné qu'elle modélise un composant connecté au bus, elle implémente l'interface <code>Component</code>.
+</p>
+
+<p>
+Une particularité de la classe <code>BootRomController</code> est qu'elle contrôle l'accès à la cartouche, afin d'intercepter les lectures faites dans la plage 0 à FF<sub>16</sub> tant et aussi longtemps que la mémoire de démarrage n'a pas été désactivée.
+</p>
+
+<p>
+Pour ce faire, la cartouche (de type <code>Cartridge</code>) n'est <i>pas</i> connectée directement au bus du Game Boy. Au lieu de cela, le contrôleur de mémoire de démarrage (de type <code>BootRomController</code>) est placé entre le bus et la cartouche. Tant et aussi longtemps que la mémoire de démarrage n'a pas été désactivée par une écriture à l'adresse FF50<sub>16</sub>, le contrôleur intercepte toutes les lectures faites dans la plage 0 à FF<sub>16</sub> et y répond lui-même, en fournissant l'octet de la mémoire de démarrage correspondant. Par contre, une fois que la mémoire de démarrage a été désactivée, le contrôleur devient « transparent » et transmet toutes les lectures à la cartouche.
+</p>
+
+<p>
+La classe <code>BootRomController</code> définit un unique constructeur public :
+</p>
+
+<ul class="org-ul">
+<li><code>BootRomController(Cartridge cartridge)</code>, qui construit un contrôleur de mémoire de démarrage auquel la cartouche donnée est attachée ; lève l'exception <code>NullPointerException</code> si cette cartouche est nulle.</li>
+</ul>
+
+<p>
+En dehors de ce constructeur, la classe <code>BootRomController</code> ne fournit rien d'autre que des mises en œuvre des méthodes <code>read</code> et <code>write</code> de <code>Component</code>.
+</p>
+
+<p>
+La méthode <code>read</code> intercepte les lectures dans la plage 0 à FF<sub>16</sub> tant et aussi longtemps que la mémoire de démarrage n'a pas été désactivée, et y répond avec l'octet correspondant de la mémoire de démarrage. Toutes les autres lectures (sans exception aucune) sont transmises à la cartouche, en appelant sa méthode <code>read</code> à elle.
+</p>
+
+<p>
+La méthode <code>write</code> détecte pour sa part les écritures à l'adresse FF50<sub>16</sub> (pour laquelle la constante <code>AddressMap.REG_BOOT_ROM_DISABLE</code> existe) et désactive la mémoire de démarrage à la première d'entre elles, indépendemment de la valeur écrite. Notez que toutes les autres écritures, sans exception aucune, sont transmises à la cartouche, en appelant sa méthode <code>write</code>. Cela est nécessaire car certaines cartouches possèdent de la mémoire vive à certaines adresses, et ont de plus des contrôleurs de banque mémoire qui sont configurés au moyen d'écritures dans la plage 0 à 8000<sub>16</sub>.
+</p>
+
+<p>
+Pour faciliter votre travail, nous mettons à votre disposition <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_bootrom.zip">une archive Zip</a> contenant une interface nommée <code>BootRom</code>. Cette interface définit un tableau d'octets nommé <code>DATA</code> dont le contenu est celui de la mémoire de démarrage.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgde1003a" class="outline-3">
+<h3 id="orgde1003a"><span class="section-number-3">2.4</span> Classe <code>Timer</code></h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+La classe <code>Timer</code> du paquetage <code>ch.epfl.gameboj.component</code>, publique et finale, représente le minuteur du Game Boy. Etant donné qu'elle modélise un composant à la fois connecté au bus et piloté par l'horloge, elle implémente les interfaces <code>Component</code> et <code>Clocked</code>. Elle offre un unique constructeur public :
+</p>
+
+<ul class="org-ul">
+<li><code>Timer(Cpu cpu)</code>, qui construit un minuteur associé au processeur donné, ou lève l'exception <code>NullPointerException</code> si celui-ci est nul.</li>
+</ul>
+
+<p>
+Le processeur est passé au constructeur pour que le minuteur ait la possibilité de lever l'interruption <code>TIMER</code> lorsque cela est nécessaire.
+</p>
+
+<p>
+En dehors de ce constructeur, la classe <code>Timer</code> n'offre aucune autre méthode publique que celles héritées de <code>Component</code> (<code>read</code> et <code>write</code>) et de <code>Clocked</code> (<code>cycle</code>). Les méthodes <code>read</code> et <code>write</code> donnent accès aux registres décrits plus haut, tandis que la méthode <code>cycle</code> met à jour le compteur principal. Ces trois méthodes doivent également mettre à jour au besoin le compteur secondaire. Des conseils de programmation sont donnés ci-dessous à ce sujet.
+</p>
+
+<p>
+Notez que des constantes sont définies dans l'interface <code>AddressMap</code> que nous vous avons fournie pour les adresses des quatre registres du minuteur. Ces constantes sont :
+</p>
+
+<ol class="org-ol">
+<li><code>REG_DIV</code> pour les 8 bits de poids fort du compteur principal,</li>
+<li><code>REG_TIMA</code> pour le compteur secondaire (<code>TIMA</code>),</li>
+<li><code>REG_TMA</code> pour la valeur de réinitialisation du registre secondaire,</li>
+<li><code>REG_TAC</code> pour la configuration du minuteur.</li>
+</ol>
+</div>
+
+<div id="outline-container-org5aed1e5" class="outline-4">
+<h4 id="org5aed1e5"><span class="section-number-4">2.4.1</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-4-1">
+<p>
+La principale difficulté rencontrée lors de l'écriture de la classe <code>Timer</code> est celle de la mise à jour du compteur secondaire. En effet, celui-ci doit être incrémenté selon la règle relativement complexe décrite plus haut.
+</p>
+
+<p>
+Pour ce faire, nous vous suggérons de procéder ainsi :
+</p>
+
+<ol class="org-ol">
+<li>définissez une méthode privée nommée p.ex. <code>state</code> et retournant ce que nous avons appelé l'état du minuteur, c-à-d la conjonction logique du bit 2 du registre <code>TAC</code> et du bit du compteur principal désigné par les 2 bits de poids faible de ce même registre,</li>
+
+<li>définissez une méthode privée nommée p.ex. <code>incIfChange</code> prenant en argument une valeur booléenne représentant l'état précédent et incrémentant le compteur secondaire si et seulement si l'état passé en argument est vrai et l'état actuel (retourné par <code>state</code>) est faux.</li>
+</ol>
+
+<p>
+Ensuite, chaque fois que vous écrivez du code modifiant soit le contenu du registre <code>TAC</code>, soit celui du compteur, procédez ainsi :
+</p>
+
+<ol class="org-ol">
+<li>obtenez l'état courant, appelons-le <code>s0</code>, et stockez-le dans une variable,</li>
+<li>effectuez le changement de la valeur,</li>
+<li>appelez <code>incIfChange</code> avec l'état <code>s0</code>.</li>
+</ol>
+
+<p>
+De la sorte, le compteur secondaire sera géré correctement.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org883cc85" class="outline-3">
+<h3 id="org883cc85"><span class="section-number-3">2.5</span> Classe <code>GameBoy</code></h3>
+<div class="outline-text-3" id="text-2-5">
+<p>
+Finalement, la classe <code>GameBoy</code> doit être augmentée afin d'ajouter au système la mémoire de démarrage, la cartouche et le minuteur. Cela implique d'apporter les modifications suivantes :
+</p>
+
+<ol class="org-ol">
+<li>changer le type de l'argument passé au constructeur pour qu'il soit désormais <code>Cartridge</code>,</li>
+
+<li>dans le constructeur, vérifier que la cartouche reçue n'est pas nulle, et lever <code>NullPointerException</code> si elle l'est,</li>
+
+<li>dans le constructeur, créer un contrôleur de mémoire de démarrage en lui passant la cartouche en argument, puis l'attacher au bus,</li>
+
+<li>dans le constructeur, créer un minuteur et l'attacher au bus,</li>
+
+<li>dans la boucle de la méthode <code>runUntil</code>, ajouter un appel à la méthode <code>cycle</code> du minuteur <i>avant</i> l'appel à celle du processeur.</li>
+</ol>
+
+<p>
+Finalement, il vous faut ajouter une méthode nommée <code>timer</code> et donnant accès au minuteur.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org5e7b77f" class="outline-3">
+<h3 id="org5e7b77f"><span class="section-number-3">2.6</span> Tests</h3>
+<div class="outline-text-3" id="text-2-6">
+<p>
+Comme d'habitude, nous vous fournissons un fichier de vérification de signatures contenu dans <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_sigchecks_6.zip">une archive Zip</a> à importer dans votre projet. Nous vous conseillons également d'importer la nouvelle version du <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_sigchecks_5.zip">fichier de vérification de signatures pour l'étape 5</a>, qui corrige un petit problème.
+</p>
+</div>
+
+<div id="outline-container-org8bccca1" class="outline-4">
+<h4 id="org8bccca1"><span class="section-number-4">2.6.1</span> Fichiers ROM</h4>
+<div class="outline-text-4" id="text-2-6-1">
+<p>
+En plus du fichier de vérification de signatures, nous mettons à votre disposition une dernière <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_blargg_tests.zip">archive Zip</a> contenant 12 fichiers ROM, à importer dans votre projet. Ces fichiers ROM contiennent des programmes testant le comportement du processeur, et sont connus sous le nom de « tests de blargg », d'après le pseudonyme de leur auteur. Le fichier <code>instr_timing.gb</code> vérifie que les instructions prennent le bon nombre de cycles pour s'exécuter, tandis que les 11 autres testent que le résultat qu'elles produisent est correct.
+</p>
+
+<p>
+Ces programmes de test affichent normalement leur résultat sur l'écran du Game Boy, que vous ne simulez pas encore. Heureusement, ce résultat est aussi envoyé sur le port série du Game Boy, caractère par caractère. Vous ne simulez pas non plus ce composant — et ne le simulerez pas dans le cadre de ce projet — mais il se trouve qu'il est très facile d'écrire un minuscule composant interceptant les caractères qui y sont écrits et les affichant à l'écran :
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-class"><span class="hljs-keyword"><span class="hljs-class"><span class="hljs-keyword">class</span></span></span><span class="hljs-class"> </span><span class="hljs-title"><span class="hljs-class"><span class="hljs-title">DebugPrintComponent</span></span></span><span class="hljs-class"> </span><span class="hljs-keyword"><span class="hljs-class"><span class="hljs-keyword">implements</span></span></span><span class="hljs-class"> </span><span class="hljs-title"><span class="hljs-class"><span class="hljs-title">Component</span></span></span><span class="hljs-class"> </span></span>{
+  <span class="hljs-meta"><span class="hljs-meta">@Override</span></span>
+  <span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">int</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">read</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(</span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">int</span></span></span></span><span class="hljs-function"><span class="hljs-params"> address)</span></span></span><span class="hljs-function"> </span></span>{
+    <span class="hljs-keyword"><span class="hljs-keyword">return</span></span> NO_DATA;
+  }
+
+  <span class="hljs-meta"><span class="hljs-meta">@Override</span></span>
+  <span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">void</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">write</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(</span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">int</span></span></span></span><span class="hljs-function"><span class="hljs-params"> address, </span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">int</span></span></span></span><span class="hljs-function"><span class="hljs-params"> data)</span></span></span><span class="hljs-function"> </span></span>{
+    <span class="hljs-keyword"><span class="hljs-keyword">if</span></span> (address == <span class="hljs-number"><span class="hljs-number">0xFF01</span></span>)
+      System.out.print((<span class="hljs-keyword"><span class="hljs-keyword">char</span></span>)data);
+  }
+}
+</pre>
+</div>
+
+<p>
+Ce composant ne fait rien d'autre qu'intercepter les écritures faites à l'adresse FF01<sub>16</sub>, interpréter les octets qu'on y écrit comme des caractères, et les afficher à l'écran.
+</p>
+
+<p>
+Une fois ce composant défini, il reste à écrire un programme principal simulant le Game Boy complet. Une petite difficulté se pose alors : les tests de blargg dépendent de l'interruption <code>VBLANK</code>, levée par l'écran à la fin du dessin d'une image. Heureusement, il suffit de la lever périodiquement pour que tout fonctionne. C'est ce que fait le programme ci-dessous, qui la lève tous les 17 556 cycles car c'est le temps que met effectivement l'écran du Game Boy pour dessiner une image.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-class"><span class="hljs-keyword"><span class="hljs-class"><span class="hljs-keyword">class</span></span></span><span class="hljs-class"> </span><span class="hljs-title"><span class="hljs-class"><span class="hljs-title">DebugMain</span></span></span><span class="hljs-class"> </span></span>{
+  <span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">static</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">void</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">main</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(String[] args)</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">throws</span></span></span><span class="hljs-function"> IOException </span></span>{
+    File romFile = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> File(args[<span class="hljs-number"><span class="hljs-number">0</span></span>]);
+    <span class="hljs-keyword"><span class="hljs-keyword">long</span></span> cycles = Long.parseLong(args[<span class="hljs-number"><span class="hljs-number">1</span></span>]);
+
+    GameBoy gb = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> GameBoy(Cartridge.ofFile(romFile));
+    Component printer = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> DebugPrintComponent();
+    printer.attachTo(gb.bus());
+    <span class="hljs-keyword"><span class="hljs-keyword">while</span></span> (gb.cycles() &lt; cycles) {
+      <span class="hljs-keyword"><span class="hljs-keyword">long</span></span> nextCycles = Math.min(gb.cycles() + <span class="hljs-number"><span class="hljs-number">17556</span></span>, cycles);
+      gb.runUntil(nextCycles);
+      gb.cpu().requestInterrupt(Cpu.Interrupt.VBLANK);
+    }
+  }
+}
+</pre>
+</div>
+
+<p>
+Une fois ce programme écrit, il est possible de l'exécuter en lui passant en premier argument le nom du fichier ROM à utiliser, et en second argument le nombre total de cycles à simuler. Pour ces fichiers ROM, vous pouvez utiliser systématiquement 30 000 000 (30 millions de cycle), ce qui suffit à exécuter tous les tests jusqu'à la fin. Notez que si vous ne savez pas comment exécuter un programme depuis Eclipse en lui passant des arguments, vous pouvez lire <a href="https://cs108.epfl.ch/archive/18/g/run.html">notre guide à ce sujet</a>.
+</p>
+
+<p>
+Si votre simulateur fonctionne, les tests devraient afficher leur nom sur la console Eclipse puis, au bout d'un temps plus ou moins long, le résultat du test. Par exemple, en exécutant le programme <code>DebugMain</code> en lui passant les arguments suivants :
+</p>
+<pre class="example">01-special.gb 30000000
+</pre>
+<p>
+vous devriez voir apparaître le texte suivant dans la console Eclipse au bout de quelques secondes :
+</p>
+<pre class="example">01-special
+
+
+Passed
+</pre>
+<p>
+et de même pour les autres tests. Sur un ordinateur relativement récent, l'exécution d'un test devrait prendre environ 2 secondes<sup><a id="fnr.1" class="footref" href="https://cs108.epfl.ch/archive/18/p/06_cartridge_timer.html#fn.1">1</a></sup>.
+</p>
+
+<p>
+Si un test échoue, un message d'erreur est affiché. Par exemple, en introduisant volontairement une erreur dans la gestion de l'instruction <code>DAA</code> et en relançant le test ci-dessus, on obtient le message suivant :
+</p>
+<pre class="example">01-special
+
+BD9BF11C 
+DAA
+
+Failed #6
+</pre>
+
+<p>
+Si votre simulateur est capable d'exécuter tous les tests sans erreur, félicitations !
+</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org5823017" class="outline-2">
+<h2 id="org5823017"><span class="section-number-2">3</span> Résumé</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Pour cette étape, vous devez :
+</p>
+
+<ul class="org-ul">
+<li>écrire les classes <code>MBC0</code>, <code>Cartridge</code>, <code>BootRomController</code> et <code>Timer</code> selon les indications données plus haut,</li>
+
+<li>augmenter la classe <code>GameBoy</code> afin d'ajouter les nouveaux composants au système,</li>
+
+<li>documenter la totalité des entités publiques que vous avez définies,</li>
+
+<li>rendre votre code au plus tard le <b>6 avril 2018 à 16h30</b>, via <a href="https://cs108.epfl.ch/archive/18/p/submit.html">le système de rendu</a>.</li>
+</ul>
+
+<p>
+Ce rendu est un rendu testé, auquel 18 points sont attribués, au prorata des tests unitaires passés avec succès.
+</p>
+
+<p>
+Notez qu'en raison du Vendredi Saint, la date de ce rendu a été repoussée d'une semaine. En contrepartie, nous ne garantissons pas que le système de rendu soit fonctionnel durant le week-end de Pâques, c-à-d du 30 mars au 2 avril, même s'il devrait l'être.
+</p>
+
+<div class="cs108warning">
+<p>
+N'attendez surtout pas le dernier moment pour effectuer votre rendu, car vous n'êtes pas à l'abri d'imprévus. <b>Souvenez-vous qu'aucun retard, aussi insignifiant soit-il, ne sera toléré !</b>
+</p>
+
+</div>
+</div>
+</div>
+<div id="footnotes">  <h2 class="footnotes">Notes de bas de page</h2>  <div id="text-footnotes">
+<div class="footdef"><sup><a id="fn.1" class="footnum" href="https://cs108.epfl.ch/archive/18/p/06_cartridge_timer.html#fnr.1">1</a></sup> <div class="footpara"><p class="footpara">
+Notez que cela permet d'avoir une idée des performances de votre simulateur par rapport à un véritable Game Boy. Un Game Boy réel exécute environ 1 million de cycles par secondes, donc il lui faut environ 30 secondes pour en exécuter 30 millions. Si votre simulateur est capable de simuler ces cycles en 2 secondes, il est actuellement 15 fois plus rapide qu'un Game Boy réel. Cela permet de penser que, même une fois qu'il simulera l'écran du Game Boy, votre simulateur sera capable de fonctionner à vitesse réelle.
+</p></div></div>
+
+</div></div></div>
+
+
+</body></html>

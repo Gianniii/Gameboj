@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<!-- saved from url=(0052)https://cs108.epfl.ch/archive/18/p/08_lcd-image.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-04-16 Lun 08:40 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Images</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Images_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Images_files/github.min.css">
+<script src="./Images_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+<script type="text/x-mathjax-config;executed=true">
+    MathJax.Hub.Config({
+        displayAlign: "center",
+        displayIndent: "0em",
+
+        "HTML-CSS": { scale: 100,
+                        linebreaks: { automatic: "false" },
+                        webFont: "TeX"
+                       },
+        SVG: {scale: 100,
+              linebreaks: { automatic: "false" },
+              font: "TeX"},
+        NativeMML: {scale: 100},
+        TeX: { equationNumbers: {autoNumber: "AMS"},
+               MultLineWidth: "85%",
+               TagSide: "right",
+               TagIndent: ".8em"
+             }
+});
+</script>
+<script type="text/javascript" src="./Images_files/MathJax.js.download"></script>
+<style type="text/css">.MathJax_Hover_Frame {border-radius: .25em; -webkit-border-radius: .25em; -moz-border-radius: .25em; -khtml-border-radius: .25em; box-shadow: 0px 0px 15px #83A; -webkit-box-shadow: 0px 0px 15px #83A; -moz-box-shadow: 0px 0px 15px #83A; -khtml-box-shadow: 0px 0px 15px #83A; border: 1px solid #A6D ! important; display: inline-block; position: absolute}
+.MathJax_Menu_Button .MathJax_Hover_Arrow {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 4px; -webkit-border-radius: 4px; -moz-border-radius: 4px; -khtml-border-radius: 4px; font-family: 'Courier New',Courier; font-size: 9px; color: #F0F0F0}
+.MathJax_Menu_Button .MathJax_Hover_Arrow span {display: block; background-color: #AAA; border: 1px solid; border-radius: 3px; line-height: 0; padding: 4px}
+.MathJax_Hover_Arrow:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_Hover_Arrow:hover span {background-color: #CCC!important}
+</style><style type="text/css">#MathJax_About {position: fixed; left: 50%; width: auto; text-align: center; border: 3px outset; padding: 1em 2em; background-color: #DDDDDD; color: black; cursor: default; font-family: message-box; font-size: 120%; font-style: normal; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; z-index: 201; border-radius: 15px; -webkit-border-radius: 15px; -moz-border-radius: 15px; -khtml-border-radius: 15px; box-shadow: 0px 10px 20px #808080; -webkit-box-shadow: 0px 10px 20px #808080; -moz-box-shadow: 0px 10px 20px #808080; -khtml-box-shadow: 0px 10px 20px #808080; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+#MathJax_About.MathJax_MousePost {outline: none}
+.MathJax_Menu {position: absolute; background-color: white; color: black; width: auto; padding: 2px; border: 1px solid #CCCCCC; margin: 0; cursor: default; font: menu; text-align: left; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; z-index: 201; box-shadow: 0px 10px 20px #808080; -webkit-box-shadow: 0px 10px 20px #808080; -moz-box-shadow: 0px 10px 20px #808080; -khtml-box-shadow: 0px 10px 20px #808080; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+.MathJax_MenuItem {padding: 2px 2em; background: transparent}
+.MathJax_MenuArrow {position: absolute; right: .5em; padding-top: .25em; color: #666666; font-size: .75em}
+.MathJax_MenuActive .MathJax_MenuArrow {color: white}
+.MathJax_MenuArrow.RTL {left: .5em; right: auto}
+.MathJax_MenuCheck {position: absolute; left: .7em}
+.MathJax_MenuCheck.RTL {right: .7em; left: auto}
+.MathJax_MenuRadioCheck {position: absolute; left: 1em}
+.MathJax_MenuRadioCheck.RTL {right: 1em; left: auto}
+.MathJax_MenuLabel {padding: 2px 2em 4px 1.33em; font-style: italic}
+.MathJax_MenuRule {border-top: 1px solid #CCCCCC; margin: 4px 1px 0px}
+.MathJax_MenuDisabled {color: GrayText}
+.MathJax_MenuActive {background-color: Highlight; color: HighlightText}
+.MathJax_MenuDisabled:focus, .MathJax_MenuLabel:focus {background-color: #E8E8E8}
+.MathJax_ContextMenu:focus {outline: none}
+.MathJax_ContextMenu .MathJax_MenuItem:focus {outline: none}
+#MathJax_AboutClose {top: .2em; right: .2em}
+.MathJax_Menu .MathJax_MenuClose {top: -10px; left: -10px}
+.MathJax_MenuClose {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 18px; -webkit-border-radius: 18px; -moz-border-radius: 18px; -khtml-border-radius: 18px; font-family: 'Courier New',Courier; font-size: 24px; color: #F0F0F0}
+.MathJax_MenuClose span {display: block; background-color: #AAA; border: 1.5px solid; border-radius: 18px; -webkit-border-radius: 18px; -moz-border-radius: 18px; -khtml-border-radius: 18px; line-height: 0; padding: 8px 0 6px}
+.MathJax_MenuClose:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_MenuClose:hover span {background-color: #CCC!important}
+.MathJax_MenuClose:hover:focus {outline: none}
+</style><style type="text/css">.MathJax_Preview .MJXf-math {color: inherit!important}
+</style><style type="text/css">.MJX_Assistive_MathML {position: absolute!important; top: 0; left: 0; clip: rect(1px, 1px, 1px, 1px); padding: 1px 0 0 0!important; border: 0!important; height: 1px!important; width: 1px!important; overflow: hidden!important; display: block!important; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none}
+.MJX_Assistive_MathML.MJX_Assistive_MathML_Block {width: 100%!important}
+</style><style type="text/css">#MathJax_Zoom {position: absolute; background-color: #F0F0F0; overflow: auto; display: block; z-index: 301; padding: .5em; border: 1px solid black; margin: 0; font-weight: normal; font-style: normal; text-align: left; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; -webkit-box-sizing: content-box; -moz-box-sizing: content-box; box-sizing: content-box; box-shadow: 5px 5px 15px #AAAAAA; -webkit-box-shadow: 5px 5px 15px #AAAAAA; -moz-box-shadow: 5px 5px 15px #AAAAAA; -khtml-box-shadow: 5px 5px 15px #AAAAAA; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+#MathJax_ZoomOverlay {position: absolute; left: 0; top: 0; z-index: 300; display: inline-block; width: 100%; height: 100%; border: 0; padding: 0; margin: 0; background-color: white; opacity: 0; filter: alpha(opacity=0)}
+#MathJax_ZoomFrame {position: relative; display: inline-block; height: 0; width: 0}
+#MathJax_ZoomEventTrap {position: absolute; left: 0; top: 0; z-index: 302; display: inline-block; border: 0; padding: 0; margin: 0; background-color: white; opacity: 0; filter: alpha(opacity=0)}
+</style><style type="text/css">.MathJax_Preview {color: #888}
+#MathJax_Message {position: fixed; left: 1em; bottom: 1.5em; background-color: #E6E6E6; border: 1px solid #959595; margin: 0px; padding: 2px 8px; z-index: 102; color: black; font-size: 80%; width: auto; white-space: nowrap}
+#MathJax_MSIE_Frame {position: absolute; top: 0; left: 0; width: 0px; z-index: 101; border: 0px; margin: 0px; padding: 0px}
+.MathJax_Error {color: #CC0000; font-style: italic}
+</style><style type="text/css">.MJXp-script {font-size: .8em}
+.MJXp-right {-webkit-transform-origin: right; -moz-transform-origin: right; -ms-transform-origin: right; -o-transform-origin: right; transform-origin: right}
+.MJXp-bold {font-weight: bold}
+.MJXp-italic {font-style: italic}
+.MJXp-scr {font-family: MathJax_Script,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-frak {font-family: MathJax_Fraktur,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-sf {font-family: MathJax_SansSerif,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-cal {font-family: MathJax_Caligraphic,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-mono {font-family: MathJax_Typewriter,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-largeop {font-size: 150%}
+.MJXp-largeop.MJXp-int {vertical-align: -.2em}
+.MJXp-math {display: inline-block; line-height: 1.2; text-indent: 0; font-family: 'Times New Roman',Times,STIXGeneral,serif; white-space: nowrap; border-collapse: collapse}
+.MJXp-display {display: block; text-align: center; margin: 1em 0}
+.MJXp-math span {display: inline-block}
+.MJXp-box {display: block!important; text-align: center}
+.MJXp-box:after {content: " "}
+.MJXp-rule {display: block!important; margin-top: .1em}
+.MJXp-char {display: block!important}
+.MJXp-mo {margin: 0 .15em}
+.MJXp-mfrac {margin: 0 .125em; vertical-align: .25em}
+.MJXp-denom {display: inline-table!important; width: 100%}
+.MJXp-denom > * {display: table-row!important}
+.MJXp-surd {vertical-align: top}
+.MJXp-surd > * {display: block!important}
+.MJXp-script-box > *  {display: table!important; height: 50%}
+.MJXp-script-box > * > * {display: table-cell!important; vertical-align: top}
+.MJXp-script-box > *:last-child > * {vertical-align: bottom}
+.MJXp-script-box > * > * > * {display: block!important}
+.MJXp-mphantom {visibility: hidden}
+.MJXp-munderover {display: inline-table!important}
+.MJXp-over {display: inline-block!important; text-align: center}
+.MJXp-over > * {display: block!important}
+.MJXp-munderover > * {display: table-row!important}
+.MJXp-mtable {vertical-align: .25em; margin: 0 .125em}
+.MJXp-mtable > * {display: inline-table!important; vertical-align: middle}
+.MJXp-mtr {display: table-row!important}
+.MJXp-mtd {display: table-cell!important; text-align: center; padding: .5em 0 0 .5em}
+.MJXp-mtr > .MJXp-mtd:first-child {padding-left: 0}
+.MJXp-mtr:first-child > .MJXp-mtd {padding-top: 0}
+.MJXp-mlabeledtr {display: table-row!important}
+.MJXp-mlabeledtr > .MJXp-mtd:first-child {padding-left: 0}
+.MJXp-mlabeledtr:first-child > .MJXp-mtd {padding-top: 0}
+.MJXp-merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 1px 3px; font-style: normal; font-size: 90%}
+.MJXp-scale0 {-webkit-transform: scaleX(.0); -moz-transform: scaleX(.0); -ms-transform: scaleX(.0); -o-transform: scaleX(.0); transform: scaleX(.0)}
+.MJXp-scale1 {-webkit-transform: scaleX(.1); -moz-transform: scaleX(.1); -ms-transform: scaleX(.1); -o-transform: scaleX(.1); transform: scaleX(.1)}
+.MJXp-scale2 {-webkit-transform: scaleX(.2); -moz-transform: scaleX(.2); -ms-transform: scaleX(.2); -o-transform: scaleX(.2); transform: scaleX(.2)}
+.MJXp-scale3 {-webkit-transform: scaleX(.3); -moz-transform: scaleX(.3); -ms-transform: scaleX(.3); -o-transform: scaleX(.3); transform: scaleX(.3)}
+.MJXp-scale4 {-webkit-transform: scaleX(.4); -moz-transform: scaleX(.4); -ms-transform: scaleX(.4); -o-transform: scaleX(.4); transform: scaleX(.4)}
+.MJXp-scale5 {-webkit-transform: scaleX(.5); -moz-transform: scaleX(.5); -ms-transform: scaleX(.5); -o-transform: scaleX(.5); transform: scaleX(.5)}
+.MJXp-scale6 {-webkit-transform: scaleX(.6); -moz-transform: scaleX(.6); -ms-transform: scaleX(.6); -o-transform: scaleX(.6); transform: scaleX(.6)}
+.MJXp-scale7 {-webkit-transform: scaleX(.7); -moz-transform: scaleX(.7); -ms-transform: scaleX(.7); -o-transform: scaleX(.7); transform: scaleX(.7)}
+.MJXp-scale8 {-webkit-transform: scaleX(.8); -moz-transform: scaleX(.8); -ms-transform: scaleX(.8); -o-transform: scaleX(.8); transform: scaleX(.8)}
+.MJXp-scale9 {-webkit-transform: scaleX(.9); -moz-transform: scaleX(.9); -ms-transform: scaleX(.9); -o-transform: scaleX(.9); transform: scaleX(.9)}
+.MathJax_PHTML .noError {vertical-align: ; font-size: 90%; text-align: left; color: black; padding: 1px 3px; border: 1px solid}
+</style><style type="text/css">.MathJax_Display {text-align: center; margin: 1em 0em; position: relative; display: block!important; text-indent: 0; max-width: none; max-height: none; min-width: 0; min-height: 0; width: 100%}
+.MathJax .merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 1px 3px; font-style: normal; font-size: 90%}
+.MathJax .MJX-monospace {font-family: monospace}
+.MathJax .MJX-sans-serif {font-family: sans-serif}
+#MathJax_Tooltip {background-color: InfoBackground; color: InfoText; border: 1px solid black; box-shadow: 2px 2px 5px #AAAAAA; -webkit-box-shadow: 2px 2px 5px #AAAAAA; -moz-box-shadow: 2px 2px 5px #AAAAAA; -khtml-box-shadow: 2px 2px 5px #AAAAAA; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true'); padding: 3px 4px; z-index: 401; position: absolute; left: 0; top: 0; width: auto; height: auto; display: none}
+.MathJax {display: inline; font-style: normal; font-weight: normal; line-height: normal; font-size: 100%; font-size-adjust: none; text-indent: 0; text-align: left; text-transform: none; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; direction: ltr; max-width: none; max-height: none; min-width: 0; min-height: 0; border: 0; padding: 0; margin: 0}
+.MathJax:focus, body :focus .MathJax {display: inline-table}
+.MathJax.MathJax_FullWidth {text-align: center; display: table-cell!important; width: 10000em!important}
+.MathJax img, .MathJax nobr, .MathJax a {border: 0; padding: 0; margin: 0; max-width: none; max-height: none; min-width: 0; min-height: 0; vertical-align: 0; line-height: normal; text-decoration: none}
+img.MathJax_strut {border: 0!important; padding: 0!important; margin: 0!important; vertical-align: 0!important}
+.MathJax span {display: inline; position: static; border: 0; padding: 0; margin: 0; vertical-align: 0; line-height: normal; text-decoration: none}
+.MathJax nobr {white-space: nowrap!important}
+.MathJax img {display: inline!important; float: none!important}
+.MathJax * {transition: none; -webkit-transition: none; -moz-transition: none; -ms-transition: none; -o-transition: none}
+.MathJax_Processing {visibility: hidden; position: fixed; width: 0; height: 0; overflow: hidden}
+.MathJax_Processed {display: none!important}
+.MathJax_ExBox {display: block!important; overflow: hidden; width: 1px; height: 60ex; min-height: 0; max-height: none}
+.MathJax .MathJax_EmBox {display: block!important; overflow: hidden; width: 1px; height: 60em; min-height: 0; max-height: none}
+.MathJax_LineBox {display: table!important}
+.MathJax_LineBox span {display: table-cell!important; width: 10000em!important; min-width: 0; max-width: none; padding: 0; border: 0; margin: 0}
+.MathJax .MathJax_HitBox {cursor: text; background: white; opacity: 0; filter: alpha(opacity=0)}
+.MathJax .MathJax_HitBox * {filter: none; opacity: 1; background: transparent}
+#MathJax_Tooltip * {filter: none; opacity: 1; background: transparent}
+@font-face {font-family: MathJax_Main; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Main-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Main-Regular.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Main-bold; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Main-Bold.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Main-Bold.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Main-italic; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Main-Italic.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Main-Italic.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Math-italic; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Math-Italic.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Math-Italic.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Caligraphic; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Caligraphic-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Caligraphic-Regular.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Size1; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Size1-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Size1-Regular.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Size2; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Size2-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Size2-Regular.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Size3; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Size3-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Size3-Regular.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Size4; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Size4-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Size4-Regular.otf?V=2.7.2') format('opentype')}
+.MathJax .noError {vertical-align: ; font-size: 90%; text-align: left; color: black; padding: 1px 3px; border: 1px solid}
+</style></head>
+<body><div style="visibility: hidden; overflow: hidden; position: absolute; top: 0px; height: 1px; width: auto; padding: 0px; border: 0px; margin: 0px; text-align: left; text-indent: 0px; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal;"><div id="MathJax_Hidden"></div></div><div id="MathJax_Message" style="display: none;"></div>
+<div id="content">
+<h1 class="title">Images
+<br>
+<span class="subtitle">Gameboj – Étape 8</span>
+</h1>
+
+<div id="outline-container-orge46c559" class="outline-2">
+<h2 id="orge46c559"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Le but de cette étape est d'écrire les classes permettant de représenter les images stockées en mémoire et affichées à l'écran du Game Boy.
+</p>
+</div>
+
+<div id="outline-container-orgecb4918" class="outline-3">
+<h3 id="orgecb4918"><span class="section-number-3">1.1</span> Image affichée</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Comme cela a été brièvement mentionné dans l'énoncé de l'étape précédente, l'image affichée à l'écran du Game Boy est obtenue par compositions de plusieurs images séparées, qui sont combinées entre elles de différentes manières. Ces images sont :
+</p>
+
+<ul class="org-ul">
+<li>l'image de fond,</li>
+<li>la « fenêtre », qui est une sorte d'image de fond alternative,</li>
+<li>les <i>sprites</i>, qui sont de petites images utilisées pour représenter les éléments mobiles de la scène.</li>
+</ul>
+
+<p>
+Avant que ces images ne soient combinées entre elles, leurs couleurs peuvent être transformées au moyen de ce que l'on nomme des palettes. De plus, les images des <i>sprites</i> peuvent être inversées horizontalement et/ou verticalement.
+</p>
+
+<p>
+Ces différentes images et la manière dont elles peuvent être transformées et composées sont décrits plus bas. Avant cela, il importe toutefois de décrire la manière dont la position des pixels dans une image est décrite.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org601af6d" class="outline-3">
+<h3 id="org601af6d"><span class="section-number-3">1.2</span> Numérotation des pixels</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Sur le Game Boy, les pixels des images sont numérotés au moyen d'une paire d'index, le premier correspondant à la position horizontale du pixel, le second à sa position verticale. Le pixel du coin haut-gauche de l'image a l'index (0,0), son voisin de droite l'index (1,0), et ainsi de suite. Les index des pixels de l'image affichée à l'écran, qui a pour mémoire une taille de 160 par 144 pixels, sont donc les suivants :
+</p>
+
+<span class="MathJax_Preview" style="color: inherit; display: none;"></span><div class="MathJax_Display" style="text-align: center;"><span class="MathJax" id="MathJax-Element-1-Frame" tabindex="0" style="text-align: center; position: relative;" data-mathml="&lt;math xmlns=&quot;http://www.w3.org/1998/Math/MathML&quot; display=&quot;block&quot;&gt;&lt;mtable rowspacing=&quot;4pt&quot; columnspacing=&quot;1em&quot;&gt;&lt;mtr&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;1&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;2&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo&gt;&amp;#x2026;&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;159&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;/mtr&gt;&lt;mtr&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;1&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;1&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;1&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;2&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;1&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo&gt;&amp;#x2026;&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;159&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;1&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;/mtr&gt;&lt;mtr&gt;&lt;mtd&gt;&lt;mo&gt;&amp;#x22EE;&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo&gt;&amp;#x22EE;&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo&gt;&amp;#x22EE;&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo&gt;&amp;#x22F1;&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo&gt;&amp;#x22EE;&lt;/mo&gt;&lt;/mtd&gt;&lt;/mtr&gt;&lt;mtr&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;143&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;1&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;143&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;2&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;143&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo&gt;&amp;#x2026;&lt;/mo&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mo stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mn&gt;159&lt;/mn&gt;&lt;mo&gt;,&lt;/mo&gt;&lt;mn&gt;143&lt;/mn&gt;&lt;mo stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;/mtr&gt;&lt;/mtable&gt;&lt;/math&gt;" role="presentation"><nobr aria-hidden="true"><span class="math" id="MathJax-Span-1" style="width: 23.722em; display: inline-block;"><span style="display: inline-block; position: relative; width: 19.419em; height: 0px; font-size: 122%;"><span style="position: absolute; clip: rect(-1.227em, 1019.16em, 5.126em, -999.997em); top: -2.2em; left: 0em;"><span class="mrow" id="MathJax-Span-2"><span class="mtable" id="MathJax-Span-3" style="padding-right: 0.156em; padding-left: 0.156em;"><span style="display: inline-block; position: relative; width: 19.111em; height: 0px;"><span style="position: absolute; clip: rect(3.64em, 1003.13em, 9.941em, -999.997em); top: -7.016em; left: 0em;"><span style="display: inline-block; position: relative; width: 3.23em; height: 0px;"><span style="position: absolute; clip: rect(3.076em, 1002.1em, 4.408em, -999.997em); top: -6.504em; left: 50%; margin-left: -1.124em;"><span class="mtd" id="MathJax-Span-4"><span class="mrow" id="MathJax-Span-5"><span class="mo" id="MathJax-Span-6" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-7" style="font-family: MathJax_Main;">0</span><span class="mo" id="MathJax-Span-8" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-9" style="font-family: MathJax_Main; padding-left: 0.156em;">0</span><span class="mo" id="MathJax-Span-10" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.076em, 1002.1em, 4.408em, -999.997em); top: -5.018em; left: 50%; margin-left: -1.124em;"><span class="mtd" id="MathJax-Span-35"><span class="mrow" id="MathJax-Span-36"><span class="mo" id="MathJax-Span-37" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-38" style="font-family: MathJax_Main;">0</span><span class="mo" id="MathJax-Span-39" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-40" style="font-family: MathJax_Main; padding-left: 0.156em;">1</span><span class="mo" id="MathJax-Span-41" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(2.564em, 1000.21em, 4.203em, -999.997em); top: -2.866em; left: 50%; margin-left: -0.151em;"><span class="mtd" id="MathJax-Span-66"><span class="mrow" id="MathJax-Span-67"><span class="mo" id="MathJax-Span-68" style="font-family: MathJax_Main;">⋮</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.076em, 1003.13em, 4.408em, -999.997em); top: -1.483em; left: 50%; margin-left: -1.586em;"><span class="mtd" id="MathJax-Span-81"><span class="mrow" id="MathJax-Span-82"><span class="mo" id="MathJax-Span-83" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-84" style="font-family: MathJax_Main;">0</span><span class="mo" id="MathJax-Span-85" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-86" style="font-family: MathJax_Main; padding-left: 0.156em;">143</span><span class="mo" id="MathJax-Span-87" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span><span style="display: inline-block; width: 0px; height: 7.021em;"></span></span><span style="position: absolute; clip: rect(3.64em, 1003.13em, 9.941em, -999.997em); top: -7.016em; left: 4.203em;"><span style="display: inline-block; position: relative; width: 3.23em; height: 0px;"><span style="position: absolute; clip: rect(3.076em, 1002.1em, 4.408em, -999.997em); top: -6.504em; left: 50%; margin-left: -1.124em;"><span class="mtd" id="MathJax-Span-11"><span class="mrow" id="MathJax-Span-12"><span class="mo" id="MathJax-Span-13" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-14" style="font-family: MathJax_Main;">1</span><span class="mo" id="MathJax-Span-15" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-16" style="font-family: MathJax_Main; padding-left: 0.156em;">0</span><span class="mo" id="MathJax-Span-17" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.076em, 1002.1em, 4.408em, -999.997em); top: -5.018em; left: 50%; margin-left: -1.124em;"><span class="mtd" id="MathJax-Span-42"><span class="mrow" id="MathJax-Span-43"><span class="mo" id="MathJax-Span-44" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-45" style="font-family: MathJax_Main;">1</span><span class="mo" id="MathJax-Span-46" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-47" style="font-family: MathJax_Main; padding-left: 0.156em;">1</span><span class="mo" id="MathJax-Span-48" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(2.564em, 1000.21em, 4.203em, -999.997em); top: -2.866em; left: 50%; margin-left: -0.151em;"><span class="mtd" id="MathJax-Span-69"><span class="mrow" id="MathJax-Span-70"><span class="mo" id="MathJax-Span-71" style="font-family: MathJax_Main;">⋮</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.076em, 1003.13em, 4.408em, -999.997em); top: -1.483em; left: 50%; margin-left: -1.586em;"><span class="mtd" id="MathJax-Span-88"><span class="mrow" id="MathJax-Span-89"><span class="mo" id="MathJax-Span-90" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-91" style="font-family: MathJax_Main;">1</span><span class="mo" id="MathJax-Span-92" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-93" style="font-family: MathJax_Main; padding-left: 0.156em;">143</span><span class="mo" id="MathJax-Span-94" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span><span style="display: inline-block; width: 0px; height: 7.021em;"></span></span><span style="position: absolute; clip: rect(3.64em, 1003.13em, 9.941em, -999.997em); top: -7.016em; left: 8.404em;"><span style="display: inline-block; position: relative; width: 3.23em; height: 0px;"><span style="position: absolute; clip: rect(3.076em, 1002.1em, 4.408em, -999.997em); top: -6.504em; left: 50%; margin-left: -1.124em;"><span class="mtd" id="MathJax-Span-18"><span class="mrow" id="MathJax-Span-19"><span class="mo" id="MathJax-Span-20" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-21" style="font-family: MathJax_Main;">2</span><span class="mo" id="MathJax-Span-22" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-23" style="font-family: MathJax_Main; padding-left: 0.156em;">0</span><span class="mo" id="MathJax-Span-24" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.076em, 1002.1em, 4.408em, -999.997em); top: -5.018em; left: 50%; margin-left: -1.124em;"><span class="mtd" id="MathJax-Span-49"><span class="mrow" id="MathJax-Span-50"><span class="mo" id="MathJax-Span-51" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-52" style="font-family: MathJax_Main;">2</span><span class="mo" id="MathJax-Span-53" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-54" style="font-family: MathJax_Main; padding-left: 0.156em;">1</span><span class="mo" id="MathJax-Span-55" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(2.564em, 1000.21em, 4.203em, -999.997em); top: -2.866em; left: 50%; margin-left: -0.151em;"><span class="mtd" id="MathJax-Span-72"><span class="mrow" id="MathJax-Span-73"><span class="mo" id="MathJax-Span-74" style="font-family: MathJax_Main;">⋮</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.076em, 1003.13em, 4.408em, -999.997em); top: -1.483em; left: 50%; margin-left: -1.586em;"><span class="mtd" id="MathJax-Span-95"><span class="mrow" id="MathJax-Span-96"><span class="mo" id="MathJax-Span-97" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-98" style="font-family: MathJax_Main;">2</span><span class="mo" id="MathJax-Span-99" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-100" style="font-family: MathJax_Main; padding-left: 0.156em;">143</span><span class="mo" id="MathJax-Span-101" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span><span style="display: inline-block; width: 0px; height: 7.021em;"></span></span><span style="position: absolute; clip: rect(3.384em, 1001.13em, 8.814em, -999.997em); top: -6.145em; left: 12.656em;"><span style="display: inline-block; position: relative; width: 1.283em; height: 0px;"><span style="position: absolute; clip: rect(3.742em, 1001.08em, 4.152em, -999.997em); top: -6.504em; left: 50%; margin-left: -0.561em;"><span class="mtd" id="MathJax-Span-25"><span class="mrow" id="MathJax-Span-26"><span class="mo" id="MathJax-Span-27" style="font-family: MathJax_Main;">…</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.742em, 1001.08em, 4.152em, -999.997em); top: -5.018em; left: 50%; margin-left: -0.561em;"><span class="mtd" id="MathJax-Span-56"><span class="mrow" id="MathJax-Span-57"><span class="mo" id="MathJax-Span-58" style="font-family: MathJax_Main;">…</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(2.308em, 1001.13em, 4.05em, -999.997em); top: -2.866em; left: 50%; margin-left: -0.663em;"><span class="mtd" id="MathJax-Span-75"><span class="mrow" id="MathJax-Span-76"><span class="mo" id="MathJax-Span-77" style="font-family: MathJax_Main;">⋱</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.742em, 1001.08em, 4.152em, -999.997em); top: -1.483em; left: 50%; margin-left: -0.561em;"><span class="mtd" id="MathJax-Span-102"><span class="mrow" id="MathJax-Span-103"><span class="mo" id="MathJax-Span-104" style="font-family: MathJax_Main;">…</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span><span style="display: inline-block; width: 0px; height: 6.15em;"></span></span><span style="position: absolute; clip: rect(3.64em, 1004.1em, 9.941em, -999.997em); top: -7.016em; left: 14.91em;"><span style="display: inline-block; position: relative; width: 4.203em; height: 0px;"><span style="position: absolute; clip: rect(3.076em, 1003.13em, 4.408em, -999.997em); top: -6.504em; left: 50%; margin-left: -1.586em;"><span class="mtd" id="MathJax-Span-28"><span class="mrow" id="MathJax-Span-29"><span class="mo" id="MathJax-Span-30" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-31" style="font-family: MathJax_Main;">159</span><span class="mo" id="MathJax-Span-32" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-33" style="font-family: MathJax_Main; padding-left: 0.156em;">0</span><span class="mo" id="MathJax-Span-34" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.076em, 1003.13em, 4.408em, -999.997em); top: -5.018em; left: 50%; margin-left: -1.586em;"><span class="mtd" id="MathJax-Span-59"><span class="mrow" id="MathJax-Span-60"><span class="mo" id="MathJax-Span-61" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-62" style="font-family: MathJax_Main;">159</span><span class="mo" id="MathJax-Span-63" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-64" style="font-family: MathJax_Main; padding-left: 0.156em;">1</span><span class="mo" id="MathJax-Span-65" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(2.564em, 1000.21em, 4.203em, -999.997em); top: -2.866em; left: 50%; margin-left: -0.151em;"><span class="mtd" id="MathJax-Span-78"><span class="mrow" id="MathJax-Span-79"><span class="mo" id="MathJax-Span-80" style="font-family: MathJax_Main;">⋮</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.076em, 1004.1em, 4.408em, -999.997em); top: -1.483em; left: 50%; margin-left: -2.098em;"><span class="mtd" id="MathJax-Span-105"><span class="mrow" id="MathJax-Span-106"><span class="mo" id="MathJax-Span-107" style="font-family: MathJax_Main;">(</span><span class="mn" id="MathJax-Span-108" style="font-family: MathJax_Main;">159</span><span class="mo" id="MathJax-Span-109" style="font-family: MathJax_Main;">,</span><span class="mn" id="MathJax-Span-110" style="font-family: MathJax_Main; padding-left: 0.156em;">143</span><span class="mo" id="MathJax-Span-111" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span><span style="display: inline-block; width: 0px; height: 7.021em;"></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.205em;"></span></span></span><span style="display: inline-block; overflow: hidden; vertical-align: -3.434em; border-left: 0px solid; width: 0px; height: 7.503em;"></span></span></nobr><span class="MJX_Assistive_MathML MJX_Assistive_MathML_Block" role="presentation"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mtable rowspacing="4pt" columnspacing="1em"><mtr><mtd><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo stretchy="false">)</mo></mtd><mtd><mo stretchy="false">(</mo><mn>1</mn><mo>,</mo><mn>0</mn><mo stretchy="false">)</mo></mtd><mtd><mo stretchy="false">(</mo><mn>2</mn><mo>,</mo><mn>0</mn><mo stretchy="false">)</mo></mtd><mtd><mo>…</mo></mtd><mtd><mo stretchy="false">(</mo><mn>159</mn><mo>,</mo><mn>0</mn><mo stretchy="false">)</mo></mtd></mtr><mtr><mtd><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false">)</mo></mtd><mtd><mo stretchy="false">(</mo><mn>1</mn><mo>,</mo><mn>1</mn><mo stretchy="false">)</mo></mtd><mtd><mo stretchy="false">(</mo><mn>2</mn><mo>,</mo><mn>1</mn><mo stretchy="false">)</mo></mtd><mtd><mo>…</mo></mtd><mtd><mo stretchy="false">(</mo><mn>159</mn><mo>,</mo><mn>1</mn><mo stretchy="false">)</mo></mtd></mtr><mtr><mtd><mo>⋮</mo></mtd><mtd><mo>⋮</mo></mtd><mtd><mo>⋮</mo></mtd><mtd><mo>⋱</mo></mtd><mtd><mo>⋮</mo></mtd></mtr><mtr><mtd><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><mn>143</mn><mo stretchy="false">)</mo></mtd><mtd><mo stretchy="false">(</mo><mn>1</mn><mo>,</mo><mn>143</mn><mo stretchy="false">)</mo></mtd><mtd><mo stretchy="false">(</mo><mn>2</mn><mo>,</mo><mn>143</mn><mo stretchy="false">)</mo></mtd><mtd><mo>…</mo></mtd><mtd><mo stretchy="false">(</mo><mn>159</mn><mo>,</mo><mn>143</mn><mo stretchy="false">)</mo></mtd></mtr></mtable></math></span></span></div><script type="math/tex; mode=display" id="MathJax-Element-1">\begin{matrix}
+(0,0) & (1,0) & (2,0) & \ldots & (159,0)\\
+(0,1) & (1,1) & (2,1) & \ldots & (159,1)\\
+\vdots & \vdots & \vdots & \ddots & \vdots\\
+(0,143) & (1,143) & (2,143) & \ldots & (159,143)\\
+\end{matrix}</script>
+</div>
+</div>
+
+<div id="outline-container-orgaf5b52d" class="outline-3">
+<h3 id="orgaf5b52d"><span class="section-number-3">1.3</span> Image de fond et fenêtre</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+L'image de fond montre généralement le décor dans lequel l'action du jeu se déroule. Il s'agit d'une image assez statique, dont la plupart des éléments sont fixes.
+</p>
+</div>
+
+<div id="outline-container-orgef33390" class="outline-4">
+<h4 id="orgef33390"><span class="section-number-4">1.3.1</span> Extraction</h4>
+<div class="outline-text-4" id="text-1-3-1">
+<p>
+Comme expliqué dans l'énoncé de l'étape précédente, l'image de fond affichée à l'écran est une sous-partie de 160×144 pixels d'une plus grande image carrée de 256 pixels de côté stockée en mémoire. Ce qui n'avait pas encore été précisé est que cette extraction est faite (conceptuellement) sur l'extension infinie par enroulement de l'image stockée en mémoire. Il faut noter que cet enroulement est fait dans les deux dimensions.
+</p>
+
+<p>
+Par exemple, si l'image à afficher est extraite à partir du pixel d'index (250, 0), alors les 6 premiers pixels de chaque ligne de l'image extraite seront les 6 derniers de chaque ligne de l'image en mémoire, tandis que les 154 derniers seront les 154 premiers de chaque ligne de l'image en mémoire.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgfba9289" class="outline-4">
+<h4 id="orgfba9289"><span class="section-number-4">1.3.2</span> Fenêtre</h4>
+<div class="outline-text-4" id="text-1-3-2">
+<p>
+Le Game Boy a la particularité d'avoir deux images de fond, la seconde étant nommée la <b>fenêtre</b> (<i>window</i>). Il s'agit d'une image de fond alternative, qui peut se substituer à cette dernière à partir d'une certaine position.
+</p>
+
+<p>
+Cela signifie que lorsque la fenêtre est visible à l'écran, à partir d'une position (x,y) donnée, alors tous les pixels affichés en dessous et à droite de cette position sont ceux de la fenêtre et pas de l'image de fond normale. En d'autres termes, la fenêtre peut occuper une portion située en bas et à droite de l'écran uniquement.
+</p>
+
+<p>
+La fenêtre est par exemple utilisée dans <i>Super Mario Land</i> pour afficher un message lorsque le jeu est mis en pause, comme le montre la figure ci-dessous. Le texte « <i>pause</i> » est écrit sur la partie haut-gauche de la fenêtre, qui apparaît dans le coin bas-droite de l'écran lorsque le jeu est mis en pause.
+</p>
+
+
+<div class="figure">
+<p><img src="./Images_files/sml-win.gif" alt="sml-win.gif" class="shadowed">
+</p>
+<p><span class="figure-number">Figure&nbsp;1&nbsp;: </span>Utilisation de la fenêtre lors de la mise en pause</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org0c0c426" class="outline-3">
+<h3 id="org0c0c426"><span class="section-number-3">1.4</span> Sprites</h3>
+<div class="outline-text-3" id="text-1-4">
+<p>
+Les <a href="https://fr.wikipedia.org/wiki/Sprite_(jeu_vid%C3%A9o)"><i>sprites</i></a> sont de petites images utilisées pour représenter les éléments mobiles de la scène, p.ex. les différents personnages présents à l'écran. Sur le Game Boy, les <i>sprites</i> font toujours 8 pixels de large, et 8 ou 16 pixels de haut. Il est possible d'en afficher jusqu'à 40 simultanément à l'écran.
+</p>
+
+<p>
+Dans la plupart des cas, les <i>sprites</i> sont placés au-dessus de l'image de fond. Certains pixels des <i>sprites</i> peuvent être transparents, ce qui signifie que l'image de fond est visible à travers eux. Cela permet aux <i>sprites</i> d'avoir des formes qui semblent quelconques, même si en réalité leurs images sont toujours des rectangles de 8×8 ou 8×16 pixels.
+</p>
+
+<p>
+Il est aussi possible de placer certains <i>sprites</i> au-dessous de l'image de fond. Dans ce cas, certains pixels de l'image de fond sont transparents et laissent apparaître les éventuels <i>sprites</i> se trouvant derrière eux.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgb111cdc" class="outline-3">
+<h3 id="orgb111cdc"><span class="section-number-3">1.5</span> Transformation des couleurs</h3>
+<div class="outline-text-3" id="text-1-5">
+<p>
+Les couleurs des différentes images metionnées ci-dessus — image de fond, fenêtre, <i>sprites</i> — peuvent être transformées avant l'affichage. Cette transformation consiste à remplacer systématiquement une couleur par une autre, au moyen d'une table.
+</p>
+
+<p>
+Par exemple, la table ci-dessous spécifie que les couleurs 0 et 3 doivent être inversées, tandis que les couleurs 1 et 2 ne changent pas.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right"><b>Couleur originale</b></th>
+<th scope="col" class="org-right">3</th>
+<th scope="col" class="org-right">2</th>
+<th scope="col" class="org-right">1</th>
+<th scope="col" class="org-right">0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right"><b>Couleur transformée</b></td>
+<td class="org-right">0</td>
+<td class="org-right">2</td>
+<td class="org-right">1</td>
+<td class="org-right">3</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Une table de ce type peut être encodée de manière compacte, au moyen d'un octet seulement : les bits 0 et 1 contiennent la couleur à utiliser en lieu et place de la couleur 0, les bits 2 et 3 contiennent celle à utiliser en lieu et place de la couleur 1, et ainsi de suite. Par exemple, la table ci-dessus est encodée par les 8 bits suivants : <code>00 10 01 11</code>.
+</p>
+
+<p>
+Sur le Game Boy, un octet utilisé pour représenter une transformation de couleurs est nommé <b>palette</b>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orga3db770" class="outline-3">
+<h3 id="orga3db770"><span class="section-number-3">1.6</span> Calcul par ligne</h3>
+<div class="outline-text-3" id="text-1-6">
+<p>
+La description du processus de calcul de l'image affichée à l'écran donnée ci-dessus pourrait laisser penser que les différentes images — fond, fenêtre, <i>sprites</i> — peuvent être calculées individuellement puis composées pour obtenir l'image finale.
+</p>
+
+<p>
+En réalité, les choses sont légèrement plus compliquées. En effet, pour des raisons qui seront expliquées dans une étape ultérieure, les paramètres des différentes opérations appliquées aux images peuvent changer à chaque ligne !
+</p>
+
+<p>
+Par exemple, il est possible de changer pour chaque ligne les paramètres déterminant quelle zone de l'image stockée en mémoire est extraite pour être affichée à l'écran. Cela permet d'extraire des zones de l'image stockée en mémoire dont la forme est plus complexe qu'un simple rectangle de 160×144 pixels.
+</p>
+
+<p>
+Cette possibilité est par exemple utilisée pour extraire l'image de fond dans <i>Super Mario Land</i> lorsque le personnage de Mario se déplace, comme l'illustre la figure ci-dessous. On y voit à gauche l'image affichée à l'écran après quelques secondes de jeu, et à droite l'image de fond stockée en mémoire — dont la partie inférieure, inutilisée, a été rognée pour alléger la présentation. Comme on le constate, l'image de fond visible à l'écran n'est pas simplement une sous-partie rectangulaire de l'image stockée en mémoire, mais une combinaison de deux sous-parties rectangulaires : celle coloriée en rouge, qui montre différentes informations comme le temps restant, et celle coloriée en bleu, qui montre le décor.
+</p>
+
+
+<div class="figure">
+<p><img src="./Images_files/sml-scrolled.png" alt="sml-scrolled.png">
+</p>
+<p><span class="figure-number">Figure&nbsp;2&nbsp;: </span>Extraction d'une image de fond non rectangulaire</p>
+</div>
+
+<p>
+De manière similaire, il est possible de changer les palettes utilisées pour transformer les couleurs des différentes images à chaque ligne.
+</p>
+
+<p>
+Cette possibilité de changer les paramètres de transformation des images à chaque ligne ouvre la porte à un très grand nombre d'effets visuels intéressants, et est utilisée dans la quasi-totalité des jeux. Elle a toutefois une implication importante sur le calcul des images dans notre simulateur, puisque celui-ci doit impérativement se faire au niveau des lignes et pas au niveau des images.
+</p>
+
+<p>
+Cela signifie que chaque ligne à afficher doit être calculée individuellement, en combinant une ligne de l'image de fond, éventuellement une ligne de la fenêtre, une ligne de chaque <i>sprite</i> ayant une intersection avec la ligne calculée, etc. Pour cette raison, toutes les opérations nécessaires à la combinaison et à la transformation des images individuelles pour obtenir l'image à afficher seront définies uniquement sur les lignes, et pas sur les images entières. Ces opérations sont :
+</p>
+
+<dl class="org-dl">
+<dt>Le décalage</dt><dd>qui consiste à décaler horizontalement une ligne d'un certain nombre de pixels ; utile, entre autres, pour positionner horizontalement les <i>sprites</i>.</dd>
+
+<dt>L'extraction par enroulement</dt><dd>qui consiste à extraire une ligne d'une taille donnée de l'extension infinie par enroulement d'une autre ligne ; utile pour obtenir une ligne de l'image de fond.</dd>
+
+<dt>La jointure</dt><dd>qui consiste à composer deux lignes de longueur identique pour en obtenir une nouvelle de même longueur dont les <i>n</i> premiers pixels sont ceux de la première, les autres ceux de la seconde ; utile pour combiner les lignes de l'image de fond et de la fenêtre.</dd>
+
+<dt>La superposition</dt><dd>qui consiste à composer deux lignes de longueur identique pour en obtenir une nouvelle de même longueur dont les pixels sont ceux de la ligne du dessus, pour ceux qui sont opaques, et ceux de la ligne du dessous sinon.</dd>
+</dl>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7fda624" class="outline-2">
+<h2 id="org7fda624"><span class="section-number-2">2</span> Mise en œuvre Java</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+Toutes les classes de cette étape seront placées dans le paquetage <code>ch.epfl.gameboj.component.lcd</code>, dédié à l'écran à cristaux liquides.
+</p>
+</div>
+
+<div id="outline-container-org8573ea9" class="outline-3">
+<h3 id="org8573ea9"><span class="section-number-3">2.1</span> Classe <code>LcdImageLine</code></h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+La classe <code>LcdImageLine</code>, du paquetage <code>ch.epfl.gameboj.component.lcd</code>, finale et <i>immuable</i>, représente une ligne d'image Game Boy.
+</p>
+
+<p>
+Une ligne d'image est composée de trois vecteurs de bits de même longueur : le premier contient les bits de poids fort (<code>msb</code>), le second les bits de poids faible (<code>lsb</code>) et le dernier l'opacité (<code>opacity</code>). Ces trois vecteurs sont passés au constructeur de la classe, qui lève une exception s'ils n'ont pas tous la même taille.
+</p>
+
+<p>
+Le bit d'index <i>i</i> de chacun des trois vecteurs contient les informations — le bit de poids fort pour <code>msb</code>, le bit de poids faible pour <code>lsb</code> et l'opacité pour <code>opacity</code> — du pixel d'index <i>i</i> de la ligne. Notez que nous avons l'habitude de numéroter les bits des vecteurs de droite à gauche, alors que les pixels d'une ligne sont numérotés de gauche à droite, ce qui est un peu troublant ! Pour ne pas se laisser inutilement perturber par cela, il est préférable de se souvenir simplement que le bit d'index <i>i</i> de chacun des vecteurs correspond au pixel d'index <i>i</i>, sans réfléchir à la manière dont ces bits sont ordonnés lorsqu'ils sont écrits dans l'ordre habituel.
+</p>
+
+<p>
+En plus du constructeur décrit ci-dessus, la classe <code>LcdImageLine</code> offre des méthodes permettant de :
+</p>
+
+<ul class="org-ul">
+<li>obtenir la longueur, en pixels, de la ligne (<code>size</code>),</li>
+
+<li>obtenir le vecteur des bits de poids fort (<code>msb</code>), des bits de poids faible (<code>lsb</code>) et de l'opacité (<code>opacity</code>),</li>
+
+<li>décaler la ligne d'un nombre de pixels donné, en préservant sa longueur (<code>shift</code>),</li>
+
+<li>extraire de l'extension infinie par enroulement, à partir d'un pixel donné, une ligne de longueur donnée (<code>extractWrapped</code>),</li>
+
+<li>transformer les couleurs de la ligne en fonction d'une palette, donnée sous la forme d'un octet encodé comme spécifié plus haut (<code>mapColors</code>),</li>
+
+<li>composer la ligne avec une seconde de même longueur, placée au-dessus d'elle, en utilisant l'opacité de la ligne supérieure pour effectuer la composition (<code>below</code>),</li>
+
+<li>composer la ligne avec une seconde de même longueur, placée au-dessus d'elle, en utilisant un vecteur d'opacité passé en argument pour effectuer la composition, celui de la ligne supérieure étant ignoré (<code>below</code>, deuxième variante),</li>
+
+<li>joindre la ligne avec une autre de même longueur, à partir d'un pixel d'index donné (<code>join</code>).</li>
+</ul>
+
+<p>
+De plus, étant donné que la classe <code>LcdImageLine</code> est immuable, elle redéfinit les méthodes <code>equals</code> et <code>hashCode</code> afin que ses instances soient comparées de manière structurelle. En d'autres termes, deux lignes d'image sont considérées comme égales si et seulement si les trois vecteurs de bits les composant sont égaux.
+</p>
+</div>
+
+<div id="outline-container-org5658984" class="outline-4">
+<h4 id="org5658984"><span class="section-number-4">2.1.1</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-1-1">
+<p>
+La plupart des méthodes de la classe <code>LcdImageLine</code> s'écrivent facilement en utilisant les méthodes de la classe <code>BitVector</code> appliquées aux trois vecteurs. Par exemple, les opérations de décalage et d'extraction se mettent en œuvre en appelant les méthodes correspondantes de <code>BitVector</code> sur chacun des trois vecteurs, et en construisant une ligne d'image avec les résultats.
+</p>
+</div>
+
+<ol class="org-ol">
+<li><a id="org79166e6"></a>Méthodes de composition<br>
+<div class="outline-text-5" id="text-2-1-1-1">
+<p>
+Les méthodes de composition (<code>below</code> et <code>join</code>) sont à peine plus complexes à écrire. Dans les deux cas, il faut trouver comment calculer un pixel de la ligne résultant de la composition en combinant les pixels correspondants des lignes à combiner au moyen d'opérations logiques — conjonction, disjonction, complément. Une fois la manière de calculer <i>un</i> pixel déterminée, il est facile de calculer <i>tous</i> pixels de la ligne en utilisant les opérations bit à bit sur les vecteurs.
+</p>
+
+<p>
+Par exemple, pour la superposition (<code>below</code>), il est clair que chaque pixel du résultat est celui de la ligne du dessus s'il est opaque, celui de la ligne du dessous sinon. Il est assez facile d'exprimer cette correspondance au moyen d'opérations logiques sur les bits correspondant, et d'écrire dès lors la méthode <code>below</code> au moyen des méthodes <code>and</code>, <code>or</code> et <code>not</code> de la classe <code>BitVector</code>.
+</p>
+</div>
+</li>
+
+<li><a id="org053369e"></a>Transformation des couleurs<br>
+<div class="outline-text-5" id="text-2-1-1-2">
+<p>
+La méthode de transformation des couleurs, <code>mapColors</code>, est probablement la plus difficile à écrire de cette étape. Il est donc important de bien y réfléchir et de faire les constatations suivantes.
+</p>
+
+<p>
+Premièrement, si la palette donnée à <code>mapColors</code> ne change aucune couleur, alors elle n'a rien besoin de faire et peut simplement retourner la ligne telle quelle. Cette optimisation est importante, car ce cas est extrêmement fréquent en pratique.
+</p>
+
+<p>
+Deuxièmement, la transformation des couleurs peut se faire de manière beaucoup plus efficace que par itérations sur les pixels ! En effet, il est possible d'itérer sur les <i>couleurs</i> et de calculer le résultat de la transformation au moyen d'opérations bit à bit effectuées sur les vecteurs de bits de poids fort et faible. Là aussi, il s'agit d'une optimisation importante car le nombre de couleurs (4) est beaucoup plus petit que le nombre de pixels par ligne (160 en général).
+</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-orga650fb5" class="outline-3">
+<h3 id="orga650fb5"><span class="section-number-3">2.2</span> Classe <code>LcdImageLine.Builder</code></h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+La classe <code>Builder</code>, publique, finale et imbriquée statiquement dans <code>LcdImageLine</code>, est un bâtisseur de ligne d'image.
+</p>
+
+<p>
+Ce bâtisseur a la particularité de ne contenir que <i>deux</i> bâtisseurs, un pour les bits de poids fort, l'autre pour les bits de poids faible. Le vecteur d'opacité est en effet calculé au moment de la construction de la ligne, par la méthode <code>build</code> décrite ci-dessous, en utilisant la convention — toujours respectée sur le Game Boy — que les pixels de couleur 0 sont transparents, les autres opaques.
+</p>
+
+<p>
+En plus de son constructeur, la classe <code>Builder</code> offre des méthodes permettant de :
+</p>
+
+<ul class="org-ul">
+<li>définir la valeur des octets de poids fort et de poids faible de la ligne, à un index donné (<code>setBytes</code>),</li>
+
+<li>construire la ligne avec les octets définis jusqu'à présent, dans laquelle tous les pixels de couleur 0 sont transparents, les autres opaques (<code>build</code>).</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org4569d79" class="outline-3">
+<h3 id="org4569d79"><span class="section-number-3">2.3</span> Classe <code>LcdImage</code></h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+La classe <code>LcdImage</code>, du paquetage <code>ch.epfl.gameboj.component.lcd</code>, finale et <i>immuable</i>, représente une image Game Boy.
+</p>
+
+<p>
+Son constructeur prend en argument la largeur et la hauteur de l'image, ainsi que la liste de ses lignes — de type <code>List&lt;LcdImageLine&gt;</code>.
+</p>
+
+<p>
+En plus de ce constructeur, la classe <code>LcdImage</code> offre des méthodes permettant de :
+</p>
+
+<ul class="org-ul">
+<li>obtenir la largeur et la hauteur de l'image (<code>width</code> et <code>height</code>),</li>
+<li>obtenir, sous la forme d'un entier compris entre 0 et 3, la couleur d'un pixel d'index (<i>x</i>, <i>y</i>) donné (<code>get</code>).</li>
+</ul>
+
+<p>
+De plus, étant donné que la classe <code>LcdImage</code> est immuable, elle redéfinit les méthodes <code>equals</code> et <code>hashCode</code> afin que ses instances soient comparées de manière structurelle.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org1c8f2a1" class="outline-3">
+<h3 id="org1c8f2a1"><span class="section-number-3">2.4</span> Classe <code>LcdImage.Builder</code></h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+La classe <code>Builder</code>, publique, finale et imbriquée statiquement dans <code>LcdImage</code>, est un bâtisseur d'image.
+</p>
+
+<p>
+Son constructeur prend en argument la largeur et la hauteur de l'image à bâtir. Initialement, celle-ci est vide, c-à-d que tous ses pixels ont la couleur 0.
+</p>
+
+<p>
+En plus du constructeur, la classe <code>Builder</code> offre des méthodes permettant de :
+</p>
+
+<ul class="org-ul">
+<li>changer la ligne d'index donné (<code>setLine</code>),</li>
+<li>obtenir l'image en cours de construction (<code>build</code>).</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org11dd594" class="outline-3">
+<h3 id="org11dd594"><span class="section-number-3">2.5</span> Tests</h3>
+<div class="outline-text-3" id="text-2-5">
+<p>
+Pour faciliter le test des classes de cette étape, nous mettons à votre disposition un fichier nommé <a href="https://cs108.epfl.ch/archive/18/p/f/sml.bin.gz"><code>sml.bin.gz</code></a> qui contient — compressés avec gzip — les 16 384 octets correspondant à l'image de 256 pixels de côté stockée en mémoire au début d'une partie de <i>Super Mario Land</i><sup><a id="fnr.1" class="footref" href="https://cs108.epfl.ch/archive/18/p/08_lcd-image.html#fn.1">1</a></sup>.
+</p>
+
+<p>
+Le programme ci-dessous lit ces octets, les utilise pour construire une image de type <code>LcdImage</code>, transforme cette image en une de type <a href="https://docs.oracle.com/javase/9/docs/api/java/awt/image/BufferedImage.html"><code>BufferedImage</code></a> et finalement l'écrit sur disque au format PNG, dans un fichier nommé <code>sml.png</code>. Bien entendu, en fonction de la manière dont vous avez défini les méthodes des classes <code>LcdImage</code> et <code>LcdImageLine</code>, et de leurs bâtisseurs, vous devrez peut-être adapter ce programme avant de pouvoir l'exécuter.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-class"><span class="hljs-keyword"><span class="hljs-class"><span class="hljs-keyword">class</span></span></span><span class="hljs-class"> </span><span class="hljs-title"><span class="hljs-class"><span class="hljs-title">DebugDrawImage</span></span></span><span class="hljs-class"> </span></span>{
+  <span class="hljs-keyword"><span class="hljs-keyword">private</span></span> <span class="hljs-keyword"><span class="hljs-keyword">static</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-keyword"><span class="hljs-keyword">int</span></span>[] COLOR_MAP = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> <span class="hljs-keyword"><span class="hljs-keyword">int</span></span>[] {
+    <span class="hljs-number"><span class="hljs-number">0xFF_FF_FF</span></span>, <span class="hljs-number"><span class="hljs-number">0xD3_D3_D3</span></span>, <span class="hljs-number"><span class="hljs-number">0xA9_A9_A9</span></span>, <span class="hljs-number"><span class="hljs-number">0x00_00_00</span></span>
+  };
+
+  <span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">static</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">void</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">main</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(String[] args)</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">throws</span></span></span><span class="hljs-function"> IOException </span></span>{
+    String f = <span class="hljs-string"><span class="hljs-string">"sml.bin.gz"</span></span>;
+    <span class="hljs-keyword"><span class="hljs-keyword">int</span></span> w = <span class="hljs-number"><span class="hljs-number">256</span></span>, h = <span class="hljs-number"><span class="hljs-number">256</span></span>;
+    LcdImage.Builder ib = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> LcdImage.Builder(w, h);
+
+    <span class="hljs-keyword"><span class="hljs-keyword">try</span></span> (InputStream s =
+	   <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> GZIPInputStream(<span class="hljs-keyword"><span class="hljs-keyword">new</span></span> FileInputStream(f))) {
+      <span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (<span class="hljs-keyword"><span class="hljs-keyword">int</span></span> y = <span class="hljs-number"><span class="hljs-number">0</span></span>; y &lt; h; ++y) {
+	LcdImageLine.Builder lb = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> LcdImageLine.Builder(w);
+	<span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (<span class="hljs-keyword"><span class="hljs-keyword">int</span></span> x = <span class="hljs-number"><span class="hljs-number">0</span></span>; x &lt; w / Byte.SIZE; ++x)
+	  lb.setBytes(x, s.read(), s.read());
+	ib.setLine(y, lb.build());
+      }
+    }
+    LcdImage li = ib.build();
+
+    BufferedImage i =
+      <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+    <span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (<span class="hljs-keyword"><span class="hljs-keyword">int</span></span> y = <span class="hljs-number"><span class="hljs-number">0</span></span>; y &lt; h; ++y)
+      <span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (<span class="hljs-keyword"><span class="hljs-keyword">int</span></span> x = <span class="hljs-number"><span class="hljs-number">0</span></span>; x &lt; w; ++x)
+	i.setRGB(x, y, COLOR_MAP[li.get(x, y)]);
+    ImageIO.write(i, <span class="hljs-string"><span class="hljs-string">"png"</span></span>, <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> File(<span class="hljs-string"><span class="hljs-string">"sml.png"</span></span>));
+    System.out.println(<span class="hljs-string"><span class="hljs-string">"done"</span></span>);
+  }
+}
+</pre>
+</div>
+
+<p>
+En exécutant ce programme puis en affichant l'image contenue dans le fichier <code>sml.png</code> qu'il génère, vous devriez voir ceci :
+</p>
+
+
+<div class="figure">
+<p><img src="./Images_files/sml.png" alt="sml.png" class="shadowed">
+</p>
+</div>
+
+<p>
+Notez bien que seule une toute petite partie du code de cette étape est utilisée par ce programme. Il vaut donc la peine de l'augmenter et/ou d'écrire des tests unitaires pour augmenter votre confiance en votre code.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgd167f61" class="outline-2">
+<h2 id="orgd167f61"><span class="section-number-2">3</span> Résumé</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Pour cette étape, vous devez :
+</p>
+
+<ul class="org-ul">
+<li>écrire les classes <code>LcdImageLine</code>, <code>LcdImageLine.Builder</code>, <code>LcdImage</code> et <code>LcdImage.Builder</code> (ou équivalent) en fonction des indications données plus haut,</li>
+
+<li>tester votre code,</li>
+
+<li>documenter la totalité des entités publiques que vous avez définies.</li>
+</ul>
+
+<p>
+Aucun rendu n'est à faire pour cette étape avant le rendu final. N'oubliez pas de faire régulièrement des copies de sauvegarde de votre travail en suivant <a href="https://cs108.epfl.ch/archive/18/g/backups.html">nos indications à ce sujet</a>.
+</p>
+</div>
+</div>
+<div id="footnotes">  <h2 class="footnotes">Notes de bas de page</h2>  <div id="text-footnotes">
+<div class="footdef"><sup><a id="fn.1" class="footnum" href="https://cs108.epfl.ch/archive/18/p/08_lcd-image.html#fnr.1">1</a></sup> <div class="footpara"><p class="footpara">
+Pour une raison qui deviendra claire lors d'une étape ultérieure, l'ordre des bits des octets obtenus de la mémoire graphique a été systématiquement inversé avant qu'ils ne soient stockés dans le fichier. Vous pouvez ignorer ce détail pour l'instant.
+</p></div></div>
+
+</div></div></div>
+
+
+<div style="position: absolute; width: 0px; height: 0px; overflow: hidden; padding: 0px; border: 0px; margin: 0px;"><div id="MathJax_Font_Test" style="position: absolute; visibility: hidden; top: 0px; left: 0px; width: auto; padding: 0px; border: 0px; margin: 0px; white-space: nowrap; text-align: left; text-indent: 0px; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; font-size: 40px; font-weight: normal; font-style: normal; font-family: MathJax_Main, sans-serif;"></div></div></body></html>

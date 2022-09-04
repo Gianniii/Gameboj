@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<!-- saved from url=(0056)https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-03-08 Jeu 12:26 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registres et processeur</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Registres et processeur_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Registres et processeur_files/github.min.css">
+<script src="./Registres et processeur_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+<script type="text/x-mathjax-config;executed=true">
+    MathJax.Hub.Config({
+        displayAlign: "center",
+        displayIndent: "0em",
+
+        "HTML-CSS": { scale: 100,
+                        linebreaks: { automatic: "false" },
+                        webFont: "TeX"
+                       },
+        SVG: {scale: 100,
+              linebreaks: { automatic: "false" },
+              font: "TeX"},
+        NativeMML: {scale: 100},
+        TeX: { equationNumbers: {autoNumber: "AMS"},
+               MultLineWidth: "85%",
+               TagSide: "right",
+               TagIndent: ".8em"
+             }
+});
+</script>
+<script type="text/javascript" src="./Registres et processeur_files/MathJax.js.download"></script>
+<style type="text/css">.MathJax_Hover_Frame {border-radius: .25em; -webkit-border-radius: .25em; -moz-border-radius: .25em; -khtml-border-radius: .25em; box-shadow: 0px 0px 15px #83A; -webkit-box-shadow: 0px 0px 15px #83A; -moz-box-shadow: 0px 0px 15px #83A; -khtml-box-shadow: 0px 0px 15px #83A; border: 1px solid #A6D ! important; display: inline-block; position: absolute}
+.MathJax_Menu_Button .MathJax_Hover_Arrow {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 4px; -webkit-border-radius: 4px; -moz-border-radius: 4px; -khtml-border-radius: 4px; font-family: 'Courier New',Courier; font-size: 9px; color: #F0F0F0}
+.MathJax_Menu_Button .MathJax_Hover_Arrow span {display: block; background-color: #AAA; border: 1px solid; border-radius: 3px; line-height: 0; padding: 4px}
+.MathJax_Hover_Arrow:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_Hover_Arrow:hover span {background-color: #CCC!important}
+</style><style type="text/css">#MathJax_About {position: fixed; left: 50%; width: auto; text-align: center; border: 3px outset; padding: 1em 2em; background-color: #DDDDDD; color: black; cursor: default; font-family: message-box; font-size: 120%; font-style: normal; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; z-index: 201; border-radius: 15px; -webkit-border-radius: 15px; -moz-border-radius: 15px; -khtml-border-radius: 15px; box-shadow: 0px 10px 20px #808080; -webkit-box-shadow: 0px 10px 20px #808080; -moz-box-shadow: 0px 10px 20px #808080; -khtml-box-shadow: 0px 10px 20px #808080; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+#MathJax_About.MathJax_MousePost {outline: none}
+.MathJax_Menu {position: absolute; background-color: white; color: black; width: auto; padding: 2px; border: 1px solid #CCCCCC; margin: 0; cursor: default; font: menu; text-align: left; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; z-index: 201; box-shadow: 0px 10px 20px #808080; -webkit-box-shadow: 0px 10px 20px #808080; -moz-box-shadow: 0px 10px 20px #808080; -khtml-box-shadow: 0px 10px 20px #808080; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+.MathJax_MenuItem {padding: 2px 2em; background: transparent}
+.MathJax_MenuArrow {position: absolute; right: .5em; padding-top: .25em; color: #666666; font-size: .75em}
+.MathJax_MenuActive .MathJax_MenuArrow {color: white}
+.MathJax_MenuArrow.RTL {left: .5em; right: auto}
+.MathJax_MenuCheck {position: absolute; left: .7em}
+.MathJax_MenuCheck.RTL {right: .7em; left: auto}
+.MathJax_MenuRadioCheck {position: absolute; left: 1em}
+.MathJax_MenuRadioCheck.RTL {right: 1em; left: auto}
+.MathJax_MenuLabel {padding: 2px 2em 4px 1.33em; font-style: italic}
+.MathJax_MenuRule {border-top: 1px solid #CCCCCC; margin: 4px 1px 0px}
+.MathJax_MenuDisabled {color: GrayText}
+.MathJax_MenuActive {background-color: Highlight; color: HighlightText}
+.MathJax_MenuDisabled:focus, .MathJax_MenuLabel:focus {background-color: #E8E8E8}
+.MathJax_ContextMenu:focus {outline: none}
+.MathJax_ContextMenu .MathJax_MenuItem:focus {outline: none}
+#MathJax_AboutClose {top: .2em; right: .2em}
+.MathJax_Menu .MathJax_MenuClose {top: -10px; left: -10px}
+.MathJax_MenuClose {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 18px; -webkit-border-radius: 18px; -moz-border-radius: 18px; -khtml-border-radius: 18px; font-family: 'Courier New',Courier; font-size: 24px; color: #F0F0F0}
+.MathJax_MenuClose span {display: block; background-color: #AAA; border: 1.5px solid; border-radius: 18px; -webkit-border-radius: 18px; -moz-border-radius: 18px; -khtml-border-radius: 18px; line-height: 0; padding: 8px 0 6px}
+.MathJax_MenuClose:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_MenuClose:hover span {background-color: #CCC!important}
+.MathJax_MenuClose:hover:focus {outline: none}
+</style><style type="text/css">.MathJax_Preview .MJXf-math {color: inherit!important}
+</style><style type="text/css">.MJX_Assistive_MathML {position: absolute!important; top: 0; left: 0; clip: rect(1px, 1px, 1px, 1px); padding: 1px 0 0 0!important; border: 0!important; height: 1px!important; width: 1px!important; overflow: hidden!important; display: block!important; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none}
+.MJX_Assistive_MathML.MJX_Assistive_MathML_Block {width: 100%!important}
+</style><style type="text/css">#MathJax_Zoom {position: absolute; background-color: #F0F0F0; overflow: auto; display: block; z-index: 301; padding: .5em; border: 1px solid black; margin: 0; font-weight: normal; font-style: normal; text-align: left; text-indent: 0; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; -webkit-box-sizing: content-box; -moz-box-sizing: content-box; box-sizing: content-box; box-shadow: 5px 5px 15px #AAAAAA; -webkit-box-shadow: 5px 5px 15px #AAAAAA; -moz-box-shadow: 5px 5px 15px #AAAAAA; -khtml-box-shadow: 5px 5px 15px #AAAAAA; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}
+#MathJax_ZoomOverlay {position: absolute; left: 0; top: 0; z-index: 300; display: inline-block; width: 100%; height: 100%; border: 0; padding: 0; margin: 0; background-color: white; opacity: 0; filter: alpha(opacity=0)}
+#MathJax_ZoomFrame {position: relative; display: inline-block; height: 0; width: 0}
+#MathJax_ZoomEventTrap {position: absolute; left: 0; top: 0; z-index: 302; display: inline-block; border: 0; padding: 0; margin: 0; background-color: white; opacity: 0; filter: alpha(opacity=0)}
+</style><style type="text/css">.MathJax_Preview {color: #888}
+#MathJax_Message {position: fixed; left: 1em; bottom: 1.5em; background-color: #E6E6E6; border: 1px solid #959595; margin: 0px; padding: 2px 8px; z-index: 102; color: black; font-size: 80%; width: auto; white-space: nowrap}
+#MathJax_MSIE_Frame {position: absolute; top: 0; left: 0; width: 0px; z-index: 101; border: 0px; margin: 0px; padding: 0px}
+.MathJax_Error {color: #CC0000; font-style: italic}
+</style><style type="text/css">.MJXp-script {font-size: .8em}
+.MJXp-right {-webkit-transform-origin: right; -moz-transform-origin: right; -ms-transform-origin: right; -o-transform-origin: right; transform-origin: right}
+.MJXp-bold {font-weight: bold}
+.MJXp-italic {font-style: italic}
+.MJXp-scr {font-family: MathJax_Script,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-frak {font-family: MathJax_Fraktur,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-sf {font-family: MathJax_SansSerif,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-cal {font-family: MathJax_Caligraphic,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-mono {font-family: MathJax_Typewriter,'Times New Roman',Times,STIXGeneral,serif}
+.MJXp-largeop {font-size: 150%}
+.MJXp-largeop.MJXp-int {vertical-align: -.2em}
+.MJXp-math {display: inline-block; line-height: 1.2; text-indent: 0; font-family: 'Times New Roman',Times,STIXGeneral,serif; white-space: nowrap; border-collapse: collapse}
+.MJXp-display {display: block; text-align: center; margin: 1em 0}
+.MJXp-math span {display: inline-block}
+.MJXp-box {display: block!important; text-align: center}
+.MJXp-box:after {content: " "}
+.MJXp-rule {display: block!important; margin-top: .1em}
+.MJXp-char {display: block!important}
+.MJXp-mo {margin: 0 .15em}
+.MJXp-mfrac {margin: 0 .125em; vertical-align: .25em}
+.MJXp-denom {display: inline-table!important; width: 100%}
+.MJXp-denom > * {display: table-row!important}
+.MJXp-surd {vertical-align: top}
+.MJXp-surd > * {display: block!important}
+.MJXp-script-box > *  {display: table!important; height: 50%}
+.MJXp-script-box > * > * {display: table-cell!important; vertical-align: top}
+.MJXp-script-box > *:last-child > * {vertical-align: bottom}
+.MJXp-script-box > * > * > * {display: block!important}
+.MJXp-mphantom {visibility: hidden}
+.MJXp-munderover {display: inline-table!important}
+.MJXp-over {display: inline-block!important; text-align: center}
+.MJXp-over > * {display: block!important}
+.MJXp-munderover > * {display: table-row!important}
+.MJXp-mtable {vertical-align: .25em; margin: 0 .125em}
+.MJXp-mtable > * {display: inline-table!important; vertical-align: middle}
+.MJXp-mtr {display: table-row!important}
+.MJXp-mtd {display: table-cell!important; text-align: center; padding: .5em 0 0 .5em}
+.MJXp-mtr > .MJXp-mtd:first-child {padding-left: 0}
+.MJXp-mtr:first-child > .MJXp-mtd {padding-top: 0}
+.MJXp-mlabeledtr {display: table-row!important}
+.MJXp-mlabeledtr > .MJXp-mtd:first-child {padding-left: 0}
+.MJXp-mlabeledtr:first-child > .MJXp-mtd {padding-top: 0}
+.MJXp-merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 1px 3px; font-style: normal; font-size: 90%}
+.MJXp-scale0 {-webkit-transform: scaleX(.0); -moz-transform: scaleX(.0); -ms-transform: scaleX(.0); -o-transform: scaleX(.0); transform: scaleX(.0)}
+.MJXp-scale1 {-webkit-transform: scaleX(.1); -moz-transform: scaleX(.1); -ms-transform: scaleX(.1); -o-transform: scaleX(.1); transform: scaleX(.1)}
+.MJXp-scale2 {-webkit-transform: scaleX(.2); -moz-transform: scaleX(.2); -ms-transform: scaleX(.2); -o-transform: scaleX(.2); transform: scaleX(.2)}
+.MJXp-scale3 {-webkit-transform: scaleX(.3); -moz-transform: scaleX(.3); -ms-transform: scaleX(.3); -o-transform: scaleX(.3); transform: scaleX(.3)}
+.MJXp-scale4 {-webkit-transform: scaleX(.4); -moz-transform: scaleX(.4); -ms-transform: scaleX(.4); -o-transform: scaleX(.4); transform: scaleX(.4)}
+.MJXp-scale5 {-webkit-transform: scaleX(.5); -moz-transform: scaleX(.5); -ms-transform: scaleX(.5); -o-transform: scaleX(.5); transform: scaleX(.5)}
+.MJXp-scale6 {-webkit-transform: scaleX(.6); -moz-transform: scaleX(.6); -ms-transform: scaleX(.6); -o-transform: scaleX(.6); transform: scaleX(.6)}
+.MJXp-scale7 {-webkit-transform: scaleX(.7); -moz-transform: scaleX(.7); -ms-transform: scaleX(.7); -o-transform: scaleX(.7); transform: scaleX(.7)}
+.MJXp-scale8 {-webkit-transform: scaleX(.8); -moz-transform: scaleX(.8); -ms-transform: scaleX(.8); -o-transform: scaleX(.8); transform: scaleX(.8)}
+.MJXp-scale9 {-webkit-transform: scaleX(.9); -moz-transform: scaleX(.9); -ms-transform: scaleX(.9); -o-transform: scaleX(.9); transform: scaleX(.9)}
+.MathJax_PHTML .noError {vertical-align: ; font-size: 90%; text-align: left; color: black; padding: 1px 3px; border: 1px solid}
+</style><style type="text/css">.MathJax_Display {text-align: center; margin: 1em 0em; position: relative; display: block!important; text-indent: 0; max-width: none; max-height: none; min-width: 0; min-height: 0; width: 100%}
+.MathJax .merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 1px 3px; font-style: normal; font-size: 90%}
+.MathJax .MJX-monospace {font-family: monospace}
+.MathJax .MJX-sans-serif {font-family: sans-serif}
+#MathJax_Tooltip {background-color: InfoBackground; color: InfoText; border: 1px solid black; box-shadow: 2px 2px 5px #AAAAAA; -webkit-box-shadow: 2px 2px 5px #AAAAAA; -moz-box-shadow: 2px 2px 5px #AAAAAA; -khtml-box-shadow: 2px 2px 5px #AAAAAA; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true'); padding: 3px 4px; z-index: 401; position: absolute; left: 0; top: 0; width: auto; height: auto; display: none}
+.MathJax {display: inline; font-style: normal; font-weight: normal; line-height: normal; font-size: 100%; font-size-adjust: none; text-indent: 0; text-align: left; text-transform: none; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; direction: ltr; max-width: none; max-height: none; min-width: 0; min-height: 0; border: 0; padding: 0; margin: 0}
+.MathJax:focus, body :focus .MathJax {display: inline-table}
+.MathJax.MathJax_FullWidth {text-align: center; display: table-cell!important; width: 10000em!important}
+.MathJax img, .MathJax nobr, .MathJax a {border: 0; padding: 0; margin: 0; max-width: none; max-height: none; min-width: 0; min-height: 0; vertical-align: 0; line-height: normal; text-decoration: none}
+img.MathJax_strut {border: 0!important; padding: 0!important; margin: 0!important; vertical-align: 0!important}
+.MathJax span {display: inline; position: static; border: 0; padding: 0; margin: 0; vertical-align: 0; line-height: normal; text-decoration: none}
+.MathJax nobr {white-space: nowrap!important}
+.MathJax img {display: inline!important; float: none!important}
+.MathJax * {transition: none; -webkit-transition: none; -moz-transition: none; -ms-transition: none; -o-transition: none}
+.MathJax_Processing {visibility: hidden; position: fixed; width: 0; height: 0; overflow: hidden}
+.MathJax_Processed {display: none!important}
+.MathJax_ExBox {display: block!important; overflow: hidden; width: 1px; height: 60ex; min-height: 0; max-height: none}
+.MathJax .MathJax_EmBox {display: block!important; overflow: hidden; width: 1px; height: 60em; min-height: 0; max-height: none}
+.MathJax_LineBox {display: table!important}
+.MathJax_LineBox span {display: table-cell!important; width: 10000em!important; min-width: 0; max-width: none; padding: 0; border: 0; margin: 0}
+.MathJax .MathJax_HitBox {cursor: text; background: white; opacity: 0; filter: alpha(opacity=0)}
+.MathJax .MathJax_HitBox * {filter: none; opacity: 1; background: transparent}
+#MathJax_Tooltip * {filter: none; opacity: 1; background: transparent}
+@font-face {font-family: MathJax_Main; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Main-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Main-Regular.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Main-bold; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Main-Bold.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Main-Bold.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Main-italic; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Main-Italic.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Main-Italic.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Math-italic; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Math-Italic.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Math-Italic.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Caligraphic; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Caligraphic-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Caligraphic-Regular.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Size1; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Size1-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Size1-Regular.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Size2; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Size2-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Size2-Regular.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Size3; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Size3-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Size3-Regular.otf?V=2.7.2') format('opentype')}
+@font-face {font-family: MathJax_Size4; src: url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/woff/MathJax_Size4-Regular.woff?V=2.7.2') format('woff'), url('https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/fonts/HTML-CSS/TeX/otf/MathJax_Size4-Regular.otf?V=2.7.2') format('opentype')}
+.MathJax .noError {vertical-align: ; font-size: 90%; text-align: left; color: black; padding: 1px 3px; border: 1px solid}
+</style></head>
+<body><div style="visibility: hidden; overflow: hidden; position: absolute; top: 0px; height: 1px; width: auto; padding: 0px; border: 0px; margin: 0px; text-align: left; text-indent: 0px; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal;"><div id="MathJax_Hidden"></div></div><div id="MathJax_Message" style="display: none;"></div>
+<div id="content">
+<h1 class="title">Registres et processeur
+<br>
+<span class="subtitle">GameBoj – Étape 3</span>
+</h1>
+
+<div id="outline-container-orga0bd8b6" class="outline-2">
+<h2 id="orga0bd8b6"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Le but de cette troisième étape est :
+</p>
+
+<ol class="org-ol">
+<li>d'écrire des classes permettant de représenter un groupe de registres, dans lesquels des valeurs peuvent être stockées,</li>
+
+<li>de commencer l'écriture de la classe représentant le processeur du Game Boy, l'une des plus grosses et des plus complexes du projet, qui vous occupera durant plusieurs étapes.</li>
+</ol>
+
+<p>
+Comme d'habitude, quelques explications sur les concepts à modéliser, ici les registres et le processeur, sont données en introduction. Avant cela, il convient toutefois d'examiner la manière dont les composants d'un système électronique sont synchronisés.
+</p>
+</div>
+
+<div id="outline-container-org858da09" class="outline-3">
+<h3 id="org858da09"><span class="section-number-3">1.1</span> Synchronisation des composants</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Les différents composants qui constituent le Game Boy — mémoires, processeurs, écran, etc. — fonctionnent indépendamment mais doivent néanmoins souvent collaborer, par exemple pour s'échanger de l'information via le bus.
+</p>
+
+<p>
+Une manière de faire collaborer ces composants serait de les laisser travailler chacun à leur rythme, et de leur faire utiliser différents protocoles pour communiquer entre eux via le bus. Par exemple, si le processeur désirait lire le contenu de la mémoire à une adresse donnée, il pourrait demander à l'obternir via le bus, puis se mettre en attente jusqu'à l'arrivée de cette donnée, sans savoir combien de temps cela prendrait. Un tel système, dans lequel chaque composant travaille à un rythme qui lui est propre, est dit <b>asynchrone</b>.
+</p>
+
+<p>
+En pratique, et pour des raisons qui ne seront pas décrites ici, il est très difficile de réaliser des systèmes asynchrones. La quasi-totalité des systèmes électroniques actuels, et en particulier des ordinateurs, sont donc des systèmes dit <b>sychrones</b>, dont les composants avancent à un rythme qui est dicté par une <b>horloge</b> (<i>clock</i>) commune.
+</p>
+
+<p>
+Pour comprendre la différence entre ces deux types de systèmes, on peut utiliser l'analogie d'une <a href="https://fr.wikipedia.org/wiki/Gal%C3%A8re_(navire)">galère</a> — un bateau à rames sur lequel chaque rame est actionnée par un rameur différent. Pour faire avancer une telle galère, il faut décider comment organiser le travail des différents rameurs.
+</p>
+
+<p>
+Une première solution est de les faire travailler de manière asynchrone, chacun ramant à son rythme : lent pour certains, rapide pour d'autres. Une galère organisée de la sorte n'avancerait probablement pas très efficacement, en raison des problèmes posés par les différences de rythme.
+</p>
+
+<p>
+Une manière plus efficace d'organiser le travail des rameurs est donc de les synchroniser. Cela peut se faire par exemple en chargeant un membre de l'équipage de frapper à un rythme régulier sur un tambour, et en demandant aux rameurs de plonger leur rame dans l'eau à chaque coup. Leur travail devient alors synchronisé, et la galère avance rapidement — et en ligne droite.
+</p>
+
+<p>
+Un système électronique synchrone fonctionne de la même manière, l'horloge jouant le rôle du tambour. L'horloge d'un système électronique est toutefois beaucoup plus rapide, puisqu'elle bat plusieurs millions, voire plusieurs milliards de fois par seconde. Celle du Game Boy, par exemple, bat à une fréquence de 2<sup>22</sup> Hz, soit un peu plus de 4 MHz — un battement toutes les 240 nano-secondes environ.
+</p>
+
+<p>
+Il faut noter que dans un système réel, <i>tous</i> les composants, mémoires comprises, sont synchronisés par l'horloge. Dans notre simulation des mémoires, nous l'avons ignoré, car il s'agit dans ce cas d'un détail insignifiant. Dans le cas d'autres composants, par exemple du processeur décrit plus bas, il est toutefois capital de correctement simuler cet aspect afin que le système simulé se comporte comme le système réel.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org31e0b3a" class="outline-3">
+<h3 id="org31e0b3a"><span class="section-number-3">1.2</span> Registres</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+De manière générale, un <b>registre</b> (<i>register</i>) est une mémoire capable de stocker un et un seul « entier » de taille fixe. Généralement, cette taille est celle du bus de données du système auquel appartient le registre. Ainsi, sur le Game Boy, la plupart des registres ont une taille de 8 bits.
+</p>
+
+<p>
+Un registre joue un peu le même rôle qu'une variable d'un type entier en Java. Ainsi, un registre (8 bits) du Game Boy est assez similaire à une variable de type <code>byte</code> d'un programme Java, puisque l'un comme l'autre peuvent contenir une, et une seule, valeur de 8 bits. (Selon la même analogie, une mémoire ressemble à un <i>tableau</i> dans un programme Java — comme nous l'avons vu, les mémoires du Game Boy sont similaires à des tableaux Java de type <code>byte[]</code>, puisque les unes comme les autres permettent de stocker un nombre fixe de valeurs de 8 bits.)
+</p>
+
+<p>
+La plupart des composants non triviaux connectés au bus d'un système comme le Game Boy possèdent un ou plusieurs registres qui sont utilisés, en gros, dans trois buts différents — et pas forcément exclusifs :
+</p>
+
+<ol class="org-ol">
+<li>pour stocker des valeurs manipulées par le composant,</li>
+<li>pour stocker des informations relatives à la configuration du composant,</li>
+<li>pour stocker des informations relatives à l'état du composant.</li>
+</ol>
+
+<p>
+Un exemple du premier cas d'utilisation est celui des registres du processeur, dans lesquels sont stockées les valeurs manipulées par le programme exécuté par ce dernier. Ainsi, comme nous le verrons ci-dessous, l'instruction de soustraction permet de soustraire une valeur de la valeur actuellement stockée dans l'un des registres du processeur, nommé <code>A</code>.
+</p>
+
+<p>
+Un exemple du second cas d'utilisation est fourni par un registre du contrôleur LCD<sup><a id="fnr.1" class="footref" href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html#fn.1">1</a></sup> nommé <code>LCDC</code>, et qui permet la configuration de l'écran du Game Boy. Comme nous le verrons plus tard, un des bits de ce registre détermine si l'écran est allumé ou éteint. En changeant la valeur de ce bit, il est donc possible d'allumer ou d'éteindre l'écran, en fonction des besoins du programme.
+</p>
+
+<p>
+Finalement, un exemple du troisième cas d'utilisation est fourni par un autre registre du contrôleur LCD nommé <code>LY</code>. Ce registre contient le numéro de la ligne de l'écran actuellement en cours de dessin. En lisant la valeur de ce registre, un programme peut déterminer quelle partie de l'image est en cours d'affichage, ce qui peut être utile pour réaliser certains effets spéciaux, comme nous le verrons plus tard.
+</p>
+</div>
+
+<div id="outline-container-org99642ce" class="outline-4">
+<h4 id="org99642ce"><span class="section-number-4">1.2.1</span> Visibilité des registres</h4>
+<div class="outline-text-4" id="text-1-2-1">
+<p>
+Les registres des différents composants peuvent être soit invisibles, soit visibles aux autres composants.
+</p>
+
+<p>
+Lorsqu'un registre est invisible aux autres composants, seul le composant propriétaire du registre peut y accéder. Cette situation est un peu similaire aux attributs privés d'une classe Java.
+</p>
+
+<p>
+Lorsqu'un registre est visible aux autres composants, son contenu est accessible à travers le bus à une addresse qui lui est réservée, soit en lecture seule, soit en lecture et en écriture. Dans ce cas, on parle de registre « <b>mappé en mémoire</b> » (<i>memory-mapped register</i>).
+</p>
+
+<p>
+Par exemple, sur le Game Boy, le registre <code>A</code> du processeur, mentionné plus haut, est invisible aux autres composants. Dès lors, seul le processeur peut lire et/ou modifier son contenu.
+</p>
+
+<p>
+Par contre, le registre <code>LCDC</code> mentionné plus haut est mappé en mémoire, à l'adresse FF40<sub>16</sub>. Dès lors, il est possible de connaître la configuration actuelle de l'écran LCD en lisant la valeur se trouvant à cette adresse, et de modifier cette configuration — p.ex. pour allumer ou éteindre l'écran — en écrivant à cette adresse.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgd45b3d6" class="outline-4">
+<h4 id="orgd45b3d6"><span class="section-number-4">1.2.2</span> Banc de registres</h4>
+<div class="outline-text-4" id="text-1-2-2">
+<p>
+Plusieurs registres peuvent être groupés en un <b>banc de registres</b> (<i>register file</i>). Par exemple, en plus du registre <code>A</code> déjà mentionné, le processeur du Game Boy possède 7 autres registres similaires (nommés <code>F</code>, <code>B</code>, <code>C</code>, <code>D</code>, <code>E</code>, <code>H</code> et <code>L</code>). Ces 8 registres sont regroupés en un banc.
+</p>
+
+<p>
+Notez que cette notion de banc est assez vague et peut être utilisée pour désigner tout groupe de registres similaires stockés dans un même composant. Lorsqu'un composant est mis en œuvre physiquement, un banc de registres prend généralement la forme d'une petite mémoire contenant les registres côte à côte. De manière similaire, dans ce projet, nous représenterons un banc comme un tableau d'entiers de type <code>byte</code> contenant chacun la valeur d'un des registres du banc.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org484c26b" class="outline-3">
+<h3 id="org484c26b"><span class="section-number-3">1.3</span> Processeur</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+Le <b>processeur</b>, ou <b>unité de calcul centrale</b> (<i>central processing unit</i> ou <i>CPU</i> en anglais), est le composant le plus important d'un ordinateur. Son rôle est d'exécuter le programme qui lui est soumis, et qui est composé d'une séquence d'<b>instructions</b> simples. Ces instructions permettent par exemple d'effectuer des calculs arithmétiques, de communiquer avec d'autres composants via le bus, ou alors de changer le cours de l'exécution du programme en fonction de certaines conditions.
+</p>
+
+<p>
+Assez naturellement, le programme que doit exécuter le processeur est stocké dans l'une des mémoires connectées au bus du système. Schématiquement, le processeur passe donc son temps à :
+</p>
+
+<ol class="org-ol">
+<li>obtenir, via le bus, la prochaine instruction à exécuter,</li>
+<li>exécuter cette instruction, ce qui peut impliquer d'effectuer des calculs au moyen de l'UAL, de lire ou d'écrire des données via le bus, etc.</li>
+<li>recommencer avec l'instruction suivante.</li>
+</ol>
+
+<p>
+Pour savoir où se trouve, en mémoire, l'instruction à exécuter, le processeur stocke son adresse dans un registre interne qui est souvent nommé <b>compteur de programme</b> (<i>program counter</i> ou <i>PC</i>). Ce registre est initialisé à 0 au démarrage du processeur, et il est modifié après chaque instruction pour désigner la prochaine instruction à exécuter. Généralement, cette instruction est simplement celle qui suit, dans la mémoire, celle qui vient d'être exécutée. Cela dit, il existe aussi des instructions dites de <b>saut</b> (<i>jump</i>) qui permettent de rediriger le compteur de programme vers une autre instruction, par exemple dans le but d'effectuer une boucle.
+</p>
+
+<p>
+L'ensemble des instructions offertes par un processeur constituent ce que l'on nomme son <b>jeu d'instructions</b> (<i>instruction set [architecture]</i> ou <i>ISA</i>). Lorsqu'un nouveau processeur est développé, ses concepteurs doivent définir son jeu d'instructions, et choisir l'<b>encodage des instructions</b> (<i>instruction encoding</i>), c-à-d de la manière dont les différentes instructions sont représentées en mémoire, sous forme d'octets. L'encodage des instructions est très important, car il doit être à la fois compact — pour que le programme consomme le moins de mémoire possible — et facile à décoder — pour que le processeur puisse le faire aussi rapidement que possible. La conception d'un jeu d'instruction et de son encodage constituent donc des tâches complexes.
+</p>
+
+<p>
+En plus d'un encodage, les différentes instructions reçoivent toutes un nom court évoquant leur rôle, traditionnellement écrit en majuscules. Par exemple, la plupart des processeurs offrent une instruction d'addition, et elle est généralement nommée <code>ADD</code>. Ces noms d'instructions ne sont bien entendu destinés qu'aux humains, le processeur ne manipulant que des instructions encodées sous la forme d'octets.
+</p>
+
+<p>
+Les noms d'instructions sont à la base du <b>langage assembleur</b> (<i>assembly language</i>), un langage de programmation très simple permettant de programmer directement au moyen des instructions d'un processeur donné. L'assembleur est un langage textuel, beaucoup plus facile à comprendre pour les humains que la suite d'octets composant un programme destiné à un processeur.
+</p>
+
+<p>
+Pour illustrer l'intérêt de l'assembleur, imaginons un processeur équipé d'une instruction d'addition nommée <code>ADD</code>, encodée par un seul octet valant par exemple 7B<sub>16</sub>. Pour écrire un programme ultra-simple composé de deux instructions d'addition, un programmeur pourrait bien entendu écrire directement ces octets :
+</p>
+<pre class="example">7B 7B
+</pre>
+<p>
+mais une solution beaucoup plus agréable serait d'écrire ce programme en utilisant les noms des instructions le composant, ce qui pourrait ressembler à :
+</p>
+<pre class="example">ADD
+ADD
+</pre>
+<p>
+Cette seconde variante du programme est nettement plus facile à écrire et à comprendre. Dès lors, de nos jours, plus personne (ou presque) n'écrit de programmes sous la forme d'une séquence d'octets représentant les instructions encodées.<sup><a id="fnr.2" class="footref" href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html#fn.2">2</a></sup>
+</p>
+
+<p>
+Il faut toutefois noter qu'un programme en langage assembleur n'est pas, tel quel, exécutable par un processeur — celui-ci ne comprend en effet que les instructions encodées sous forme d'octets. Afin d'être exécuté, un programme en langage assembleur doit donc être transformé en une suite d'octets, tâche réalisée par un programme que l'on nomme un <b>assembleur</b> (<i>assembler</i>). Pour l'hypothétique processeur ci-dessus, l'assembleur serait donc capable de transformer la seconde version du programme (<code>ADD ADD</code>) en la première (<code>7B 7B</code>).
+</p>
+
+<p>
+Un exemple de programme assembleur réel, pour le processeur du Game Boy, est donné plus bas.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgf9762a3" class="outline-3">
+<h3 id="orgf9762a3"><span class="section-number-3">1.4</span> Processeur du Game Boy</h3>
+<div class="outline-text-3" id="text-1-4">
+<p>
+Le Game Boy est équipé d'un processeur poétiquement nommé le Sharp LR35902, et qui est une variante du très célèbre <a href="https://fr.wikipedia.org/wiki/Zilog_Z80">Zilog Z80</a>. Les similarités entre les deux processeurs sont grandes, mais ils n'en sont pas moins différents en de nombreux points, p.ex. au niveau du jeu d'instruction ou même des registres à disposition du programmeur.
+</p>
+
+<p>
+Comme tous les autres composants du Game Boy, le processeur est piloté par l'horloge du système dont la fréquence est, nous l'avons vu, d'environ 4 MHz. Toutefois, il se trouve que le processeur nécessite <i>toujours</i> un nombre de battements qui est un multiple de 4 pour exécuter une instruction. Dès lors, nous désignerons par le terme de <b>cycle</b> une durée de 4 battements d'horloge, et toutes les durées manipulées par notre simulateur seront exprimées en cycles. Etant donné qu'il y a 2<sup>22</sup> battements d'horloge par seconde, il y a 2<sup>20</sup> cycles par seconde, et un cycle dure donc un tout petit peu moins d'une micro-seconde.
+</p>
+</div>
+
+<div id="outline-container-orgdf02ffa" class="outline-4">
+<h4 id="orgdf02ffa"><span class="section-number-4">1.4.1</span> Registres</h4>
+<div class="outline-text-4" id="text-1-4-1">
+<p>
+Le processeur du Game Boy possède les registres suivants, qui ne sont <i>pas</i> visibles aux autres composants du système :
+</p>
+
+<ul class="org-ul">
+<li>huit registres 8 bits nommés <code>A</code>, <code>F</code>, <code>B</code>, <code>C</code>, <code>D</code>, <code>E</code>, <code>H</code> et <code>L</code>, à usage (plus ou moins) général,</li>
+<li>un registre 16 bits nommé <code>PC</code>, contenant le compteur de programme,</li>
+<li>un registre 16 bits nommé <code>SP</code>, contenant l'adresse du sommet de la pile (voir plus bas),</li>
+<li>d'autres registres liés à la gestion de ce que l'on nomme les interruptions, et qui seront décrits dans une prochaine étape.</li>
+</ul>
+
+<p>
+Tous ces registres sont initialisés à 0 au démarrage du processeur.
+</p>
+
+<p>
+Les huit registres 8 bits sont arrangés par paires (<code>AF</code>, <code>BC</code>, <code>DE</code> et <code>HL</code>), et certaines instructions permettent de manipuler une telle paire comme un registre 16 bits. Dans un tel cas, le premier registre contient les 8 bits de poids fort de la valeur 16 bits, le second ses 8 bits de poids faible.
+</p>
+
+<p>
+Il faut noter que les registres 8 bits ne sont pas tous équivalents, et deux d'entre eux en particulier ont un rôle bien spécifique :
+</p>
+
+<ul class="org-ul">
+<li><code>A</code>, qui est parfois nommé l'accumulateur (<i>accumulator</i>), est le registre dans lequel le résultat de la plupart des opérations est stocké ; par exemple, comme nous le verrons à l'étape suivante, les instructions permettant de calculer un <i>et</i> logique bit à bit stockent leur résultat dans le registre <code>A</code>,</li>
+
+<li><code>F</code> est le registre contenant les fanions produits par l'UAL, dans ses 4 bits de poids fort (<code>Z</code> est le bit 7, <code>N</code> le bit 6, <code>H</code> le bit 5 et <code>C</code> le bit 4), ses 4 bits de poids faible valant toujours 0.</li>
+</ul>
+
+<p>
+De même, la paire <code>HL</code> joue un rôle spécial car plusieurs instructions utilisent son contenu comme une adresse 16 bits dont les 8 bits de poids fort sont dans <code>H</code>, ceux de poids faibles dans <code>L</code>. C'est d'ailleurs de cet usage que provient le nom des registres : <code>H</code> signifie <i>high</i>, <code>L</code> signifie <i>low</i>.
+</p>
+
+<p>
+Finalement, le registre <code>SP</code> a pour but de toujours contenir une adresse, raison pour laquelle il fait 16 bits et non 8. Cette adresse est celle de ce que l'on nomme le sommet de la <b>pile</b> (<i>stack</i>), et le nom du registre vient de là, <code>SP</code> signifiant <i>stack pointer</i> (pointeur de pile). Le fonctionnement de la pile sera expliqué dans une étape ultérieure, pour l'instant il n'est pas nécessaire de comprendre son but exact.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org4b5e200" class="outline-4">
+<h4 id="org4b5e200"><span class="section-number-4">1.4.2</span> Instructions</h4>
+<div class="outline-text-4" id="text-1-4-2">
+<p>
+Le processeur du Game Boy possède un relativement grand nombre d'instructions, qui seront décrites dans cette étape et les deux suivantes. Ces instructions peuvent être groupées en quatre catégories principales :
+</p>
+
+<ol class="org-ol">
+<li>les instructions de chargement et de stockage, qui permettent de transférer des données entre le bus et les registres du processeur, ou alors entre les registres eux-mêmes,</li>
+
+<li>les instructions arithmétiques et logiques, qui appliquent les opérations de l'UAL à des données de provenances diverses,</li>
+
+<li>les instructions de contrôle, qui permettent de contrôler l'exécution du programme, p.ex. en effectuant un saut ou en appelant une fonction,</li>
+
+<li>les instructions ne faisant partie d'aucune des catégories précédentes.</li>
+</ol>
+
+<p>
+Dans le cadre de cette étape, seules les instructions de la première catégorie seront examinées en détail — et simulées —, les autres le seront dans des étapes ultérieures. Avant de décrire ces instructions, il convient de dire quelques mots concernant leur encodage.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org33a3543" class="outline-4">
+<h4 id="org33a3543"><span class="section-number-4">1.4.3</span> Encodage des instructions</h4>
+<div class="outline-text-4" id="text-1-4-3">
+<p>
+Chaque instruction du processeur du Game Boy est encodée en 1, 2 ou 3 octets. De manière générale, le premier octet permet, à lui seul, de déterminer à quel genre d'instruction on a affaire — p.ex. une addition, ou alors un chargement. Les 1 ou 2 octets suivants éventuellement n'ont que pour but de contenir une valeur de 8 ou 16 bits qui sert de paramètre à l'instruction<sup><a id="fnr.3" class="footref" href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html#fn.3">3</a></sup>.
+</p>
+
+<p>
+Etant donné que le premier octet de l'encodage d'une instruction est celui qui détermine le genre d'opération effectuée par l'instruction, on l'appelle l'<b><i>opcode</i></b> (pour <i>operation code</i>).
+</p>
+
+<p>
+La table ci-dessous illustre quatre exemples d'encodage d'instructions du processeur du Game Boy. Chaque ligne présente une instruction différentes et, pour chacune d'entre elles, la syntaxe assembleur est donnée, suivie de l'encodage et d'une description de son effet sur le processeur. Dans la colonne de gauche, notez que les constantes hexadécimales sont précédées d'un signe dollar (<code>$</code>), qui est l'équivalent assembleur du préfixe <code>0x</code> de Java.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Encodage</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>HALT</code></td>
+<td class="org-left"><code>76</code></td>
+<td class="org-left"><i>arrête le processeur</i></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>DEC B</code></td>
+<td class="org-left"><code>05</code></td>
+<td class="org-left"><code>B = B - 1</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>DEC C</code></td>
+<td class="org-left"><code>0D</code></td>
+<td class="org-left"><code>C = C - 1</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD A, $56</code></td>
+<td class="org-left"><code>3E</code> <code>56</code></td>
+<td class="org-left"><code>A = 0x56</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD BC, $5678</code></td>
+<td class="org-left"><code>01</code> <code>78</code> <code>56</code></td>
+<td class="org-left"><code>BC = 0x5678</code> (<code>B = 0x56</code>, <code>C = 0x78</code>)</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Comme expliqué plus haut, le premier octet de l'encodage de chaque instruction est son <i>opcode</i>, tandis que les éventuels autres constituent un de ses paramètres. Par exemple, à l'avant-dernière ligne, le second octet de l'encodage est <code>56</code>, qui est le paramètre donné à l'instruction <code>LD</code>. La dernière ligne illustre quant à elle une particularité de l'encodage, à savoir que la constante (hexadécimale) 16 bits <code>5678</code> est encodée par les octets <code>78</code> et <code>56</code>, dans cet ordre ! En d'autres termes, l'octet de poids faible est placé <i>avant</i> celui de poids fort.
+</p>
+
+<p>
+Cette manière d'ordonner les octets en mémoire en allant des poids faibles aux poids forts est nommée <b>petit-boutienne</b> (<i>little endian</i> en anglais). La convention inverse, consistant à placer les octets de poids forts d'abord, est dite <b>grand-boutienne</b> (<i>big endian</i>). Des détails sur l'origine de ces termes étranges sont donnés sur <a href="https://fr.wikipedia.org/wiki/Endianness">la page Wikipedia qui leur est consacrée</a>.
+</p>
+
+<p>
+En comparant les lignes 2 et 3 de la table ci-dessus, on constate qu'elles contiennent deux instructions qui sont très similaires, puisque toutes les deux décrémentent le contenu d'un registre — <code>B</code> dans le premier cas, <code>C</code> dans le second. Ces deux instructions ont un <i>opcode</i> différent (<code>05</code> et <code>0D</code> respectivement), mais elles sont clairement liées étant donné que leur effet est semblable. Elles forment ce que nous nommerons une <b>famille</b> d'instructions, c-à-d des instructions d'<i>opcode</i> différent mais de comportement similaire.
+</p>
+
+<p>
+Comme on peut s'y attendre, l'encodage des instructions constituant une famille est construit de manière systématique. Dans le cas de la famille d'instructions <code>DEC</code>, par exemple, l'encodage est le suivant (en binaire) :
+</p>
+<pre class="example">00rrr101
+</pre>
+<p>
+où <code>rrr</code> représente les 3 bits qui déterminent le registre à décrémenter, et dont la signification est donnée par la table ci-dessous :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><code>rrr</code></th>
+<th scope="col" class="org-left">Registre</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>000</code></td>
+<td class="org-left"><code>B</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>001</code></td>
+<td class="org-left"><code>C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>010</code></td>
+<td class="org-left"><code>D</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>011</code></td>
+<td class="org-left"><code>E</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>100</code></td>
+<td class="org-left"><code>H</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>101</code></td>
+<td class="org-left"><code>L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>110</code></td>
+<td class="org-left"><i>aucun</i></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>111</code></td>
+<td class="org-left"><code>A</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Ainsi, <code>DEC B</code> s'encode en binaire comme <code>00000101</code> (05<sub>16</sub>) et <code>DEC C</code> s'encode en binaire comme <code>00001101</code> (0D<sub>16</sub>). Plusieurs autres familles d'instructions utilisent le même encodage des registres pour spécifier l'un de leurs arguments. Par exemple, la famille permettant d'additionner au contenu du registre <code>A</code> le contenu d'un autre registre est encodée ainsi :
+</p>
+<pre class="example">10000rrr
+</pre>
+<p>
+Il s'ensuit que l'instruction <code>ADD A,B</code> s'encode <code>10000000</code> en binaire (80<sub>16</sub>).
+</p>
+
+<p>
+Certaines familles d'instructions décrites plus bas travaillent sur les <i>paires</i> de registres, et chaque paire est encodée au moyen de <i>deux</i> bits dans l'opcode de l'instruction. L'encodage utilisé est le suivant :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><code>rr</code></th>
+<th scope="col" class="org-left">Paire</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>00</code></td>
+<td class="org-left"><code>BC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>01</code></td>
+<td class="org-left"><code>DE</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>10</code></td>
+<td class="org-left"><code>HL</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>11</code></td>
+<td class="org-left"><code>AF</code> (<code>SP</code> dans certains cas)</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Comme la dernière ligne le montre, les deux bits <code>11</code> sont soit utilisés pour désigner la paire <code>AF</code>, soit pour désigner le registre 16 bits <code>SP</code>, en fonction des instructions.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org53bdd32" class="outline-4">
+<h4 id="org53bdd32"><span class="section-number-4">1.4.4</span> Exemple de programme</h4>
+<div class="outline-text-4" id="text-1-4-4">
+<p>
+Pour donner une idée du jeu d'instructions du processeur du Game Boy, voyons comment écrire un petit programme permettant de calculer <span class="MathJax_Preview" style="color: inherit; display: none;"></span><span class="MathJax" id="MathJax-Element-1-Frame" tabindex="0" style="position: relative;" data-mathml="&lt;math xmlns=&quot;http://www.w3.org/1998/Math/MathML&quot;&gt;&lt;msub&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;/mrow&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mn class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;11&lt;/mn&gt;&lt;/mrow&gt;&lt;/msub&gt;&lt;/math&gt;" role="presentation"><nobr aria-hidden="true"><span class="math" id="MathJax-Span-1" style="width: 1.847em; display: inline-block;"><span style="display: inline-block; position: relative; width: 1.488em; height: 0px; font-size: 122%;"><span style="position: absolute; clip: rect(1.386em, 1001.49em, 2.513em, -999.997em); top: -2.2em; left: 0em;"><span class="mrow" id="MathJax-Span-2"><span class="msubsup" id="MathJax-Span-3"><span style="display: inline-block; position: relative; width: 1.488em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="texatom" id="MathJax-Span-4"><span class="mrow" id="MathJax-Span-5"><span class="mi" id="MathJax-Span-6" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="texatom" id="MathJax-Span-7"><span class="mrow" id="MathJax-Span-8"><span class="mn" id="MathJax-Span-9" style="font-size: 70.7%; font-family: MathJax_Caligraphic;">11</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.205em;"></span></span></span><span style="display: inline-block; overflow: hidden; vertical-align: -0.247em; border-left: 0px solid; width: 0px; height: 1.128em;"></span></span></nobr><span class="MJX_Assistive_MathML" role="presentation"><math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi></mrow><mrow class="MJX-TeXAtom-ORD"><mn class="MJX-tex-caligraphic" mathvariant="script">11</mn></mrow></msub></math></span></span><script type="math/tex" id="MathJax-Element-1">\cal{F}_{11}</script>, le douzième terme de la fameuse <a href="https://fr.wikipedia.org/wiki/Suite_de_Fibonacci">suite de Fibonacci</a>. Pour mémoire, cette suite est définie ainsi :
+</p>
+
+<span class="MathJax_Preview" style="color: inherit; display: none;"></span><div class="MathJax_Display" style="text-align: center;"><span class="MathJax" id="MathJax-Element-2-Frame" tabindex="0" style="text-align: center; position: relative;" data-mathml="&lt;math xmlns=&quot;http://www.w3.org/1998/Math/MathML&quot; display=&quot;block&quot;&gt;&lt;mtable columnalign=&quot;right left right left right left right left right left right left&quot; rowspacing=&quot;3pt&quot; columnspacing=&quot;0em 2em 0em 2em 0em 2em 0em 2em 0em 2em 0em&quot; minlabelspacing=&quot;.8em&quot; displaystyle=&quot;true&quot;&gt;&lt;mtr&gt;&lt;mtd&gt;&lt;msub&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;/mrow&gt;&lt;mn class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;0&lt;/mn&gt;&lt;/msub&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mi&gt;&lt;/mi&gt;&lt;mo&gt;=&lt;/mo&gt;&lt;mn&gt;0&lt;/mn&gt;&lt;/mtd&gt;&lt;/mtr&gt;&lt;mtr&gt;&lt;mtd&gt;&lt;msub&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;/mrow&gt;&lt;mn class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;1&lt;/mn&gt;&lt;/msub&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mi&gt;&lt;/mi&gt;&lt;mo&gt;=&lt;/mo&gt;&lt;mn&gt;1&lt;/mn&gt;&lt;/mtd&gt;&lt;/mtr&gt;&lt;mtr&gt;&lt;mtd&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;msub&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;n&lt;/mi&gt;&lt;/msub&gt;&lt;/mrow&gt;&lt;/mtd&gt;&lt;mtd&gt;&lt;mi&gt;&lt;/mi&gt;&lt;mo&gt;=&lt;/mo&gt;&lt;msub&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;/mrow&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;n&lt;/mi&gt;&lt;mo class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;&amp;#x2212;&lt;/mo&gt;&lt;mn class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;2&lt;/mn&gt;&lt;/mrow&gt;&lt;/msub&gt;&lt;mo class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;+&lt;/mo&gt;&lt;msub&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;/mrow&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;n&lt;/mi&gt;&lt;mo class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;&amp;#x2212;&lt;/mo&gt;&lt;mn class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;1&lt;/mn&gt;&lt;/mrow&gt;&lt;/msub&gt;&lt;mtext class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;&amp;#xA0;&lt;/mtext&gt;&lt;mtext class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;&amp;#xA0;&lt;/mtext&gt;&lt;mo class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot; stretchy=&quot;false&quot;&gt;(&lt;/mo&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;n&lt;/mi&gt;&lt;mo&gt;&amp;#x2265;&lt;/mo&gt;&lt;mn class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;2&lt;/mn&gt;&lt;mo class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot; stretchy=&quot;false&quot;&gt;)&lt;/mo&gt;&lt;/mtd&gt;&lt;/mtr&gt;&lt;/mtable&gt;&lt;/math&gt;" role="presentation"><nobr aria-hidden="true"><span class="math" id="MathJax-Span-10" style="width: 14.603em; display: inline-block;"><span style="display: inline-block; position: relative; width: 11.939em; height: 0px; font-size: 122%;"><span style="position: absolute; clip: rect(-0.049em, 1011.68em, 3.947em, -999.997em); top: -2.2em; left: 0em;"><span class="mrow" id="MathJax-Span-11"><span class="mtable" id="MathJax-Span-12" style="padding-right: 0.156em; padding-left: 0.156em;"><span style="display: inline-block; position: relative; width: 11.632em; height: 0px;"><span style="position: absolute; clip: rect(2.359em, 1001.23em, 6.099em, -999.997em); top: -4.454em; left: 0em;"><span style="display: inline-block; position: relative; width: 1.232em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1001.13em, 4.306em, -999.997em); top: -5.274em; right: 0em;"><span class="mtd" id="MathJax-Span-13"><span class="mrow" id="MathJax-Span-14"><span class="msubsup" id="MathJax-Span-15"><span style="display: inline-block; position: relative; width: 1.13em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="texatom" id="MathJax-Span-16"><span class="mrow" id="MathJax-Span-17"><span class="mi" id="MathJax-Span-18" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="mn" id="MathJax-Span-19" style="font-size: 70.7%; font-family: MathJax_Caligraphic;">0</span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.179em, 1001.13em, 4.306em, -999.997em); top: -3.993em; right: 0em;"><span class="mtd" id="MathJax-Span-25"><span class="mrow" id="MathJax-Span-26"><span class="msubsup" id="MathJax-Span-27"><span style="display: inline-block; position: relative; width: 1.13em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="texatom" id="MathJax-Span-28"><span class="mrow" id="MathJax-Span-29"><span class="mi" id="MathJax-Span-30" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="mn" id="MathJax-Span-31" style="font-size: 70.7%; font-family: MathJax_Caligraphic;">1</span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.179em, 1001.23em, 4.306em, -999.997em); top: -2.661em; right: 0em;"><span class="mtd" id="MathJax-Span-37"><span class="mrow" id="MathJax-Span-38"><span class="texatom" id="MathJax-Span-39"><span class="mrow" id="MathJax-Span-40"><span class="msubsup" id="MathJax-Span-41"><span style="display: inline-block; position: relative; width: 1.232em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="mi" id="MathJax-Span-42" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="mi" id="MathJax-Span-43" style="font-size: 70.7%; font-family: MathJax_Math-italic;">n</span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span><span style="display: inline-block; width: 0px; height: 4.46em;"></span></span><span style="position: absolute; clip: rect(2.41em, 1010.3em, 6.253em, -999.997em); top: -4.506em; left: 1.232em;"><span style="display: inline-block; position: relative; width: 10.402em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1001.74em, 4.152em, -999.997em); top: -5.274em; left: 0em;"><span class="mtd" id="MathJax-Span-20"><span class="mrow" id="MathJax-Span-21"><span class="mi" id="MathJax-Span-22"></span><span class="mo" id="MathJax-Span-23" style="font-family: MathJax_Main; padding-left: 0.259em;">=</span><span class="mn" id="MathJax-Span-24" style="font-family: MathJax_Main; padding-left: 0.259em;">0</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.179em, 1001.74em, 4.152em, -999.997em); top: -3.993em; left: 0em;"><span class="mtd" id="MathJax-Span-32"><span class="mrow" id="MathJax-Span-33"><span class="mi" id="MathJax-Span-34"></span><span class="mo" id="MathJax-Span-35" style="font-family: MathJax_Main; padding-left: 0.259em;">=</span><span class="mn" id="MathJax-Span-36" style="font-family: MathJax_Main; padding-left: 0.259em;">1</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; clip: rect(3.076em, 1010.3em, 4.408em, -999.997em); top: -2.661em; left: 0em;"><span class="mtd" id="MathJax-Span-44"><span class="mrow" id="MathJax-Span-45"><span class="mi" id="MathJax-Span-46"></span><span class="mo" id="MathJax-Span-47" style="font-family: MathJax_Main; padding-left: 0.259em;">=</span><span class="msubsup" id="MathJax-Span-48" style="padding-left: 0.259em;"><span style="display: inline-block; position: relative; width: 2.103em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="texatom" id="MathJax-Span-49"><span class="mrow" id="MathJax-Span-50"><span class="mi" id="MathJax-Span-51" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="texatom" id="MathJax-Span-52"><span class="mrow" id="MathJax-Span-53"><span class="mi" id="MathJax-Span-54" style="font-size: 70.7%; font-family: MathJax_Math-italic;">n</span><span class="mo" id="MathJax-Span-55" style="font-size: 70.7%; font-family: MathJax_Main;">−</span><span class="mn" id="MathJax-Span-56" style="font-size: 70.7%; font-family: MathJax_Caligraphic;">2</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span><span class="mo" id="MathJax-Span-57" style="font-family: MathJax_Main; padding-left: 0.207em;">+</span><span class="msubsup" id="MathJax-Span-58" style="padding-left: 0.207em;"><span style="display: inline-block; position: relative; width: 2.103em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="texatom" id="MathJax-Span-59"><span class="mrow" id="MathJax-Span-60"><span class="mi" id="MathJax-Span-61" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="texatom" id="MathJax-Span-62"><span class="mrow" id="MathJax-Span-63"><span class="mi" id="MathJax-Span-64" style="font-size: 70.7%; font-family: MathJax_Math-italic;">n</span><span class="mo" id="MathJax-Span-65" style="font-size: 70.7%; font-family: MathJax_Main;">−</span><span class="mn" id="MathJax-Span-66" style="font-size: 70.7%; font-family: MathJax_Caligraphic;">1</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span><span class="mtext" id="MathJax-Span-67" style="font-family: MathJax_Caligraphic;">&nbsp;</span><span class="mtext" id="MathJax-Span-68" style="font-family: MathJax_Caligraphic;">&nbsp;</span><span class="mo" id="MathJax-Span-69" style="font-family: MathJax_Main;">(</span><span class="mi" id="MathJax-Span-70" style="font-family: MathJax_Math-italic;">n</span><span class="mo" id="MathJax-Span-71" style="font-family: MathJax_Main; padding-left: 0.259em;">≥</span><span class="mn" id="MathJax-Span-72" style="font-family: MathJax_Caligraphic; padding-left: 0.259em;">2</span><span class="mo" id="MathJax-Span-73" style="font-family: MathJax_Main;">)</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span><span style="display: inline-block; width: 0px; height: 4.511em;"></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.205em;"></span></span></span><span style="display: inline-block; overflow: hidden; vertical-align: -1.997em; border-left: 0px solid; width: 0px; height: 4.566em;"></span></span></nobr><span class="MJX_Assistive_MathML MJX_Assistive_MathML_Block" role="presentation"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mtable columnalign="right left right left right left right left right left right left" rowspacing="3pt" columnspacing="0em 2em 0em 2em 0em 2em 0em 2em 0em 2em 0em" minlabelspacing=".8em" displaystyle="true"><mtr><mtd><msub><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi></mrow><mn class="MJX-tex-caligraphic" mathvariant="script">0</mn></msub></mtd><mtd><mi></mi><mo>=</mo><mn>0</mn></mtd></mtr><mtr><mtd><msub><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi></mrow><mn class="MJX-tex-caligraphic" mathvariant="script">1</mn></msub></mtd><mtd><mi></mi><mo>=</mo><mn>1</mn></mtd></mtr><mtr><mtd><mrow class="MJX-TeXAtom-ORD"><msub><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi><mi class="MJX-tex-caligraphic" mathvariant="script">n</mi></msub></mrow></mtd><mtd><mi></mi><mo>=</mo><msub><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi></mrow><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">n</mi><mo class="MJX-tex-caligraphic" mathvariant="script">−</mo><mn class="MJX-tex-caligraphic" mathvariant="script">2</mn></mrow></msub><mo class="MJX-tex-caligraphic" mathvariant="script">+</mo><msub><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi></mrow><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">n</mi><mo class="MJX-tex-caligraphic" mathvariant="script">−</mo><mn class="MJX-tex-caligraphic" mathvariant="script">1</mn></mrow></msub><mtext class="MJX-tex-caligraphic" mathvariant="script">&nbsp;</mtext><mtext class="MJX-tex-caligraphic" mathvariant="script">&nbsp;</mtext><mo class="MJX-tex-caligraphic" mathvariant="script" stretchy="false">(</mo><mi class="MJX-tex-caligraphic" mathvariant="script">n</mi><mo>≥</mo><mn class="MJX-tex-caligraphic" mathvariant="script">2</mn><mo class="MJX-tex-caligraphic" mathvariant="script" stretchy="false">)</mo></mtd></mtr></mtable></math></span></span></div><script type="math/tex; mode=display" id="MathJax-Element-2">\begin{align*}
+\cal{F}_0 &= 0\\
+\cal{F}_1 &= 1\\
+\cal{F_n} &= \cal{F}_{n-2} + \cal{F}_{n-1}\ \ (n \ge 2)
+\end{align*}</script>
+
+<p>
+et ses 12 premiers termes sont :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><span class="MathJax_Preview" style="color: inherit; display: none;"></span><span class="MathJax" id="MathJax-Element-3-Frame" tabindex="0" style="position: relative;" data-mathml="&lt;math xmlns=&quot;http://www.w3.org/1998/Math/MathML&quot;&gt;&lt;mi&gt;n&lt;/mi&gt;&lt;/math&gt;" role="presentation"><nobr aria-hidden="true"><span class="math" id="MathJax-Span-74" style="width: 0.765em; display: inline-block;"><span style="display: inline-block; position: relative; width: 0.612em; height: 0px; font-size: 123%;"><span style="position: absolute; clip: rect(1.578em, 1000.61em, 2.34em, -999.997em); top: -2.182em; left: 0em;"><span class="mrow" id="MathJax-Span-75"><span class="mi" id="MathJax-Span-76" style="font-family: MathJax_Math-italic;">n</span></span><span style="display: inline-block; width: 0px; height: 2.188em;"></span></span></span><span style="display: inline-block; overflow: hidden; vertical-align: -0.059em; border-left: 0px solid; width: 0px; height: 0.691em;"></span></span></nobr><span class="MJX_Assistive_MathML" role="presentation"><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>n</mi></math></span></span><script type="math/tex" id="MathJax-Element-3">n</script></th>
+<th scope="col" class="org-right">0</th>
+<th scope="col" class="org-right">1</th>
+<th scope="col" class="org-right">2</th>
+<th scope="col" class="org-right">3</th>
+<th scope="col" class="org-right">4</th>
+<th scope="col" class="org-right">5</th>
+<th scope="col" class="org-right">6</th>
+<th scope="col" class="org-right">7</th>
+<th scope="col" class="org-right">8</th>
+<th scope="col" class="org-right">9</th>
+<th scope="col" class="org-right">10</th>
+<th scope="col" class="org-right">11</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><span class="MathJax_Preview" style="color: inherit; display: none;"></span><span class="MathJax" id="MathJax-Element-4-Frame" tabindex="0" style="position: relative;" data-mathml="&lt;math xmlns=&quot;http://www.w3.org/1998/Math/MathML&quot;&gt;&lt;msub&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;/mrow&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;n&lt;/mi&gt;&lt;/msub&gt;&lt;/math&gt;" role="presentation"><nobr aria-hidden="true"><span class="math" id="MathJax-Span-77" style="width: 1.539em; display: inline-block;"><span style="display: inline-block; position: relative; width: 1.232em; height: 0px; font-size: 122%;"><span style="position: absolute; clip: rect(1.386em, 1001.23em, 2.513em, -999.997em); top: -2.2em; left: 0em;"><span class="mrow" id="MathJax-Span-78"><span class="msubsup" id="MathJax-Span-79"><span style="display: inline-block; position: relative; width: 1.232em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="texatom" id="MathJax-Span-80"><span class="mrow" id="MathJax-Span-81"><span class="mi" id="MathJax-Span-82" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="mi" id="MathJax-Span-83" style="font-size: 70.7%; font-family: MathJax_Math-italic;">n</span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.205em;"></span></span></span><span style="display: inline-block; overflow: hidden; vertical-align: -0.247em; border-left: 0px solid; width: 0px; height: 1.128em;"></span></span></nobr><span class="MJX_Assistive_MathML" role="presentation"><math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi></mrow><mi class="MJX-tex-caligraphic" mathvariant="script">n</mi></msub></math></span></span><script type="math/tex" id="MathJax-Element-4">\cal{F}_n</script></td>
+<td class="org-right">0</td>
+<td class="org-right">1</td>
+<td class="org-right">1</td>
+<td class="org-right">2</td>
+<td class="org-right">3</td>
+<td class="org-right">5</td>
+<td class="org-right">8</td>
+<td class="org-right">13</td>
+<td class="org-right">21</td>
+<td class="org-right">34</td>
+<td class="org-right">55</td>
+<td class="org-right">89</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Un programme Java permettant de calculer et d'afficher le douzième terme est donné ci-dessous. Notez qu'il est écrit dans un style étrange, avec des variables portant des noms peu évocateurs. Ceci est volontaire, et a pour but de faciliter la comparaison avec le programme Game Boy plus bas. Vous ne devriez toutefois pas avoir trop de peine à le comprendre en notant que, au début de la boucle, la variable <code>b</code> contient <span class="MathJax_Preview" style="color: inherit; display: none;"></span><span class="MathJax" id="MathJax-Element-5-Frame" tabindex="0" style="position: relative;" data-mathml="&lt;math xmlns=&quot;http://www.w3.org/1998/Math/MathML&quot;&gt;&lt;msub&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;/mrow&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;n&lt;/mi&gt;&lt;mo class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;&amp;#x2212;&lt;/mo&gt;&lt;mn class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;2&lt;/mn&gt;&lt;/mrow&gt;&lt;/msub&gt;&lt;/math&gt;" role="presentation"><nobr aria-hidden="true"><span class="math" id="MathJax-Span-84" style="width: 2.564em; display: inline-block;"><span style="display: inline-block; position: relative; width: 2.103em; height: 0px; font-size: 122%;"><span style="position: absolute; clip: rect(1.386em, 1002.1em, 2.564em, -999.997em); top: -2.2em; left: 0em;"><span class="mrow" id="MathJax-Span-85"><span class="msubsup" id="MathJax-Span-86"><span style="display: inline-block; position: relative; width: 2.103em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="texatom" id="MathJax-Span-87"><span class="mrow" id="MathJax-Span-88"><span class="mi" id="MathJax-Span-89" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="texatom" id="MathJax-Span-90"><span class="mrow" id="MathJax-Span-91"><span class="mi" id="MathJax-Span-92" style="font-size: 70.7%; font-family: MathJax_Math-italic;">n</span><span class="mo" id="MathJax-Span-93" style="font-size: 70.7%; font-family: MathJax_Main;">−</span><span class="mn" id="MathJax-Span-94" style="font-size: 70.7%; font-family: MathJax_Caligraphic;">2</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.205em;"></span></span></span><span style="display: inline-block; overflow: hidden; vertical-align: -0.309em; border-left: 0px solid; width: 0px; height: 1.191em;"></span></span></nobr><span class="MJX_Assistive_MathML" role="presentation"><math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi></mrow><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">n</mi><mo class="MJX-tex-caligraphic" mathvariant="script">−</mo><mn class="MJX-tex-caligraphic" mathvariant="script">2</mn></mrow></msub></math></span></span><script type="math/tex" id="MathJax-Element-5">\cal{F}_{n-2}</script>, tandis que <code>a</code> contient <span class="MathJax_Preview" style="color: inherit; display: none;"></span><span class="MathJax" id="MathJax-Element-6-Frame" tabindex="0" style="position: relative;" data-mathml="&lt;math xmlns=&quot;http://www.w3.org/1998/Math/MathML&quot;&gt;&lt;msub&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;/mrow&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;n&lt;/mi&gt;&lt;mo class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;&amp;#x2212;&lt;/mo&gt;&lt;mn class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;1&lt;/mn&gt;&lt;/mrow&gt;&lt;/msub&gt;&lt;/math&gt;" role="presentation"><nobr aria-hidden="true"><span class="math" id="MathJax-Span-95" style="width: 2.564em; display: inline-block;"><span style="display: inline-block; position: relative; width: 2.103em; height: 0px; font-size: 122%;"><span style="position: absolute; clip: rect(1.386em, 1002.1em, 2.564em, -999.997em); top: -2.2em; left: 0em;"><span class="mrow" id="MathJax-Span-96"><span class="msubsup" id="MathJax-Span-97"><span style="display: inline-block; position: relative; width: 2.103em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="texatom" id="MathJax-Span-98"><span class="mrow" id="MathJax-Span-99"><span class="mi" id="MathJax-Span-100" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="texatom" id="MathJax-Span-101"><span class="mrow" id="MathJax-Span-102"><span class="mi" id="MathJax-Span-103" style="font-size: 70.7%; font-family: MathJax_Math-italic;">n</span><span class="mo" id="MathJax-Span-104" style="font-size: 70.7%; font-family: MathJax_Main;">−</span><span class="mn" id="MathJax-Span-105" style="font-size: 70.7%; font-family: MathJax_Caligraphic;">1</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.205em;"></span></span></span><span style="display: inline-block; overflow: hidden; vertical-align: -0.309em; border-left: 0px solid; width: 0px; height: 1.191em;"></span></span></nobr><span class="MJX_Assistive_MathML" role="presentation"><math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi></mrow><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">n</mi><mo class="MJX-tex-caligraphic" mathvariant="script">−</mo><mn class="MJX-tex-caligraphic" mathvariant="script">1</mn></mrow></msub></math></span></span><script type="math/tex" id="MathJax-Element-6">\cal{F}_{n-1}</script>. A la fin de cette même boucle, <code>b</code> contient <span class="MathJax_Preview" style="color: inherit; display: none;"></span><span class="MathJax" id="MathJax-Element-7-Frame" tabindex="0" style="position: relative;" data-mathml="&lt;math xmlns=&quot;http://www.w3.org/1998/Math/MathML&quot;&gt;&lt;msub&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;/mrow&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;n&lt;/mi&gt;&lt;mo class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;&amp;#x2212;&lt;/mo&gt;&lt;mn class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;1&lt;/mn&gt;&lt;/mrow&gt;&lt;/msub&gt;&lt;/math&gt;" role="presentation"><nobr aria-hidden="true"><span class="math" id="MathJax-Span-106" style="width: 2.564em; display: inline-block;"><span style="display: inline-block; position: relative; width: 2.103em; height: 0px; font-size: 122%;"><span style="position: absolute; clip: rect(1.386em, 1002.1em, 2.564em, -999.997em); top: -2.2em; left: 0em;"><span class="mrow" id="MathJax-Span-107"><span class="msubsup" id="MathJax-Span-108"><span style="display: inline-block; position: relative; width: 2.103em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="texatom" id="MathJax-Span-109"><span class="mrow" id="MathJax-Span-110"><span class="mi" id="MathJax-Span-111" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="texatom" id="MathJax-Span-112"><span class="mrow" id="MathJax-Span-113"><span class="mi" id="MathJax-Span-114" style="font-size: 70.7%; font-family: MathJax_Math-italic;">n</span><span class="mo" id="MathJax-Span-115" style="font-size: 70.7%; font-family: MathJax_Main;">−</span><span class="mn" id="MathJax-Span-116" style="font-size: 70.7%; font-family: MathJax_Caligraphic;">1</span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.205em;"></span></span></span><span style="display: inline-block; overflow: hidden; vertical-align: -0.309em; border-left: 0px solid; width: 0px; height: 1.191em;"></span></span></nobr><span class="MJX_Assistive_MathML" role="presentation"><math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi></mrow><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">n</mi><mo class="MJX-tex-caligraphic" mathvariant="script">−</mo><mn class="MJX-tex-caligraphic" mathvariant="script">1</mn></mrow></msub></math></span></span><script type="math/tex" id="MathJax-Element-7">\cal{F}_{n-1}</script> tandis que <code>a</code> contient <span class="MathJax_Preview" style="color: inherit; display: none;"></span><span class="MathJax" id="MathJax-Element-8-Frame" tabindex="0" style="position: relative;" data-mathml="&lt;math xmlns=&quot;http://www.w3.org/1998/Math/MathML&quot;&gt;&lt;msub&gt;&lt;mrow class=&quot;MJX-TeXAtom-ORD&quot;&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;F&lt;/mi&gt;&lt;/mrow&gt;&lt;mi class=&quot;MJX-tex-caligraphic&quot; mathvariant=&quot;script&quot;&gt;n&lt;/mi&gt;&lt;/msub&gt;&lt;/math&gt;" role="presentation"><nobr aria-hidden="true"><span class="math" id="MathJax-Span-117" style="width: 1.539em; display: inline-block;"><span style="display: inline-block; position: relative; width: 1.232em; height: 0px; font-size: 122%;"><span style="position: absolute; clip: rect(1.386em, 1001.23em, 2.513em, -999.997em); top: -2.2em; left: 0em;"><span class="mrow" id="MathJax-Span-118"><span class="msubsup" id="MathJax-Span-119"><span style="display: inline-block; position: relative; width: 1.232em; height: 0px;"><span style="position: absolute; clip: rect(3.179em, 1000.82em, 4.203em, -999.997em); top: -3.993em; left: 0em;"><span class="texatom" id="MathJax-Span-120"><span class="mrow" id="MathJax-Span-121"><span class="mi" id="MathJax-Span-122" style="font-family: MathJax_Caligraphic;">F<span style="display: inline-block; overflow: hidden; height: 1px; width: 0.105em;"></span></span></span></span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span><span style="position: absolute; top: -3.84em; left: 0.72em;"><span class="mi" id="MathJax-Span-123" style="font-size: 70.7%; font-family: MathJax_Math-italic;">n</span><span style="display: inline-block; width: 0px; height: 3.998em;"></span></span></span></span></span><span style="display: inline-block; width: 0px; height: 2.205em;"></span></span></span><span style="display: inline-block; overflow: hidden; vertical-align: -0.247em; border-left: 0px solid; width: 0px; height: 1.128em;"></span></span></nobr><span class="MJX_Assistive_MathML" role="presentation"><math xmlns="http://www.w3.org/1998/Math/MathML"><msub><mrow class="MJX-TeXAtom-ORD"><mi class="MJX-tex-caligraphic" mathvariant="script">F</mi></mrow><mi class="MJX-tex-caligraphic" mathvariant="script">n</mi></msub></math></span></span><script type="math/tex" id="MathJax-Element-8">\cal{F}_n</script>.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="linenr"> <span class="hljs-number"><span class="hljs-number">1</span></span>: </span><span class="hljs-keyword"><span class="hljs-keyword">byte</span></span> b = <span class="hljs-number"><span class="hljs-number">0</span></span>;             <span class="hljs-comment"><span class="hljs-comment">// b = F(0)</span></span>
+<span class="linenr"> <span class="hljs-number"><span class="hljs-number">2</span></span>: </span><span class="hljs-keyword"><span class="hljs-keyword">byte</span></span> a = <span class="hljs-number"><span class="hljs-number">1</span></span>;             <span class="hljs-comment"><span class="hljs-comment">// a = F(1)</span></span>
+<span class="linenr"> <span class="hljs-number"><span class="hljs-number">3</span></span>: </span><span class="hljs-keyword"><span class="hljs-keyword">byte</span></span> c = <span class="hljs-number"><span class="hljs-number">10</span></span>;            <span class="hljs-comment"><span class="hljs-comment">// nb d'itérations restantes</span></span>
+<span class="linenr"> <span class="hljs-number"><span class="hljs-number">4</span></span>: </span><span class="hljs-keyword"><span class="hljs-keyword">do</span></span> {
+<span class="linenr"> <span class="hljs-number"><span class="hljs-number">5</span></span>: </span>  <span class="hljs-keyword"><span class="hljs-keyword">byte</span></span> d = a;           <span class="hljs-comment"><span class="hljs-comment">// d = F(n-1)</span></span>
+<span class="linenr"> <span class="hljs-number"><span class="hljs-number">6</span></span>: </span>  a = (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)(a + b);    <span class="hljs-comment"><span class="hljs-comment">// a = F(n-1) + F(n-2) [= F(n)]</span></span>
+<span class="linenr"> <span class="hljs-number"><span class="hljs-number">7</span></span>: </span>  b = d;                <span class="hljs-comment"><span class="hljs-comment">// b = F(n-1)</span></span>
+<span class="linenr"> <span class="hljs-number"><span class="hljs-number">8</span></span>: </span>  c = (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)(c - <span class="hljs-number"><span class="hljs-number">1</span></span>);    <span class="hljs-comment"><span class="hljs-comment">// c = c - 1</span></span>
+<span class="linenr"> <span class="hljs-number"><span class="hljs-number">9</span></span>: </span>} <span class="hljs-keyword"><span class="hljs-keyword">while</span></span> (c != <span class="hljs-number"><span class="hljs-number">0</span></span>);
+<span class="linenr"><span class="hljs-number"><span class="hljs-number">10</span></span>: </span>
+<span class="linenr"><span class="hljs-number"><span class="hljs-number">11</span></span>: </span>System.out.println(a);  <span class="hljs-comment"><span class="hljs-comment">// affiche 89</span></span>
+</pre>
+</div>
+
+<p>
+Ce programme Java peut être traduit assez directement en un programme assembleur pour le Game Boy, présenté ci-dessous. Pour le déchiffrer, il faut savoir que chaque ligne (sauf la 4) contient une instruction du processeur. Ces instructions sont identifiées par leur nom (<code>LD</code>, <code>ADD</code>, <code>DEC</code>, <code>JP</code> et <code>HALT</code> ici) et prennent généralement un ou plusieurs paramètres. Dans cet exemple, les paramètres sont soit des registres (<code>A</code>, <code>B</code>, <code>C</code> et <code>D</code>), soit des valeurs entières (0, 1, 10), soit des conditions (<code>NZ</code> à la ligne 9), soit des étiquettes (<code>loop</code> à cette même ligne). L'étiquette <code>loop</code> est définie à la ligne 4, et sa valeur est celle de l'adresse de l'instruction qui suit, qui est la première instruction de la boucle.
+</p>
+
+<p>
+A la droite de chacune des instructions (sauf la dernière) se trouve un commentaire décrivant son effet. Ce commentaire — uniquement destiné au lecteur humain — est précédé d'un point-virgule (<code>;</code>) qui est l'équivalent assembleur de la double barre oblique (<code>//</code>) de Java.
+</p>
+
+<pre class="example"><span class="linenr"> 1: </span>        LD B, 0        ; B = 0
+<span class="linenr"> 2: </span>        LD A, 1        ; A = 1
+<span class="linenr"> 3: </span>        LD C, 10       ; C = 10
+<span class="linenr"> 4: </span>loop:                  ; do {
+<span class="linenr"> 5: </span>        LD D, A        ;   D = A
+<span class="linenr"> 6: </span>        ADD A, B       ;   A = A + B
+<span class="linenr"> 7: </span>        LD B, D        ;   B = D
+<span class="linenr"> 8: </span>        DEC C          ;   C = C - 1;  Z = (C == 0)
+<span class="linenr"> 9: </span>        JP NZ, loop    ; } while (C != 0)
+<span class="linenr">10: </span>        HALT
+</pre>
+
+<p>
+L'effet de ces instructions devrait être relativement facile à comprendre grâce au commentaire qui leur est attaché, et grâce à la correspondance très directe existant entre les lignes 1 à 9 de ce programme et celles du programme Java donné plus haut.
+</p>
+
+<p>
+La manière dont l'équivalent de la boucle <code>do…while</code> est programmé mérite toutefois quelques explications. Le corps de cette boucle est constitué des lignes 5 à 8. La ligne 9, quant à elle, contient ce que l'on nomme un <b>saut conditionnel</b> (<i>conditional jump</i> en anglais, d'où le nom <code>JP</code>). Son but est d'exécuter une fois encore le corps de la boucle, en revenant à la ligne 4, si et seulement si <code>C</code> est différent de 0. Pour ce faire, elle teste si le fanion <code>Z</code> de l'UAL est faux, ce qui est exprimé par la condition <code>NZ</code> (<i>not zero</i>), et n'effectue le saut que dans ce cas. Si la condition est fausse — c-à-d si le fanion <code>Z</code> est vrai — le saut ne se fait pas, et l'exécution se poursuit avec l'instruction suivante, ici <code>HALT</code>. La raison pour laquelle il est possible de savoir si <code>C</code> est nul en testant le fanion <code>Z</code> de l'UAL est que l'instruction <code>DEC</code> de la ligne 8 ne se contente pas de décrémenter <code>C</code> : elle modifie de plus les fanions de l'UAL, dont <code>Z</code>, en fonction du résultat — comme indiqué dans le commentaire qui lui est attaché.
+</p>
+
+<p>
+Notez que la description ci-dessus n'est pas tout à fait exacte, car la ligne 4 ne contient aucune instruction, et il n'est donc pas possible d'y sauter. La ligne 4 contient une <b>étiquette</b> (<i>label</i>), nommée ici <code>loop</code>, qui identifie l'adresse de l'instruction qui la suit, ici celle de la ligne 5. Dès lors, la destination du saut conditionnel de la ligne 9 est l'instruction de la ligne 5, qui est bien la première du corps de la boucle.
+</p>
+
+<p>
+Comme tout programme assembleur, celui donné ci-dessus n'est pas, dans sa version textuelle, directement exécutable par le processeur du Game Boy. Pour qu'il le soit, il faut l'assembler, c-à-d le transformer en une suite d'octets représentant les différentes instructions. En faisant cela, on obtient la séquence de 14 octets suivante (donnée en hexadécimal)<sup><a id="fnr.4" class="footref" href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html#fn.4">4</a></sup> :
+</p>
+<pre class="example">06 00 3E 01 0E 0A 57 80 42 0D C2 06 00 76
+</pre>
+
+<p>
+Lorsqu'on donne cette séquence d'octets au processeur d'un Game Boy pour qu'il l'exécute, il effectue le nombre attendu d'itérations de la boucle avant d'arriver à l'instruction <code>HALT</code> de la dernière ligne, qui stoppe son exécution. A ce moment, le registre <code>A</code> contient 89, comme attendu.
+</p>
+
+<p>
+La table ci-dessous donne la correspondance entre les différentes instructions du programme et leur encodage sous forme d'octets, en supposant que la première instruction est placée en mémoire à l'adresse 0.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Adresse</th>
+<th scope="col" class="org-left">Octet(s)</th>
+<th scope="col" class="org-left">Instruction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>0000</code></td>
+<td class="org-left"><code>06 00</code></td>
+<td class="org-left"><code>LD B, 0</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>0002</code></td>
+<td class="org-left"><code>3E 01</code></td>
+<td class="org-left"><code>LD A, 1</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>0004</code></td>
+<td class="org-left"><code>0E 0A</code></td>
+<td class="org-left"><code>LD C, 10</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>0006</code></td>
+<td class="org-left"><code>57</code></td>
+<td class="org-left"><code>LD D, A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>0007</code></td>
+<td class="org-left"><code>80</code></td>
+<td class="org-left"><code>ADD A, B</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>0008</code></td>
+<td class="org-left"><code>42</code></td>
+<td class="org-left"><code>LD B, D</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>0009</code></td>
+<td class="org-left"><code>0D</code></td>
+<td class="org-left"><code>DEC C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>000A</code></td>
+<td class="org-left"><code>C2 06 00</code></td>
+<td class="org-left"><code>JP NZ, 0006</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>000D</code></td>
+<td class="org-left"><code>76</code></td>
+<td class="org-left"><code>HALT</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Cet exemple de programme ayant donné une idée des instructions offertes par le processeur du Game Boy, il est temps de les décrire de manière plus systématique.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org08e08e8" class="outline-4">
+<h4 id="org08e08e8"><span class="section-number-4">1.4.5</span> Instructions de chargement et de stockage</h4>
+<div class="outline-text-4" id="text-1-4-5">
+<p>
+Dans cette première étape consacrée au processeur, deux catégories d'instructions seront traitées : les instructions sans effet, et les instructions de chargement et de stockage. Dans les descriptions qui suivent, trois informations sont données pour chaque instruction :
+</p>
+
+<ol class="org-ol">
+<li>sa syntaxe assembleur,</li>
+<li>l'encodage binaire de son <i>opcode</i>,</li>
+<li>son effet sur l'état du processeur et/ou des composants connectés au bus.</li>
+</ol>
+
+<p>
+Dans la description de la syntaxe, les conventions suivantes sont utilisées :
+</p>
+
+<dl class="org-dl">
+<dt><code>r8</code></dt><dd>représente un registre 8 bits quelconque (<code>A</code>, <code>B</code>, <code>C</code>, <code>D</code>, <code>E</code>, <code>H</code> ou <code>L</code>, mais <i>pas</i> <code>F</code>),</dd>
+
+<dt><code>r16</code></dt><dd>représente une paire de registres quelconque (<code>AF</code>, <code>BC</code>, <code>DE</code> ou <code>HL</code>) ; comme cela a été dit plus haut, dans certains cas qui seront systématiquement indiqués, <code>AF</code> est remplacé par <code>SP</code>,</dd>
+
+<dt><code>n8</code></dt><dd>représente une valeur de 8 bits,</dd>
+
+<dt><code>n16</code></dt><dd>représente une valeur de 16 bits,</dd>
+
+<dt><code>[XXX]</code></dt><dd>représente la valeur à l'adresse donnée par <code>XXX</code>.</dd>
+</dl>
+
+<p>
+Dans la description de l'effet des instructions, la convention suivante est utilisée :
+</p>
+
+<dl class="org-dl">
+<dt><code>r</code> ou <code>s</code></dt><dd>représente un registre dont l'identité est encodée dans l'<i>opcode</i>,</dd>
+
+<dt><code>n</code></dt><dd>représente la valeur 8 bits suivant l'<i>opcode</i> de l'instruction,</dd>
+
+<dt><code>nn</code></dt><dd>représente la valeur 16 bits suivant l'<i>opcode</i> de l'instruction,</dd>
+
+<dt><code>BUS[a]</code></dt><dd>représente une lecture ou écriture sur le bus, à l'adresse <code>a</code>.</dd>
+</dl>
+
+<p>
+Les instructions sans effet sont décrites d'abord, suivies des instructions de chargement, de stockage et de déplacement.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgcb157e3" class="outline-4">
+<h4 id="orgcb157e3"><span class="section-number-4">1.4.6</span> Instructions sans effet</h4>
+<div class="outline-text-4" id="text-1-4-6">
+<p>
+Comme leur nom l'indique, les instructions sans effet n'ont aucun effet sur l'état du processeur, ou presque : leur seul effet est de consommer un certain temps (1 cycle dans le cas du Game Boy) pour être exécutées.
+</p>
+
+<p>
+Les instructions sans effet ne sont pas aussi inutiles qu'on peut le penser, car on peut p.ex. les utiliser pour laisser passer du temps sans rien faire. Dès lors, tous les processeurs possèdent une instruction sans effet, généralement nommée <code>NOP</code> ou <code>NOOP</code> (pour <i>no operation</i>).
+</p>
+
+<p>
+Le processeur du Game Boy est particulier en ce qu'il ne possède pas <i>une</i> instruction sans effet, mais <i>huit</i> ! La première, nommée <code>NOP</code>, est la « vraie » instruction sans effet. Les autres sont rigoureusement des instructions permettant de copier le contenu d'un registre dans un autre. Toutefois, lorsqu'on les utilise pour copier le contenu d'un registre dans ce <i>même</i> registre, elles n'ont aucun effet.
+</p>
+
+<p>
+En résumé, les instructions sans effet ont l'une des deux formes suivantes :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>NOP</code></td>
+<td class="org-left"><code>00000000</code></td>
+<td class="org-left"><i>aucun</i></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD r8, r8</code></td>
+<td class="org-left"><code>01rrrsss</code></td>
+<td class="org-left"><i>aucun</i> (ssi <code>r</code> = <code>s</code>)</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Les deux registres <code>r</code> et <code>s</code> de la seconde famille sont encodés selon la convention donnée plus haut.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org1a4915b" class="outline-4">
+<h4 id="org1a4915b"><span class="section-number-4">1.4.7</span> Instructions de chargement</h4>
+<div class="outline-text-4" id="text-1-4-7">
+<p>
+Les instructions de chargement (<i>load instructions</i> en anglais) ont pour but de transférer une valeur depuis un composant connecté au bus — souvent la mémoire — vers un registre du processeur.
+</p>
+
+<p>
+Toutes ces instructions sont nommées <code>LD</code>, pour <i>load</i> et leur premier argument est le registre dans lequel la donnée doit être écrite, le second est sa provenance.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">&nbsp;</th>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>LD r8, [HL]</code></td>
+<td class="org-left"><code>01rrr110</code></td>
+<td class="org-left"><code>r = BUS[HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>LD A, [HL+]</code></td>
+<td class="org-left"><code>00101010</code></td>
+<td class="org-left"><code>A = BUS[HL]; HL += 1</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>LD A, [HL-]</code></td>
+<td class="org-left"><code>00111010</code></td>
+<td class="org-left"><code>A = BUS[HL]; HL -= 1</code></td>
+</tr>
+
+<tr>
+<td class="org-left">†</td>
+<td class="org-left"><code>LD A, [$FF00 + n8]</code></td>
+<td class="org-left"><code>11110000</code></td>
+<td class="org-left"><code>A = BUS[0xFF00 + n]</code></td>
+</tr>
+
+<tr>
+<td class="org-left">†</td>
+<td class="org-left"><code>LD A, [$FF00 + C]</code></td>
+<td class="org-left"><code>11110010</code></td>
+<td class="org-left"><code>A = BUS[0xFF00 + C]</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>LD A, [n16]</code></td>
+<td class="org-left"><code>11111010</code></td>
+<td class="org-left"><code>A = BUS[nn]</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>LD A, [BC]</code></td>
+<td class="org-left"><code>00001010</code></td>
+<td class="org-left"><code>A = BUS[BC]</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>LD A, [DE]</code></td>
+<td class="org-left"><code>00011010</code></td>
+<td class="org-left"><code>A = BUS[DE]</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>LD r8, n8</code></td>
+<td class="org-left"><code>00rrr110</code></td>
+<td class="org-left"><code>r = n</code></td>
+</tr>
+
+<tr>
+<td class="org-left">‡</td>
+<td class="org-left"><code>LD r16, n16</code></td>
+<td class="org-left"><code>00rr0001</code></td>
+<td class="org-left"><code>r = nn</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>POP r16</code></td>
+<td class="org-left"><code>11rr0001</code></td>
+<td class="org-left"><code>r = BUS[SP]; SP += 2</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+La raison d'être des deux instructions marquées d'un obèle (†), qui permettent de lire des données provenant de la plage d'adresses FF00<sub>16</sub> à FFFF<sub>16</sub>, est que cette plage est très fréquemment utilisée. En effet, elle contient presque tous les registres mappés en mémoire des différents composants. Notez que l'adresse FF00<sub>16</sub> est fournie par l'interface <code>AddressMap</code> que nous vous avons donnée, sous le nom de <code>REGS_START</code>, que vous pouvez utiliser dans votre code.
+</p>
+
+<p>
+L'instruction marquée avec un double obèle (‡) permet de charger une valeur 16 bits dans l'une des paires de registres <code>BC</code>, <code>DE</code> ou <code>HL</code>, ou dans le pointeur de pile <code>SP</code>. Dès lors, si les deux bits <code>rr</code> de l'<i>opcode</i> valent <code>11</code>, alors la valeur est chargée dans le registre <code>SP</code>, et <i>pas</i> dans la paire <code>AF</code>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org5388b9c" class="outline-4">
+<h4 id="org5388b9c"><span class="section-number-4">1.4.8</span> Instructions de stockage</h4>
+<div class="outline-text-4" id="text-1-4-8">
+<p>
+Les instructions de stockage (<i>store instructions</i> en anglais) ont pour but de transférer une valeur depuis un registre du processeur vers la mémoire — plus généralement, vers n'importe quel composant attaché au bus.
+</p>
+
+<p>
+Malheureusement, toutes ces instructions sont aussi nommées <code>LD</code>, ce qui peut porter à confusion. Toutefois, l'ordre des arguments est cohérent, et comme précédemment, le premier représente l'endroit où la donnée est écrite, le second sa provenance.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>LD [HL], r8</code></td>
+<td class="org-left"><code>01110rrr</code></td>
+<td class="org-left"><code>BUS[HL] = r</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD [HL+], A</code></td>
+<td class="org-left"><code>00100010</code></td>
+<td class="org-left"><code>BUS[HL] = A; HL += 1</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD [HL-], A</code></td>
+<td class="org-left"><code>00110010</code></td>
+<td class="org-left"><code>BUS[HL] = A; HL -= 1</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD [$FF00 + n8], A</code></td>
+<td class="org-left"><code>11100000</code></td>
+<td class="org-left"><code>BUS[0xFF00 + n] = A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD [$FF00 + C], A</code></td>
+<td class="org-left"><code>11100010</code></td>
+<td class="org-left"><code>BUS[0xFF00 + C] = A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD [n16], A</code></td>
+<td class="org-left"><code>11101010</code></td>
+<td class="org-left"><code>BUS[nn] = A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD [BC], A</code></td>
+<td class="org-left"><code>00000010</code></td>
+<td class="org-left"><code>BUS[BC] = A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD [DE], A</code></td>
+<td class="org-left"><code>00010010</code></td>
+<td class="org-left"><code>BUS[DE] = A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD [HL], n8</code></td>
+<td class="org-left"><code>00110110</code></td>
+<td class="org-left"><code>BUS[HL] = n</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD [n16], SP</code></td>
+<td class="org-left"><code>00001000</code></td>
+<td class="org-left"><code>BUS[nn] = SP</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>PUSH r16</code></td>
+<td class="org-left"><code>11rr0101</code></td>
+<td class="org-left"><code>SP -= 2; BUS[SP] = r</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-org1297e17" class="outline-4">
+<h4 id="org1297e17"><span class="section-number-4">1.4.9</span> Instructions de copie</h4>
+<div class="outline-text-4" id="text-1-4-9">
+<p>
+Les instructions de copie, aussi dites de déplacement (<i>move instructions</i> en anglais) ont pour but de transférer une valeur d'un registre du processeur à un autre.
+</p>
+
+<p>
+Malheureusement encore, ces instructions sont elles aussi nommées <code>LD</code>.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>LD r8, r8</code></td>
+<td class="org-left"><code>01rrrsss</code></td>
+<td class="org-left"><code>r = s</code>  (ssi <code>r</code> ≠ <code>s</code>)</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD SP, HL</code></td>
+<td class="org-left"><code>11111001</code></td>
+<td class="org-left"><code>SP = HL</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgdd515be" class="outline-2">
+<h2 id="orgdd515be"><span class="section-number-2">2</span> Mise en œuvre Java</h2>
+<div class="outline-text-2" id="text-2">
+</div>
+<div id="outline-container-orgc9996db" class="outline-3">
+<h3 id="orgc9996db"><span class="section-number-3">2.1</span> Enumération <code>Opcode</code></h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+Pour faciliter votre travail, nous mettons à votre disposition <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_opcode.zip">une archive Zip</a> dont le contenu est à importer dans votre projet. Elle contient un seul fichier nommé <code>Opcode.java</code> et définissant le type énuméré <code>Opcode</code>. Celui-ci décrit les <i>opcodes</i> du processeur du GameBoy et a la structure suivante :
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">enum</span></span> Opcode {
+  <span class="hljs-comment"><span class="hljs-comment">// Direct (non-prefixed) opcodes</span></span>
+  ADD_A_B(Kind.DIRECT, Family.ADD_A_R8, <span class="hljs-number"><span class="hljs-number">0x80</span></span>, <span class="hljs-number"><span class="hljs-number">1</span></span>, <span class="hljs-number"><span class="hljs-number">1</span></span>),
+  <span class="hljs-comment"><span class="hljs-comment">// … beaucoup d'autres opcodes</span></span>
+
+  <span class="hljs-comment"><span class="hljs-comment">// Prefixed opcodes</span></span>
+  RLC_B(Kind.PREFIXED, Family.ROTC_R8, <span class="hljs-number"><span class="hljs-number">0x00</span></span>, <span class="hljs-number"><span class="hljs-number">2</span></span>, <span class="hljs-number"><span class="hljs-number">2</span></span>),
+  <span class="hljs-comment"><span class="hljs-comment">// … beaucoup d'autres opcodes</span></span>
+
+  <span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">enum</span></span> Kind { DIRECT, PREFIXED }
+  <span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">enum</span></span> Family {
+    NOP,
+    <span class="hljs-comment"><span class="hljs-comment">// … beaucoup d'autres familles</span></span>
+  }
+
+  <span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> Kind kind;
+  <span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> Family family;
+  <span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-keyword"><span class="hljs-keyword">int</span></span> encoding;
+  <span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-keyword"><span class="hljs-keyword">int</span></span> totalBytes;
+  <span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-keyword"><span class="hljs-keyword">int</span></span> cycles, additionalCycles;
+
+  <span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">private</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">Opcode</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(Kind kind,
+		 Family family,
+		 </span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">int</span></span></span></span><span class="hljs-function"><span class="hljs-params"> encoding,
+		 </span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">int</span></span></span></span><span class="hljs-function"><span class="hljs-params"> totalBytes,
+		 </span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">int</span></span></span></span><span class="hljs-function"><span class="hljs-params"> cycles,
+		 </span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">int</span></span></span></span><span class="hljs-function"><span class="hljs-params"> additionalCycles)</span></span></span><span class="hljs-function"> </span></span>{
+    <span class="hljs-comment"><span class="hljs-comment">// …</span></span>
+  }
+  <span class="hljs-comment"><span class="hljs-comment">// … second constructeur</span></span>
+}
+</pre>
+</div>
+
+<p>
+Le type énuméré <code>Opcode</code> a trois particuliarités :
+</p>
+
+<ol class="org-ol">
+<li>ses éléments possèdent des attributs (<code>kind</code>, <code>family</code>, etc.),</li>
+<li>il possède deux constructeurs (privés),</li>
+<li>il contient deux autres types énumérés, <code>Kind</code> et <code>Family</code>.</li>
+</ol>
+
+<p>
+Les constructeurs ont pour unique but de donner leurs valeurs aux différents attributs, et peuvent être ignorés. Les attributs eux-même, par contre, sont très importants et ont la signification suivante :
+</p>
+
+<ul class="org-ul">
+<li><code>kind</code> décrit la sorte d'instructions correspondant à l'<i>opcode</i> ; pour cette étape, seule la sorte <code>DIRECT</code> nous intéresse, la sorte <code>PREFIXED</code> sera décrite ultérieurement,</li>
+<li><code>family</code> décrit la famille d'instructions auquel l'<i>opcode</i> appartient,</li>
+<li><code>encoding</code> donne l'encodage de l'<i>opcode</i> sous la forme d'une valeur 8 bits comprise entre 0 et FF<sub>16</sub>,</li>
+<li><code>totalBytes</code> donne la taille totale de l'instruction correspondant à l'<i>opcode</i>,</li>
+<li><code>cycles</code> donne le nombre de cycles nécessaires à l'exécution de l'instruction,</li>
+<li><code>additionalCycles</code> donne le nombre de cycles supplémentaires nécessaires à l'exécution de l'instruction ; il vaut 0 dans la plupart des cas, et ne sera utilisé que dans une étape ultérieure.</li>
+</ul>
+
+<p>
+Par exemple, l'<i>opcode</i> correspondant à l'instruction <code>LD B, D</code> est décrit par l'élément suivant du type énuméré <code>Opcode</code>, à la ligne 115 du fichier <code>Opcode.java</code> :
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs">LD_B_D(Kind.DIRECT, Family.LD_R8_R8, 0x42, 1, 1)
+</pre>
+</div>
+<p>
+Cela signifie que l'<i>opcode</i> en question correspond à une instruction de type non-préfixé, sa famille est <code>LD_R8_R8</code> (qui est celle de toutes les instructions ayant la forme <code>LD r8,r8</code>), son encodage est 42<sub>16</sub>, la taille totale de l'instruction est de un octet, et son exécution dure un cycle.
+</p>
+
+<p>
+Les noms des familles ont été choisis de manière à être aussi évocateurs que possible. Pour clarifier leur signification, la table ci-dessous donne la correspondance entre les familles à traiter pour cette étape et les instructions correspondantes :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Famille</th>
+<th scope="col" class="org-left">Instruction(s) en assembleur</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>NOP</code></td>
+<td class="org-left"><code>NOP</code> / <code>LD A, A</code> / <code>LD B, B</code> / … / <code>LD L, L</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>LD_R8_HLR</code></td>
+<td class="org-left"><code>LD A, [HL]</code> / <code>LD B, [HL]</code> / … / <code>LD L, [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_A_HLRU</code></td>
+<td class="org-left"><code>LD A, [HL+]</code> / <code>LD A, [HL-]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_A_N8R</code></td>
+<td class="org-left"><code>LD A, [$FF00 + 0]</code> / … / <code>LD A, [$FF00 + $FF]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_A_CR</code></td>
+<td class="org-left"><code>LD A, [$FF00 + C]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_A_N16R</code></td>
+<td class="org-left"><code>LD A, [0]</code> / … / <code>LD A, [$FFFF]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_A_BCR</code></td>
+<td class="org-left"><code>LD A, [BC]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_A_DER</code></td>
+<td class="org-left"><code>LD A, [DE]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_R8_N8</code></td>
+<td class="org-left"><code>LD A, 0</code> / <code>LD B, 0</code> / … / <code>LD L, $FF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_R16SP_N16</code></td>
+<td class="org-left"><code>LD SP, 0</code> / <code>LD BC, 0</code> / … / <code>LD HL, $FFFF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>POP_R16</code></td>
+<td class="org-left"><code>POP AF</code> / <code>POP BC</code> / <code>POP DE</code> / <code>POP HL</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>LD_HLR_R8</code></td>
+<td class="org-left"><code>LD [HL], A</code> / <code>LD [HL], B</code> / … / <code>LD [HL], L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_HLRU_A</code></td>
+<td class="org-left"><code>LD [HL+], A</code> / <code>LD [HL-], A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_N8R_A</code></td>
+<td class="org-left"><code>LD [$FF00 + 0], A</code> / … / <code>LD [$FF00 + $FF], A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_CR_A</code></td>
+<td class="org-left"><code>LD [$FF00 + C], A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_N16R_A</code></td>
+<td class="org-left"><code>LD [0], A</code> / … / <code>LD [$FFFF], A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_BCR_A</code></td>
+<td class="org-left"><code>LD [BC], A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_DER_A</code></td>
+<td class="org-left"><code>LD [DE], A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_HLR_N8</code></td>
+<td class="org-left"><code>LD [HL], 0</code> / <code>LD [HL], 1</code> / … / <code>LD [HL], $FF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_N16R_SP</code></td>
+<td class="org-left"><code>LD [0], SP</code> / <code>LD [1], SP</code> / … / <code>LD [$FFFF], SP</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>PUSH_R16</code></td>
+<td class="org-left"><code>PUSH AF</code> / <code>PUSH BC</code> / <code>PUSH DE</code> / <code>PUSH HL</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>LD_R8_R8</code></td>
+<td class="org-left"><code>LD A, B</code> / <code>LD A, C</code> / … / <code>LD L, H</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD_SP_HL</code></td>
+<td class="org-left"><code>LD SP, HL</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-orgb55a8cc" class="outline-3">
+<h3 id="orgb55a8cc"><span class="section-number-3">2.2</span> Interface <code>Register</code></h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+L'interface <code>Register</code> du paquetage <code>ch.epfl.gameboj</code>, publique, a pour but d'être implémentée par les types énumérés représentant les registres d'un même banc. Par exemple, les registres du processeurs seront représentés par un type énuméré ressemblant à ceci :
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">enum</span></span> Reg implements Register { A, F, B, C, D, E, H, L }
+</pre>
+</div>
+
+<p>
+L'interface <code>Register</code> est extrêmement similaire à l'interface <code>Bit</code> de l'étape 1, mais a un rôle différent. Elle n'offre qu'une seule méthode publique et par défaut, nommée <code>index</code> et retournant la même valeur que celle retournée par la méthode <code>ordinal</code>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgbf02b58" class="outline-3">
+<h3 id="orgbf02b58"><span class="section-number-3">2.3</span> Classe <code>RegisterFile</code></h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+La classe <code>RegisterFile</code> du paquetage <code>ch.epfl.gameboj</code>, publique et finale, représente un banc de registres 8 bits.
+</p>
+
+<p>
+Il s'agit d'une classe générique dont l'unique paramètre de type représente le type des registres du banc. Bien entendu, ce paramètre possède le type <code>Register</code> comme borne supérieure.
+</p>
+
+<p>
+La classe <code>RegisterFile</code> possède un unique constructeur :
+</p>
+
+<ul class="org-ul">
+<li><code>RegisterFile(E[] allRegs)</code>, qui construit un banc de registres 8 bits dont la taille (c-à-d le nombre de registres) est égale à la taille du tableau donné.</li>
+</ul>
+
+<p>
+Notez que ce constructeur est destiné à être <i>toujours</i> appelé avec en argument le résultat de la méthode <code>values</code> du type énuméré représentant les registres. (Pour mémoire, en Java, tous les types énumérés possèdent une méthode publique et statique nommée <code>values</code> retournant un tableau contenant la totalité des éléments du type énuméré, dans leur ordre de déclaration.)
+</p>
+
+<p>
+Par exemple, pour créer un banc de quatre registres <code>R1</code> à <code>R4</code>, on écrira :
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">enum</span></span> Reg implements Register { R1, R2, R3, R4 }
+RegisterFile&lt;Reg&gt; registerFile =
+  <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> RegisterFile&lt;&gt;(Reg.values());
+</pre>
+</div>
+
+<p>
+En plus de ce constructeur, la classe <code>RegisterFile</code> offre les méthodes publiques suivantes :
+</p>
+
+<ul class="org-ul">
+<li><code>int get(E reg)</code>, qui retourne la valeur 8 bits contenue dans le registre donné, sous la forme d'un entier compris entre 0 (inclus) et FF<sub>16</sub> (inclus),</li>
+
+<li><code>void set(E reg, int newValue)</code>, qui modifie le contenu du registre donné pour qu'il soit égal à la valeur 8 bits donnée ; lève <code>IllegalArgumentException</code> si la valeur n'est pas une valeur 8 bits valide,</li>
+
+<li><code>boolean testBit(E reg, Bit b)</code>, qui retourne vrai si et seulement si le bit donné du registre donné vaut 1,</li>
+
+<li><code>void setBit(E reg, Bit bit, boolean newValue)</code>, qui modifie la valeur stockée dans le registre donné pour que le bit donné ait la nouvelle valeur donnée.</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org0675a09" class="outline-3">
+<h3 id="org0675a09"><span class="section-number-3">2.4</span> Interface <code>Clocked</code></h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+L'interface <code>Clocked</code> du paquetage <code>ch.epfl.gameboj.component</code>, publique, représente un composant piloté par l'horloge du système. Elle n'offre qu'une seule méthode, qui est abstraite :
+</p>
+
+<ul class="org-ul">
+<li><code>void cycle(long cycle)</code>, qui demande au composant d'évoluer en exécutant toutes les opérations qu'il doit exécuter durant le cycle d'index donné en argument.</li>
+</ul>
+
+<p>
+Cette méthode a pour but de faire évoluer l'état de tous les composants du Game Boy de manière synchrone. Pour cela, au début de la simulation, elle sera appelée sur tous les composants (processeurs, contrôleur LCD, etc.) avec la valeur 0. Ensuite, elle sera à nouveau appelée sur tous les composants, mais avec la valeur 1. Et ainsi de suite.
+</p>
+
+<p>
+Les composants peuvent dès lors faire l'hypothèse que la toute première fois que leur méthode <code>cycle</code> sera appelée, le paramètre sera 0. Ensuite il sera 1, et ainsi de suite. Cela dit, il n'est pas demandé qu'ils vérifient explicitement cette condition.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org4b1046b" class="outline-3">
+<h3 id="org4b1046b"><span class="section-number-3">2.5</span> Classe <code>Cpu</code></h3>
+<div class="outline-text-3" id="text-2-5">
+<p>
+La classe <code>Cpu</code> du paquetage <code>ch.epfl.gameboj.component.cpu</code>, publique et finale, représente le processeur du Game Boy. Son interface publique est relativement simple, mais il s'agit de la classe la plus complexe du projet et il est donc très important de l'organiser correctement en interne. De nombreux conseils de programmation sont donnés plus bas à ce sujet, lisez-les avant de commencer à programmer !
+</p>
+
+<p>
+La classe <code>Cpu</code> implémente les interfaces <code>Component</code> et <code>Clocked</code>, étant donné qu'elle modélise un composant attaché au bus et piloté par l'horloge.
+</p>
+
+<p>
+Les méthodes <code>read</code> et <code>write</code> provenant de <code>Component</code> ne font, dans leur version actuelle, rien du tout (ce qui implique que <code>read</code> retourne systématiquement <code>NO_DATA</code>). Elles seront modifiées dans les étapes suivantes.
+</p>
+
+<p>
+La classe <code>Cpu</code> offre également une mise en œuvre de la méthode <code>cycle</code> de l'interface <code>Clocked</code>. Cette méthode doit, en gros, exécuter la prochaine instruction désignée par le compteur de programme (registre <code>PC</code>). Toutefois, étant donné que de nombreuses instructions prennent plus d'un cycle pour s'exécuter, cette méthode ne doit parfois rien faire du tout. Plus de détails à ce sujet sont donnés dans les conseils de programmation plus bas.
+</p>
+
+<p>
+Finalement, la classe <code>Cpu</code> offre une méthode publique dont le seul but est de faciliter les tests, et dont le nom peu commun a été choisi en fonction :
+</p>
+
+<ul class="org-ul">
+<li><code>int[] _testGetPcSpAFBCDEHL()</code>, qui retourne un tableau contenant, dans l'ordre, la valeur des registres <code>PC</code>, <code>SP</code>, <code>A</code>, <code>F</code>, <code>B</code>, <code>C</code>, <code>D</code>, <code>E</code>, <code>H</code> et <code>L</code>.</li>
+</ul>
+
+<p>
+(Cette méthode aurait pu être protégée, mais pour simplifier les choses, nous avons décidé de la rendre publique.)
+</p>
+</div>
+
+<div id="outline-container-orgec46715" class="outline-4">
+<h4 id="orgec46715"><span class="section-number-4">2.5.1</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-5-1">
+<p>
+La classe <code>Cpu</code> est l'une des plus grosses du projet, et il est donc <i>capital</i> de bien l'organiser afin qu'elle reste compréhensible. Nous vous donnons donc quelques conseils ci-dessous sur la manière de procéder, entre autres en vous suggérant quelles entités privées — types énumérés, attributs et méthodes — créer.
+</p>
+
+<p>
+Etant donné que les conseils qui suivent concernent la partie privée de la classe, vous êtes libres de les ignorer, partiellement ou totalement. Toutefois, ne le faites que si vous avez de bonnes raisons de le faire, et souvenez-vous que votre projet sera également jugé en fonction de son style. Ne le négligez donc pas !
+</p>
+</div>
+
+<ol class="org-ol">
+<li><a id="org4b67403"></a>Registres<br>
+<div class="outline-text-5" id="text-2-5-1-1">
+<p>
+Pour stocker les registres 8 bits du processeur, il faut bien entendu utiliser une instance de la classe <code>RegisterFile</code>, ce qui implique de définir un type énuméré pour les registres, qui pourrait ressembler à ceci :
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">private</span></span> <span class="hljs-keyword"><span class="hljs-keyword">enum</span></span> Reg implements Register {
+  A, F, B, C, D, E, H, L
+}
+</pre>
+</div>
+
+<p>
+Tout comme les types énumérés <code>Kind</code> et <code>Family</code> du fichier <code>Opcode.java</code>, celui-ci peut être déclaré <i>dans</i> la classe <code>Cpu</code> et rendu privé, donc totalement invisible de l'extérieur !
+</p>
+
+<p>
+En plus de ce type <code>Reg</code>, il est conseillé de définir un autre type énuméré pour les paires de registres (<code>AF</code>, <code>BC</code>, <code>DE</code> et <code>HL</code>), qui pourrait se nommer <code>Reg16</code> (ce type apparaît plus loin, raison pour laquelle il est mentionné).
+</p>
+</div>
+</li>
+
+<li><a id="org7834ac4"></a>Méthode <code>cycle</code><br>
+<div class="outline-text-5" id="text-2-5-1-2">
+<p>
+La plus grosse partie du code de la classe <code>Cpu</code> se cache derrière la méthode <code>cycle</code>, puisque c'est uniquement lorsqu'elle est appelée que le processeur exécute des instructions. Cela ne signifie pas pour autant que cette méthode doit être gigantesque, au contraire !
+</p>
+
+<p>
+La première chose dont il faut se rendre compte est que beaucoup d'instructions prennent plusieurs cycles pour s'exécuter, et il arrivera donc souvent que la méthode <code>cycle</code> n'ait rien à faire du tout<sup><a id="fnr.5" class="footref" href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html#fn.5">5</a></sup>. Dès lors, il est conseillé d'ajouter à la classe <code>Cpu</code> un attribut, nommé p.ex. <code>nextNonIdleCycle</code>, qui donne la valeur du prochain cycle durant lequel le processeur aura effectivement quelque chose à faire. La méthode <code>cycle</code> peut alors commencer par vérifier si elle a quelque chose à faire ou non, et retourner directement si tel n'est pas le cas.
+</p>
+
+<p>
+Si elle ne doit pas retourner immédiatement, la méthode <code>cycle</code> doit obtenir l'<i>opcode</i> de la prochaine instruction à exécuter (référencé par le compteur de programme) et exécuter cette instruction. Il est préférable de laisser ce travail à une méthode séparée, décrite ci-après.
+</p>
+</div>
+</li>
+
+<li><a id="org194644c"></a>Exécution d'une instruction<br>
+<div class="outline-text-5" id="text-2-5-1-3">
+<p>
+Pour exécuter la prochaine instruction, le processeur doit lire son <i>opcode</i> depuis le bus, puis l'utiliser pour déterminer que faire. Ce travail peut être confié à une méthode séparée, nommée p.ex. <code>dispatch</code> et qui, étant donné un octet contenant un <i>opcode</i>, exécute l'instruction correspondante — en lisant ou écrivant, au besoin, des valeurs depuis le bus ou les registres.
+</p>
+
+<p>
+La description qui précède suggère l'utilisation d'un <code>switch</code> en Java pour exécuter le code de l'instruction correspondant à l'<i>opcode</i>. Et effectivement, la méthode <code>dispatch</code> consiste principalement en un (gros) <code>switch</code>, mais sur la <i>famille</i> d'instruction correspondant à l'<i>opcode</i>, et pas sur l'<i>opcode</i> lui-même.
+</p>
+
+<p>
+L'extrait de code ci-dessous, que vous pouvez copier dans le corps de votre <code>switch</code>, contient un cas par famille à traiter dans cette étape. Notez que le premier cas, qui correspond à la famille des instructions sans effet, est déjà correct tel quel !
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">case</span></span> NOP: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_R8_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_A_HLRU: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_A_N8R: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_A_CR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_A_N16R: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_A_BCR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_A_DER: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_R8_N8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_R16SP_N16: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> POP_R16: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_HLR_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_HLRU_A: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_N8R_A: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_CR_A: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_N16R_A: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_BCR_A: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_DER_A: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_HLR_N8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_N16R_SP: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_R8_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_SP_HL: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> PUSH_R16: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+</pre>
+</div>
+
+<p>
+Vous noterez qu'entre le <code>case</code> et le <code>break</code> de chaque cas se trouve un bloc, actuellement vide, entouré par des accolades (<code>{</code> et <code>}</code>). Le but de ces blocs est de permettre la déclaration de variables locales aux différents cas.
+</p>
+
+<p>
+La question qui se pose encore est de savoir comment, étant donné un octet contenant un <i>opcode</i>, obtenir la famille qui correspond. Le plus simple est de construire, au moment de la création de la classe <code>Cpu</code>, un tableau de familles indexé par les 256 <i>opcodes</i> possibles. Ce tableau peut être construit au moyen d'une méthode statique nommée p.ex. <code>buildOpcodeTable</code> se basant sur les valeurs du type énuméré <code>Opcode</code> fourni pour construire la table. Attention à ne prendre en compte que les éléments dont la sorte est <code>DIRECT</code> !
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">private</span></span> <span class="hljs-keyword"><span class="hljs-keyword">static</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> Opcode[] DIRECT_OPCODE_TABLE =
+  buildOpcodeTable(Opcode.Kind.DIRECT);
+</pre>
+</div>
+
+<p>
+Pour mémoire, en Java, un tableau contenant toutes les valeurs d'un type énuméré donné peut s'obtenir en appelant la méthode statique <code>values</code> sur ce type. Dès lors, il est possible d'itérer sur tous les éléments du type énuméré <code>Opcode</code> au moyen d'une boucle comme :
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (Opcode o: Opcode.values()) { <span class="hljs-comment"><span class="hljs-comment">/* … */</span></span> }
+</pre>
+</div>
+
+<p>
+En plus de son effet direct sur l'état du processeur, une instruction a également deux effets indirects : d'une part le compteur de programme <code>PC</code> doit être mis à jour pour référencer la prochaine instruction, et d'autre part un certain nombre de cycles doivent s'écouler avant que la prochaine instruction ne puisse être exécutée.
+</p>
+
+<p>
+Pour mettre à jour le compteur de programme, vous pouvez bien entendu utiliser l'attribut <code>totalBytes</code> du type <code>Opcode</code>, et pour mettre à jour l'attribut <code>nextNonIdleCycle</code>, l'attribut <code>cycles</code>.
+</p>
+
+<p>
+Notez qu'il est fortement conseillé de ne <i>pas</i> essayer de mettre à jour le compteur de programme progressivement, p.ex. en l'avançant d'un octet après avoir lu l'<i>opcode</i> de l'instruction, puis d'un autre après avoir lu son éventuel argument 8 bits, etc. Procéder de cette manière peut sembler élégant à ce stade du projet, mais risque de vous jouer des tours lors de la gestion des sauts. Même si vous ne comprenez pas encore pourquoi à ce stade, suivez notre conseil !
+</p>
+</div>
+</li>
+
+<li><a id="orgf865fa3"></a>Accès au bus<br>
+<div class="outline-text-5" id="text-2-5-1-4">
+<p>
+Beaucoup d'instructions du processeur — y compris certaines qui seront décrites dans des étapes ultérieures — lisent ou écrivent des valeurs depuis le bus.
+</p>
+
+<p>
+Cela implique premièrement d'avoir accès au bus du système ! Pour cela, il convient de redéfinir la méthode <code>attachTo</code> héritée de <code>Component</code>, afin de stocker le bus dans un attribut de la classe <code>Cpu</code>.
+</p>
+
+<p>
+D'autre part, il est judicieux d'offrir un certain nombre de méthodes (<i>privées !</i>) d'accès au bus pour simplifier la mise en œuvre des instructions. La liste suivante donne une idée des méthodes dont vous pourriez avoir besoin :
+</p>
+
+<ul class="org-ul">
+<li><code>int read8(int address)</code>, qui lit depuis le bus la valeur 8 bits à l'adresse donnée,</li>
+
+<li><code>int read8AtHl()</code>, qui lit depuis le bus la valeur 8 bits à l'adresse contenue dans la paire de registres <code>HL</code>,</li>
+
+<li><code>int read8AfterOpcode()</code>, qui lit depuis le bus la valeur 8 bits à l'adresse suivant celle contenue dans le compteur de programme, c-à-d à l'adresse <code>PC+1</code>,</li>
+
+<li><code>int read16(int address)</code>, qui lit depuis le bus la valeur 16 bits à l'adresse donnée,</li>
+
+<li><code>int read16AfterOpcode()</code>, qui lit depuis le bus la valeur 16 bits à l'adresse suivant celle contenue dans le compteur de programme, c-à-d à l'adresse <code>PC+1</code>,</li>
+
+<li><code>void write8(int address, int v)</code>, qui écrit sur le bus, à l'adresse donnée, la valeur 8 bits donnée,</li>
+
+<li><code>void write16(int address, int v)</code>, qui écrit sur le bus, à l'adresse donnée, la valeur 16 bits donnée,</li>
+
+<li><code>void write8AtHl(int v)</code>, qui écrit sur le bus, à l'adresse contenue dans la paire de registres <code>HL</code>, la valeur 8 bits donnée,</li>
+
+<li><code>void push16(int v)</code>, qui décrémente l'adresse contenue dans le pointeur de pile (registre <code>SP</code>) de 2 unités, puis écrit à cette nouvelle adresse la valeur 16 bits donnée,</li>
+
+<li><code>int pop16()</code>, qui lit depuis le bus (et retourne) la valeur 16 bits à l'adresse contenue dans le pointeur de pile (registre <code>SP</code>), puis l'incrémente de 2 unités.</li>
+</ul>
+
+<p>
+Attention : souvenez-vous que lorsqu'une valeur 16 bits est placée en mémoire, ses 8 bits de poids faible <i>précèdent</i> ceux de poids fort.
+</p>
+</div>
+</li>
+
+<li><a id="org2393251"></a>Gestion des paires de registres<br>
+<div class="outline-text-5" id="text-2-5-1-5">
+<p>
+Beaucoup d'instructions du processeur lisent ou écrivent des valeurs des paires de registres. Là aussi, il vaut la peine de n'écrire ce code qu'une seule fois et de le placer dans des méthodes (<i>privées !</i>). Voici les méthodes que nous vous suggérons d'offrir :
+</p>
+
+<ul class="org-ul">
+<li><code>int reg16(Reg16 r)</code>, qui retourne la valeur contenue dans la paire de registres donnée,</li>
+
+<li><code>void setReg16(Reg16 r, int newV)</code>, qui modifie la valeur contenue dans la paire de registres donnée, en faisant attention de mettre à 0 les bits de poids faible si la paire en question est <code>AF</code>,</li>
+
+<li><code>void setReg16SP(Reg16 r, int newV)</code>, qui fait la même chose que <code>setReg16</code> sauf dans le cas où la paire passée est <code>AF</code>, auquel cas le registre <code>SP</code> est modifié en lieu et place de la paire <code>AF</code>.</li>
+</ul>
+</div>
+</li>
+
+<li><a id="orgd04d1cd"></a>Extraction de paramètres<br>
+<div class="outline-text-5" id="text-2-5-1-6">
+<p>
+Plusieurs familles d'instructions possèdent des paramètres, p.ex. l'identité d'un registre, et certains de ces paramètres sont encodés dans l'octet formant l'<i>opcode</i>. Il est dès lors utile d'avoir des méthodes permettant d'extraire ces paramètres d'un <i>opcode</i>, par exemple :
+</p>
+
+<ul class="org-ul">
+<li><code>Reg extractReg(Opcode opcode, int startBit)</code>, qui extrait et retourne l'identité d'un registre 8 bits de l'encodage de l'<i>opcode</i> donné, à partir du bit d'index donné,</li>
+
+<li><code>Reg16 extractReg16(Opcode opcode)</code>, qui fait la même chose que <code>extractReg</code> mais pour les paires de registres (ne prend pas le paramètre <code>startBit</code> car il vaut 4 pour toutes les instructions du processeur),</li>
+
+<li><code>int extractHlIncrement(Opcode opcode)</code>, qui retourne -1 ou +1 en fonction du bit d'index 4, qui est utilisé pour encoder l'incrémentation ou la décrémentation de la paire <code>HL</code> dans différentes instructions.</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org966ae3d" class="outline-3">
+<h3 id="org966ae3d"><span class="section-number-3">2.6</span> Tests</h3>
+<div class="outline-text-3" id="text-2-6">
+<p>
+Comme pour l'étape précédente, nous ne vous fournissons plus de tests mais un fichier de vérification de signatures contenu dans <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_sigchecks_3.zip">une archive Zip</a> à importer dans votre projet.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7e6eb70" class="outline-2">
+<h2 id="org7e6eb70"><span class="section-number-2">3</span> Références</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Les personnes désirant avoir plus d'informations concernant les instructions du processeur du Game Boy et/ou leur encodage pourront se reporter aux références externes suivantes, toutes deux en anglais :
+</p>
+
+<ul class="org-ul">
+<li><a href="https://rednex.github.io/rgbds/gbz80.7.html"><i>CPU opcode reference</i></a>, qui liste la totalité des instructions du processeur du Game Boy, donne une brève description de leur effet et différentes autres informations,</li>
+<li><a href="http://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html"><i>Gameboy CPU (LR35902) instruction set</i></a>, qui présente, sous forme de table, l'encodage de toutes les instructions du processeur du Game Boy et différentes autres informations (notez que, dans ce document, le terme <i>cycle</i> est utilisé pour désigner ce que nous désignons par le terme <i>battement d'horloge</i>).</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgead70d8" class="outline-2">
+<h2 id="orgead70d8"><span class="section-number-2">4</span> Résumé</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+Pour cette étape, vous devez :
+</p>
+
+<ul class="org-ul">
+<li>écrire les classes et interfaces <code>Register</code>, <code>RegisterFile</code>, <code>Clocked</code> et <code>Cpu</code> selon les indications données plus haut,</li>
+
+<li>documenter la totalité des entités publiques que vous avez définies,</li>
+
+<li>rendre votre code au plus tard le <b>9 mars 2018 à 16h30</b>, via <a href="https://cs108.epfl.ch/archive/18/p/submit.html">le système de rendu</a>.</li>
+</ul>
+
+<p>
+Ce rendu est un rendu testé, auquel 18 points sont attribués, au prorata des tests unitaires passés avec succès. Notez que la documentation de votre code ne sera <i>pas</i> évaluée avant le rendu intermédiaire. Dès lors, si vous êtes en retard, ne vous en préoccupez pas pour l'instant.
+</p>
+
+<div class="cs108warning">
+<p>
+N'attendez surtout pas le dernier moment pour effectuer votre rendu, car vous n'êtes pas à l'abri d'imprévus. <b>Souvenez-vous qu'aucun retard, aussi insignifiant soit-il, ne sera toléré !</b>
+</p>
+
+</div>
+</div>
+</div>
+<div id="footnotes">  <h2 class="footnotes">Notes de bas de page</h2>  <div id="text-footnotes">
+<div class="footdef"><sup><a id="fn.1" class="footnum" href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html#fnr.1">1</a></sup> <div class="footpara"><p class="footpara">
+Le contrôleur LCD est le composant qui gère l'écran à cristaux liquides (<i>liquid-crystal display</i> ou <i>LCD</i> en anglais) du Game Boy.
+</p></div></div>
+
+<div class="footdef"><sup><a id="fn.2" class="footnum" href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html#fnr.2">2</a></sup> <div class="footpara"><p class="footpara">
+A vrai dire, peu de gens écrivent encore des programmes directement en assembleur de nos jours, à part dans des domaines spécialisés comme l'informatique embarquée. Les langages de plus haut niveau, et surtout indépendants du processeur, comme Java, lui sont généralement préférés.
+</p></div></div>
+
+<div class="footdef"><sup><a id="fn.3" class="footnum" href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html#fnr.3">3</a></sup> <div class="footpara"><p class="footpara">
+Cela n'est pas tout à fait exact, et nous verrons à l'étape suivante que les instructions dites <i>préfixées</i> nécessitent au moins 2 octets pour être identifiées. Nous ignorerons cela pour l'instant.
+</p></div></div>
+
+<div class="footdef"><sup><a id="fn.4" class="footnum" href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html#fnr.4">4</a></sup> <div class="footpara"><p class="footpara">
+Cet assemblage peut se faire au moyen d'un assembleur pour Game Boy. Celui que nous avons utilisé pour cet exemple se nomme <code>rgbasm</code> et fait partie du projet <a href="https://rednex.github.io/rgbds/">RGBDS</a>.
+</p></div></div>
+
+<div class="footdef"><sup><a id="fn.5" class="footnum" href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html#fnr.5">5</a></sup> <div class="footpara"><p class="footpara">
+Notez que le véritable processeur du Game Boy est actif à chaque cycle, et si certaines instructions prennent plus d'un cycle à s'exécuter, c'est uniquement en raison de limitations du matériel. Par exemple, il n'est pas possible de faire plus d'un accès au bus par cycle. Dès lors, toute instruction dont l'encodage fait 2 octets aura besoin d'au moins deux cycles pour s'exécuter. Dans notre simulation, les instructions sont exécutées instantanément durant leur premier cycle, après quoi notre processeur simulé attend sans rien faire. Strictement parlant, cela est incorrect et constitue l'une des plus grosses approximation faite par notre simulation. Heureusement, peu de programmes dépendent de ce comportement.
+</p></div></div>
+
+</div></div></div>
+
+
+<div style="position: absolute; width: 0px; height: 0px; overflow: hidden; padding: 0px; border: 0px; margin: 0px;"><div id="MathJax_Font_Test" style="position: absolute; visibility: hidden; top: 0px; left: 0px; width: auto; padding: 0px; border: 0px; margin: 0px; white-space: nowrap; text-align: left; text-indent: 0px; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; font-size: 40px; font-weight: normal; font-style: normal; font-family: MathJax_Math-italic, sans-serif;"></div></div></body></html>

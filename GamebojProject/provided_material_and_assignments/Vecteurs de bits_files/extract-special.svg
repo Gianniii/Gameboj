@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="5.169292 9.515752 412.02367 124.03544" width="412.02367" height="124.03544">
+  <defs>
+    <font-face font-family="Fira Sans" font-size="16" panose-1="2 11 5 3 5 0 0 2 0 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="527" cap-height="689" ascent="935.0019" descent="-265.00054" font-weight="400">
+      <font-face-src>
+        <font-face-name name="FiraSans-Regular"/>
+      </font-face-src>
+    </font-face>
+    <marker orient="auto" overflow="visible" markerUnits="strokeWidth" id="FilledArrow_Marker" stroke-linejoin="miter" stroke-miterlimit="10" viewBox="-1 -4 10 8" markerWidth="10" markerHeight="8" color="black">
+      <g>
+        <path d="M 8 0 L 0 -3 L 0 3 Z" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+      </g>
+    </marker>
+    <font-face font-family="Fira Sans" font-size="10" panose-1="2 11 5 3 5 0 0 2 0 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="527" cap-height="689" ascent="935.0019" descent="-265.00054" font-weight="400">
+      <font-face-src>
+        <font-face-name name="FiraSans-Regular"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.7.1 
+    <dc:date>2018-04-07 14:12:48 +0000</dc:date>
+  </metadata>
+  <g id="Canevas_1" fill-opacity="1" stroke-dasharray="none" stroke="none" stroke-opacity="1" fill="none">
+    <title>Canevas 1</title>
+    <g id="Canevas_1: Calque 1">
+      <title>Calque 1</title>
+      <g id="Group_29">
+        <g id="Graphic_44">
+          <rect x="5.669292" y="28.34646" width="28.34646" height="28.34646" fill="white"/>
+          <rect x="5.669292" y="28.34646" width="28.34646" height="28.34646" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(10.669292 33.01969)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="3.26923" y="15">…</tspan>
+          </text>
+        </g>
+        <g id="Graphic_43">
+          <rect x="388.3465" y="28.34646" width="28.34646" height="28.34646" fill="white"/>
+          <rect x="388.3465" y="28.34646" width="28.34646" height="28.34646" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(393.3465 33.01969)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="3.26923" y="15">…</tspan>
+          </text>
+        </g>
+        <g id="Graphic_33">
+          <rect x="34.01575" y="28.34646" width="70.86615" height="28.34646" fill="white"/>
+          <rect x="34.01575" y="28.34646" width="70.86615" height="28.34646" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(39.01575 33.01969)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="25.969075" y="15">0</tspan>
+          </text>
+        </g>
+        <g id="Graphic_32">
+          <rect x="317.48035" y="28.34646" width="70.86615" height="28.34646" fill="white"/>
+          <rect x="317.48035" y="28.34646" width="70.86615" height="28.34646" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(322.48035 33.01969)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="25.969075" y="15">0</tspan>
+          </text>
+        </g>
+        <g id="Graphic_31">
+          <rect x="246.6142" y="28.34646" width="70.86615" height="28.34646" fill="white"/>
+          <rect x="246.6142" y="28.34646" width="70.86615" height="28.34646" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(251.6142 33.01969)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="25.849075" y="15">A</tspan>
+          </text>
+        </g>
+        <g id="Graphic_30">
+          <rect x="175.74805" y="28.34646" width="70.86615" height="28.34646" fill="white"/>
+          <rect x="175.74805" y="28.34646" width="70.86615" height="28.34646" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(180.74805 33.01969)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="25.569075" y="15">B</tspan>
+          </text>
+        </g>
+        <g id="Graphic_28">
+          <rect x="104.8819" y="28.34646" width="70.86615" height="28.34646" fill="white"/>
+          <rect x="104.8819" y="28.34646" width="70.86615" height="28.34646" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(109.8819 33.01969)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="25.953075" y="15">C</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Group_34">
+        <g id="Graphic_35">
+          <rect x="175.74805" y="85.03938" width="70.86615" height="28.34646" fill="white"/>
+          <rect x="175.74805" y="85.03938" width="70.86615" height="28.34646" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(180.74805 89.71261)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="25.849075" y="15">A</tspan>
+          </text>
+        </g>
+        <g id="Graphic_39">
+          <rect x="104.8819" y="85.03938" width="70.86615" height="28.34646" fill="white"/>
+          <rect x="104.8819" y="85.03938" width="70.86615" height="28.34646" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(109.8819 89.71261)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="25.569075" y="15">B</tspan>
+          </text>
+        </g>
+        <g id="Graphic_36">
+          <rect x="246.6142" y="85.03938" width="70.86615" height="28.34646" fill="white"/>
+          <rect x="246.6142" y="85.03938" width="70.86615" height="28.34646" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(251.6142 89.71261)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="25.969075" y="15">0</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Line_40">
+        <line x1="193.4646" y1="56.69292" x2="165.76211" y2="78.8549" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_41">
+        <line x1="264.33074" y1="56.69292" x2="236.62826" y2="78.8549" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_42">
+        <line x1="335.1969" y1="56.69292" x2="307.4944" y2="78.8549" marker-end="url(#FilledArrow_Marker)" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_45">
+        <text transform="translate(313.9764 15.015752)" fill="black">
+          <tspan font-family="Fira Sans" font-size="10" font-weight="400" fill="black" x=".21" y="9">0</tspan>
+        </text>
+      </g>
+      <g id="Graphic_46">
+        <text transform="translate(241.11026 15.015752)" fill="black">
+          <tspan font-family="Fira Sans" font-size="10" font-weight="400" fill="black" x=".03" y="9">32</tspan>
+        </text>
+      </g>
+      <g id="Graphic_47">
+        <text transform="translate(169.40947 15.015752)" fill="black">
+          <tspan font-family="Fira Sans" font-size="10" font-weight="400" fill="black" x=".175" y="9">64</tspan>
+        </text>
+      </g>
+      <g id="Graphic_48">
+        <text transform="translate(99.04332 15.015752)" fill="black">
+          <tspan font-family="Fira Sans" font-size="10" font-weight="400" fill="black" x=".21" y="9">96</tspan>
+        </text>
+      </g>
+      <g id="Graphic_49">
+        <text transform="translate(27.011814 15.015752)" fill="black">
+          <tspan font-family="Fira Sans" font-size="10" font-weight="400" fill="black" x=".105" y="9">128</tspan>
+        </text>
+      </g>
+      <g id="Graphic_50">
+        <text transform="translate(379.5079 15.015752)" fill="black">
+          <tspan font-family="Fira Sans" font-size="10" font-weight="400" fill="black" x=".08" y="9">–32</tspan>
+        </text>
+      </g>
+      <g id="Graphic_53">
+        <text transform="translate(313.9764 116.0512)" fill="black">
+          <tspan font-family="Fira Sans" font-size="10" font-weight="400" fill="black" x=".21" y="9">0</tspan>
+        </text>
+      </g>
+      <g id="Graphic_52">
+        <text transform="translate(241.11026 116.0512)" fill="black">
+          <tspan font-family="Fira Sans" font-size="10" font-weight="400" fill="black" x=".03" y="9">32</tspan>
+        </text>
+      </g>
+      <g id="Graphic_51">
+        <text transform="translate(169.40947 116.0512)" fill="black">
+          <tspan font-family="Fira Sans" font-size="10" font-weight="400" fill="black" x=".175" y="9">64</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>

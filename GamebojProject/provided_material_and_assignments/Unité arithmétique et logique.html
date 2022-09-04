@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<!-- saved from url=(0046)https://cs108.epfl.ch/archive/18/p/02_alu.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-03-02 Ven 13:37 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unité arithmétique et logique</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Unité arithmétique et logique_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Unité arithmétique et logique_files/github.min.css">
+<script src="./Unité arithmétique et logique_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Unité arithmétique et logique
+<br>
+<span class="subtitle">GameBoj – Étape 2</span>
+</h1>
+
+<div id="outline-container-org53331fe" class="outline-2">
+<h2 id="org53331fe"><span class="section-number-2">1</span> Préliminaires</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Avant de commencer à travailler à cette seconde étape, lisez le guide <a href="https://cs108.epfl.ch/archive/18/g/backups.html"><i>Sauvegarder son travail</i></a>. Il vous donnera des conseils importants concernant la sauvegarde de votre projet au cours du semestre.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org24d8756" class="outline-2">
+<h2 id="org24d8756"><span class="section-number-2">2</span> Introduction</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+Le but principal de cette seconde étape est d'écrire une classe représentant une partie importante du processeur appelée l'unité arithmétique et logique. Cette unité est chargée d'effectuer des calculs, p.ex. des additions ou des soustractions, pour le compte du processeur.
+</p>
+
+<p>
+Il faut noter que cette unité est intégrée au processeur, et ne constitue donc pas un composant individuel connecté au bus. Il est néanmoins intéressant de la modéliser comme une entité à part entière, d'une part car cela répartit le code simulant le processeur entre plusieurs classes, et d'autre part car une unité séparée est plus simple à tester.
+</p>
+</div>
+
+<div id="outline-container-org622e1ff" class="outline-3">
+<h3 id="org622e1ff"><span class="section-number-3">2.1</span> Unité arithmétique et logique</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+Une <b>unité arithmétique et logique</b> ou <b>UAL</b> (<i>arithmetic logic unit</i> ou <i>ALU</i> en anglais) est une partie d'un processeur chargée d'effectuer des calculs sur des « entiers » de taille fixe.
+</p>
+
+<p>
+Le processeur du Game Boy possède une UAL capable d'effectuer des calculs sur des « entiers » de 8 bits<sup><a id="fnr.1" class="footref" href="https://cs108.epfl.ch/archive/18/p/02_alu.html#fn.1">1</a></sup>. Parmi les opérations qu'elle offre figurent :
+</p>
+
+<ul class="org-ul">
+<li>l'addition et la soustraction,</li>
+<li>les opérations bit à bit usuelles (<i>et</i>, <i>ou</i>, <i>ou exclusif</i>, etc.),</li>
+<li>le décalage et la rotation dans chacune des deux directions, mais d'une distance limitée à un seul bit,</li>
+<li>le test et la modification d'un bit individuel d'un « entier » de 8 bits.</li>
+</ul>
+
+<p>
+En plus de ces opérations sur des « entiers » de 8 bits, elle offre également l'addition sur les « entiers » de 16 bits.
+</p>
+
+<p>
+Il faut noter que cette UAL ne permet <i>pas</i> d'effectuer des multiplications ou des divisions ! Cela implique que le processeur du Game Boy n'offre pas non plus d'instruction de multiplication ou de division, ce qui ne facilite pas la vie des programmeurs.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org0bb07a7" class="outline-3">
+<h3 id="org0bb07a7"><span class="section-number-3">2.2</span> Fanions</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+En plus de produire un « entier » de taille fixe comme résultat, les différentes opérations de l'UAL produisent également un certain nombre de valeurs booléennes, nommées <b>fanions</b> ou parfois <b>drapeaux</b> (<i>flags</i>), qui donnent des informations sur le résultat. Ces fanions permettent de facilement déterminer si le résultat d'une opération a une caractéristique donnée — p.ex. s'il est nul —, simplement en consultant le fanion correspondant.
+</p>
+
+<p>
+Les fanions sont généralement nommés au moyen d'une seule lettre et, dans le cas de l'UAL du Game Boy, sont au nombre de quatre : <code>Z</code>, <code>N</code>, <code>H</code> et <code>C</code>. Leur signification est la suivante :
+</p>
+
+<ul class="org-ul">
+<li><code>Z</code> (<i>zero</i>) est vrai ssi le résultat de l'opération vaut zéro,</li>
+
+<li><code>N</code> est vrai ssi l'opération effectuée était une soustraction,</li>
+
+<li><code>H</code> (<i>half carry</i>) est vrai ssi une retenue (resp. un emprunt) a été produite par l'addition (resp. la soustraction) des 4 bits de poids faible,</li>
+
+<li><code>C</code> (<i>carry</i>) est vrai ssi une retenue (resp. un emprunt) a été produite par l'addition (resp. la soustraction) de la totalité des 8 bits.</li>
+</ul>
+
+<p>
+Les notions de retenue et d'emprunt sont décrites plus en détail à la section suivante. Le fonctionnement des fanions peut néanmoins être illustré au moyen de l'exemple suivant : admettons que l'on demande à l'UAL du Game Boy de calculer la somme des deux « entiers » de 8 bits valant 91<sub>16</sub> et 83<sub>16</sub>. Elle produit :
+</p>
+
+<ul class="org-ul">
+<li>un résultat de 8 bits valant 14<sub>16</sub> (qui est différent du résultat mathématique, 114<sub>16</sub>, car celui-ci n'est pas représentable avec 8 bits),</li>
+<li>un fanion <code>Z</code> faux, car le résultat n'est pas égal à 0,</li>
+<li>un fanion <code>N</code> faux, car l'opération n'était pas une soustraction,</li>
+<li>un fanion <code>H</code> faux, car l'addition des 4 bits de poids faible (1<sub>16</sub> et 3<sub>16</sub>) n'a pas produit de retenue — en d'autres termes, son résultat (4<sub>16</sub>) est représentable avec 4 bits uniquement,</li>
+<li>un fanion <code>C</code> vrai, car l'addition des 8 bits a produit une retenue — en d'autres termes, son résultat (114<sub>16</sub>) n'est pas représentable avec 8 bits et a été tronqué en 14<sub>16</sub>.</li>
+</ul>
+
+<p>
+Il faut noter que certains fanions n'ont pas de sens clair pour chacune des opérations de l'UAL. Par exemple, la notion de retenue/emprunt n'a de sens que pour l'addition et la soustraction, et dès lors la signification des fanions <code>H</code> et <code>C</code> n'est claire que pour ces deux opérations. La valeur d'un fanion à la suite d'une opération pour lequel il n'a pas de sens évident a donc été choisie plus ou moins arbitrairement par les concepteurs du processeur du Game Boy, et ne répond généralement à aucune logique.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org2c944a8" class="outline-3">
+<h3 id="org2c944a8"><span class="section-number-3">2.3</span> Retenues et emprunts</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+La signification des deux fanions de retenue (<code>H</code> et <code>C</code>) n'est pas la même pour les additions que pour les soustractions. Quelques explications à leur sujet s'imposent donc.
+</p>
+</div>
+
+<div id="outline-container-org5ba4ab0" class="outline-4">
+<h4 id="org5ba4ab0"><span class="section-number-4">2.3.1</span> Addition</h4>
+<div class="outline-text-4" id="text-2-3-1">
+<p>
+En binaire (base 2), une addition de deux nombres peut se faire selon la même technique qu'en base 10, consistant à additioner deux à deux chacun les chiffres des deux nombres, de droite à gauche, en propageant les éventuelles retenues.
+</p>
+
+<p>
+Par exemple, pour additionner les nombres 11<sub>2</sub> (3) et 1, on procède ainsi :
+</p>
+
+<ol class="org-ol">
+<li>les deux bits de poids faible (1 et 1) sont additionnés : le résultat vaut 0, mais une retenue est produite,</li>
+<li>les deux bits suivants (1 et 0) ainsi que la retenue précédente (1) sont additionés : le résultat vaut à nouveau 0, et la retenue 1,</li>
+<li>les deux bits suivants (0 et 0) ainsi que la retenue précédente (1) sont additionés : le résultat vaut 1, et aucune retenue n'est produite.</li>
+</ol>
+
+<p>
+Le résultat est donc 100<sub>2</sub>, soit 4, comme attendu.
+</p>
+
+<p>
+Plus généralement, admettons que l'on additionne deux valeurs de <i>n</i> bits nommées <code>x</code> et <code>y</code>. Les différents bits de ces deux valeurs peuvent être numérotés de 0 (bit de poids le plus faible) à <i>n</i> - 1 (bit de poids le plus fort). De la même manière, on peut numéroter les bits de retenue <code>c</code> (pour <i>carry</i>) de 0 à <i>n</i>. Cette convention est illustrée par la table ci-dessous :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><b>Index de bit</b></th>
+<th scope="col" class="org-right">n</th>
+<th scope="col" class="org-right">n - 1</th>
+<th scope="col" class="org-left">…</th>
+<th scope="col" class="org-right">2</th>
+<th scope="col" class="org-right">1</th>
+<th scope="col" class="org-right">0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><b>Retenue</b> <code>c</code></td>
+<td class="org-right"><code>c</code>[n]</td>
+<td class="org-right"><code>c</code>[n-1]</td>
+<td class="org-left">…</td>
+<td class="org-right"><code>c</code>[2]</td>
+<td class="org-right"><code>c</code>[1]</td>
+<td class="org-right"><code>c</code>[0]</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>x</code></td>
+<td class="org-right">&nbsp;</td>
+<td class="org-right"><code>x</code>[n-1]</td>
+<td class="org-left">…</td>
+<td class="org-right"><code>x</code>[2]</td>
+<td class="org-right"><code>x</code>[1]</td>
+<td class="org-right"><code>x</code>[0]</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>y</code></td>
+<td class="org-right">&nbsp;</td>
+<td class="org-right"><code>y</code>[n-1]</td>
+<td class="org-left">…</td>
+<td class="org-right"><code>y</code>[2]</td>
+<td class="org-right"><code>y</code>[1]</td>
+<td class="org-right"><code>y</code>[0]</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Il est très important de comprendre qu'avec cette convention, le bit d'index <i>i</i> de la retenue est produit par l'addition des bits d'index <i>i</i> - 1 de <code>x</code>, <code>y</code> et <code>c</code> ! Dès lors, <code>c</code>[0] vaut toujours 0, et la retenue contient un total de <i>n</i> + 1 bits, soit un bit de plus que les deux opérandes.
+</p>
+
+<p>
+Une fois les différents bits de la retenue numérotés de la sorte, il est trivial d'expliquer la signification des fanions <code>H</code> et <code>C</code> lors d'une addition dans l'UAL du Game Boy : <code>H</code> est simplement <code>c</code>[4], tandis que <code>C</code> est <code>c</code>[8].
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgf12b355" class="outline-4">
+<h4 id="orgf12b355"><span class="section-number-4">2.3.2</span> Soustraction</h4>
+<div class="outline-text-4" id="text-2-3-2">
+<p>
+Tout comme l'addition, la soustraction peut s'effectuer en base 2 exactement comme en base 10 : bit à bit, de droite à gauche, en effectuant éventuellement des emprunts à gauche.
+</p>
+
+<p>
+Par exemple, pour calculer 100<sub>2</sub> (4) - 1, on procède ainsi :
+</p>
+
+<ol class="org-ol">
+<li>les deux bits de poids faible (0 et 1) sont soustraits : comme la valeur à soustraire est plus grande que la valeur dont on soustrait, on emprunte 1 à gauche, et le bit de poids faible du résultat est : 10<sub>2</sub> (emprunt) + 0 - 1 = 1,</li>
+
+<li>les deux bits suivants (0 et 0) sont soustraits, de même que l'emprunt effectué précédemment, qui doit lui aussi être soustrait ; là aussi, un emprunt doit être effectué, et le prochain bit vaut donc 10<sub>2</sub> (emprunt) + 0 - 1 (emprunté ci-dessus) - 0 = 1,</li>
+
+<li>les deux bits suivants (1 et 0) sont soustraits, de même que l'emprunt précédent ; le dernier bit vaut donc 1 - 1 (emprunté précédemment) - 0 = 0.</li>
+</ol>
+
+<p>
+Le résultat est donc 011<sub>2</sub>, soit 3, comme attendu.
+</p>
+
+<p>
+Dans le cas général d'une soustraction de deux valeurs de <i>n</i> bits, il est une fois encore possible de numéroter les bits des opérandes et de l'emprunt. On obtient une table similaire à celle ci-dessus, si ce n'est que l'emprunt est nommé <code>b</code>, comme <i>borrow</i> :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><b>Index de bit</b></th>
+<th scope="col" class="org-right">n</th>
+<th scope="col" class="org-right">n - 1</th>
+<th scope="col" class="org-left">…</th>
+<th scope="col" class="org-right">2</th>
+<th scope="col" class="org-right">1</th>
+<th scope="col" class="org-right">0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><b>Emprunt</b> <code>b</code></td>
+<td class="org-right"><code>b</code>[n]</td>
+<td class="org-right"><code>b</code>[n-1]</td>
+<td class="org-left">…</td>
+<td class="org-right"><code>b</code>[2]</td>
+<td class="org-right"><code>b</code>[1]</td>
+<td class="org-right"><code>b</code>[0]</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>x</code></td>
+<td class="org-right">&nbsp;</td>
+<td class="org-right"><code>x</code>[n-1]</td>
+<td class="org-left">…</td>
+<td class="org-right"><code>x</code>[2]</td>
+<td class="org-right"><code>x</code>[1]</td>
+<td class="org-right"><code>x</code>[0]</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>y</code></td>
+<td class="org-right">&nbsp;</td>
+<td class="org-right"><code>y</code>[n-1]</td>
+<td class="org-left">…</td>
+<td class="org-right"><code>y</code>[2]</td>
+<td class="org-right"><code>y</code>[1]</td>
+<td class="org-right"><code>y</code>[0]</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Là aussi, il est important de comprendre que le bit d'index <i>i</i> de l'emprunt est produit par la soustraction des bits d'index <i>i</i> - 1 de <code>x</code>, <code>y</code> et <code>b</code> ! Dès lors, <code>b</code>[0] vaut toujours 0. Par contre, conceptuellement en tout cas, l'emprunt peut avoir un nombre infini de bits, car lorsque <code>x</code> &lt; <code>y</code>, <code>b</code>[i] = 1 pour tout <i>i</i> ≥ <i>n</i>. (Pour vous en rendre compte, vous pouvez essayer de calculer 0 - 1 avec la technique sus-mentionnée). Cela n'a toutefois pas d'impact sur la discussion qui suit.
+</p>
+
+<p>
+Comme pour l'addition, étant donné la numérotation des bits de l'emprunt décrite ci-dessus, il devient trivial d'expliquer la signification des bits <code>H</code> et <code>C</code> dans le cas d'une soustraction : <code>H</code> est simplement <code>b</code>[4], tandis que <code>C</code> est <code>b</code>[8].
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org1e6bf7d" class="outline-3">
+<h3 id="org1e6bf7d"><span class="section-number-3">2.4</span> Ajout avec retenue, soustraction avec emprunt</h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+Dans la section précédente, nous avons affirmé que dans le cas d'une addition, le premier bit de la retenue — <code>c</code>[0] — valait toujours 0. De même, dans le cas d'une soustraction, le premier bit de l'emprunt — <code>b</code>[0] — valait toujours 0.
+</p>
+
+<p>
+Dans certaines situations, il est pourtant intéressant de pouvoir spécifier, lors d'une addition, la valeur de <code>c</code>[0] et, lors d'une soustraction, la valeur de <code>b</code>[0].
+</p>
+
+<p>
+Par exemple, admettons que l'on désire effecuter une soustraction de deux valeurs 16 bits alors qu'on ne dispose que d'une UAL capable d'additioner des valeurs 8 bits. Intuitivement, cela peut se faire en enchaînant deux additions de 8 bits : la première pour les 8 bits de poids faible, la seconde pour les 8 bits de poids fort. Toutefois, il faut bien prendre garde à une chose : si la première addition produit une retenue, celle-ci doit être utilisée comme retenue initiale de la seconde addition ! En d'autres termes, la valeur de <code>c</code>[8] de la première addition doit être utilisée comme valeur de <code>c</code>[0] de la seconde addition.
+</p>
+
+<p>
+Pour cette raison, l'UAL du Game Boy offre la possibilité de spécifier la valeur de <code>c</code>[0] (resp. <code>b</code>[0]) lors d'une addition (resp. une soustraction). On appelle ces variantes de l'addition et de la soustraction : <b>addition avec retenue</b> (<i>add with carry</i>) et <b>soustraction avec emprunt</b> (<i>subtract with borrow</i>).
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgd2f85eb" class="outline-3">
+<h3 id="orgd2f85eb"><span class="section-number-3">2.5</span> Retenues des addition 16 bits</h3>
+<div class="outline-text-3" id="text-2-5">
+<p>
+L'UAL du Game Boy peut également effectuer des additions de valeurs 16 bits, ce qu'elle fait en chaînant deux additions de 8 bits comme décrit ci-dessus.
+</p>
+
+<p>
+Lorsqu'une telle addition est effectuée, la question se pose de savoir ce que valent les fanions de retenue, <code>H</code> et <code>C</code>. En gros, deux possibilités sensées existent :
+</p>
+
+<ol class="org-ol">
+<li>ces fanions sont ceux de la première addition de 8 bits, celle qui somme les 8 bits de poids faible de chacune des deux valeurs,</li>
+
+<li>ces fanions sont ceux de la seconde addition de 8 bits, celle qui somme les 8 bits de poids fort de chacune des deux valeurs et l'éventuelle retenue produite par la première addition.</li>
+</ol>
+
+<p>
+Visiblement, les concepteurs du processeur du Game Boy n'ont pas réussi à se décider pour l'une de ces deux possibilités, et on retrouve donc les deux dans différentes situations. Pour cette raison, notre UAL simulée offre deux variantes de l'addition 16 bits, qui produisent la même valeur 16 bits mais des fanions <code>H</code> et <code>C</code> calculés différemment.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org29a5069" class="outline-3">
+<h3 id="org29a5069"><span class="section-number-3">2.6</span> Rotation à travers la retenue</h3>
+<div class="outline-text-3" id="text-2-6">
+<p>
+Comme d'autres UAL, celle du Game Boy offre une opération dite de <b>rotation à travers la retenue</b> (<i>rotate through carry</i>).
+</p>
+
+<p>
+Conceptuellement, cette opération consiste à obtenir une valeur de 9 bits en combinant les 8 bits de la valeur et le bit de retenue, qui devient le bit de poids le plus fort de la valeur combinée. Cette valeur de 9 bits subit une rotation, et les 9 bits du résultat sont à nouveau séparés en le bit de poids le plus fort, qui devient le fanion de retenue du résultat, et les 8 bits de poids faible, qui constituent la valeur du résultat.
+</p>
+
+<p>
+Par exemple, admettons que l'on désire effectuer une rotation d'un bit vers la gauche de la valeur 8 bits <code>stuvwxyz</code> (chaque lettre représente un bit) et du fanion <code>C</code>. On procède comme décrit plus haut en :
+</p>
+
+<ol class="org-ol">
+<li>formant la valeur 9 bits combinée, <code>Cstuvwxyz</code>,</li>
+<li>tournant cette valeur d'un bit vers la gauche, ce qui donne <code>stuvwxyzC</code>,</li>
+<li>séparant cette valeur en son bit de poids le plus fort, <code>s</code>, qui devient la retenue du résultat, et ses 8 bits de poids faible, <code>tuvwxyzC</code>, qui deviennent la valeur du résultat.</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-orgc08d17e" class="outline-3">
+<h3 id="orgc08d17e"><span class="section-number-3">2.7</span> Valeurs décimales codées en binaire</h3>
+<div class="outline-text-3" id="text-2-7">
+<p>
+Les ordinateurs représentent en interne les nombres en base 2, tandis que les humains ont l'habitude de travailler en base 10.
+</p>
+
+<p>
+Cette différence de base pose parfois problème, par exemple lorsqu'on désire afficher, en base 10, un nombre stocké dans l'ordinateur. En effet, cet affichage implique de déterminer la représentation en base 10 d'un nombre dont on ne connaît que la représentation en base 2.
+</p>
+
+<p>
+La solution la plus naturelle pour passer d'une représentation à l'autre consiste à calculer le reste de la division du nombre par 10, ce qui donne le chiffre de poids faible. Le chiffre suivant (depuis la droite) peut ensuite être obtenu en appliquant la même technique au nombre divisé entièrement par 10, et ainsi de suite.
+</p>
+
+<p>
+Cette solution fonctionne, mais sa mise en œuvre est problématique (et coûteuse) sur un système comme le Game Boy dont l'UAL n'offre pas d'opération de division.
+</p>
+
+<p>
+Pour cette raison, et d'autres, certains nombres sont parfois stockés dans une représentation particulière nommée le <a href="https://fr.wikipedia.org/wiki/D%C3%A9cimal_cod%C3%A9_binaire"><b>décimal codé binaire</b></a>, abrégé <b>DCB</b> (<i>binary coded decimal</i>, <i>BCD</i>). L'idée est de représenter chaque chiffre décimal par un groupe de 4 bits, selon la correspondance (évidente) suivante :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">Chiffre</th>
+<th scope="col" class="org-left">Représentation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">0</td>
+<td class="org-left"><code>0000</code></td>
+</tr>
+
+<tr>
+<td class="org-right">1</td>
+<td class="org-left"><code>0001</code></td>
+</tr>
+
+<tr>
+<td class="org-right">2</td>
+<td class="org-left"><code>0010</code></td>
+</tr>
+
+<tr>
+<td class="org-right">3</td>
+<td class="org-left"><code>0011</code></td>
+</tr>
+
+<tr>
+<td class="org-right">4</td>
+<td class="org-left"><code>0100</code></td>
+</tr>
+
+<tr>
+<td class="org-right">5</td>
+<td class="org-left"><code>0101</code></td>
+</tr>
+
+<tr>
+<td class="org-right">6</td>
+<td class="org-left"><code>0110</code></td>
+</tr>
+
+<tr>
+<td class="org-right">7</td>
+<td class="org-left"><code>0111</code></td>
+</tr>
+
+<tr>
+<td class="org-right">8</td>
+<td class="org-left"><code>1000</code></td>
+</tr>
+
+<tr>
+<td class="org-right">9</td>
+<td class="org-left"><code>1001</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Par exemple, 73 est représenté en DCB par un groupe de huit bits, les quatre de poids fort valant <code>0111</code> (7), les quatre de poids faible valant <code>0011</code> (3), soit <code>01110011</code>. Notez que cette représentation n'a rien à voir avec la représentation de 73 en binaire, qui vaut <code>01001001</code>.
+</p>
+
+<p>
+Bien entendu, le décimal codé binaire gaspille beaucoup de place, car il n'utilise que 10 des 16 valeurs représentables au moyen d'un groupe de 4 bits. Ainsi, en DCB, un groupe de 8 bits ne permet que de représenter les entiers allant de 0 à 99, alors qu'en binaire, ces mêmes 8 bits permettent de représenter les entiers allant de 0 à 255. L'intérêt du DCB est que la conversion en base 10 est triviale car il y a une correspondance directe entre un groupe de 4 bits et un chiffre décimal.
+</p>
+
+<p>
+Pour faciliter la manipulation de nombres décimaux codés binaire, l'UAL du Game Boy permet d'ajuster le résultat d'une opération arithmétique (addition ou soustraction) effectuée sur deux nombres DCB afin que le résultat soit lui aussi au format DCB.
+</p>
+
+<p>
+Par exemple, admettons que l'on désire calculer la somme de 35 et de 38, représentés en DCB, et obtenir un résultat qui soit lui aussi en DCB. En DCB, 35 est représenté par les 8 bits valant <code>0011 0101</code>, tandis que 38 l'est par les 8 bits valant <code>0011 1000</code>. En calculant « bêtement » la somme de ces deux valeurs 8 bits, on obtient <code>0110 1101</code>. Ces 8 bits ne constituent pas une valeur DCB valide, car les 4 bits de poids faible valent <code>1101</code>, ce qui ne correspond pas à un chiffre décimal. Dans ce cas particulier, il suffit d'ajouter 6 au résultat pour obtenir <code>0111 0011</code>, qui est bien la représentation DCB de 73, la somme de 35 et de 38.
+</p>
+
+<p>
+De manière générale, lorsqu'on effectue une addition ou une soustraction « normale » (c-à-d sans savoir qu'on manipule des valeurs DCB) sur deux valeurs DCB, le résultat obtenu n'est pas forcément une valeur DCB valide. Pour la rendre valide, il faut soit ajouter (dans le cas d'une addition), soit soustraire (dans le cas d'une soustraction) 6 à l'un ou l'autre, ou les deux, groupes de 4 bits. Ainsi, dans l'exemple ci-dessus, il a été nécessaire d'ajouter 6 au groupe de bits de poids faible<sup><a id="fnr.2" class="footref" href="https://cs108.epfl.ch/archive/18/p/02_alu.html#fn.2">2</a></sup>.
+</p>
+
+<p>
+La manière dont on détermine le sous-ensemble des deux groupes de 4 bits nécessitant une correction n'est pas totalement triviale. Dès lors, nous vous la décrivons sous la forme de l'algorithme d'ajustement ci-dessous, donné en pseudo-code. Cet algorithme prend quatre paramètres : la valeur 8 bits <code>V</code> à ajuster et les fanions <code>N</code>, <code>H</code> et <code>C</code> décrits plus haut. Cinq valeurs sont produites en résultat par la dernière ligne, sous la forme d'un quintuplet dont les composantes sont données entre parenthèses et sont, dans l'ordre : la valeur ajustée (<code>Va</code>) et les 4 fanions <code>Z</code>, <code>N</code>, <code>H</code> et <code>C</code>.
+</p>
+
+<pre class="example">fixL := H ∨ (¬N ∧ V[3:0] &gt; 9)
+fixH := C ∨ (¬N ∧ V &gt; 99₁₆)
+fix := 60₁₆ × fixH + 06₁₆ × fixL
+Va := V - fix si N, V + fix sinon
+(Va, Va = 0, N, faux, fixH)
+</pre>
+
+<p>
+On fait ci-dessus l'hypothèse que les fanions sont utilisables comme des entiers valant 0 si faux, 1 si vrai. D'autre part, les symboles usuels sont utilisés pour la conjonction (<code>∨</code>), disjonction (<code>∧</code>) et négation (<code>¬</code>) logiques. Finalement, <code>V[3:0]</code> dénote l'entier représenté par les 4 bits de poids faible de <code>V</code>.
+</p>
+
+<p>
+Pour illustrer le fonctionnement de cet algorithme on peut l'appliquer à l'exemple donné plus haut, l'addition des valeurs DCB <code>0011 0101</code> (35<sub>16</sub>) et <code>0011 1000</code> (38<sub>16</sub>). Dans ce cas, <code>V</code> vaut <code>0110 1101</code> (6D<sub>16</sub>), le fanion <code>N</code> est faux car l'opération effectuée était une addition et pas une soustraction, le fanion <code>H</code> est faux car l'addition des 4 bits de poids faible (<code>0101</code> et <code>1000</code>) n'a pas produit de retenue, et le fanion <code>C</code> est faux car l'addition des deux valeurs 8 bits n'a pas produit de retenue non plus.
+</p>
+
+<p>
+Les paramètres de l'algorithme étant connus, on peut l'exécuter et on obtient alors :
+</p>
+<pre class="example">fixL := faux ∨ (¬faux ∧ D₁₆ &gt; 9₁₆) = vrai
+fixH := faux ∨ (¬faux ∧ 6D₁₆ &gt; 99₁₆) = faux
+fix := 60₁₆ × 0 + 06₁₆ × 1 = 06₁₆
+Va := 6D₁₆ + 06₁₆ = 73₁₆
+(73₁₆, faux, faux, faux, faux)
+</pre>
+<p>
+En d'autres termes, la valeur ajustée vaut 73<sub>16</sub> (comme attendu) et les fanions <code>Z</code>, <code>N</code>, <code>H</code> et <code>C</code> sont tous faux.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgca2f470" class="outline-2">
+<h2 id="orgca2f470"><span class="section-number-2">3</span> Mise en œuvre Java</h2>
+<div class="outline-text-2" id="text-3">
+</div>
+<div id="outline-container-org11c9f55" class="outline-3">
+<h3 id="org11c9f55"><span class="section-number-3">3.1</span> Encodage des résultats</h3>
+<div class="outline-text-3" id="text-3-1">
+<p>
+Comme cela a été expliqué plus haut, les opérations de l'UAL produisent non seulement un « entier » 8 (ou 16) bits, mais aussi quatre fanions, soit cinq valeurs au total.
+</p>
+
+<p>
+Malheureusement, une méthode Java ne peut retourner qu'une seule valeur en résultat. La solution généralement adoptée lorsqu'on désire écrire une méthode retournant plus d'une valeur consiste à définir une classe dont les instances peuvent contenir ces valeurs, et à retourner ensuite une instance de cette classe.
+</p>
+
+<p>
+Cette solution serait bien entendu utilisable ici, mais le coût de la création d'un nouvel objet à chaque appel d'une méthode de l'UAL serait prohibitif étant donné la simplicité des opérations effectuées par ces méthodes (additions, etc.).
+</p>
+
+<p>
+Dans ce cas particulier, il existe toutefois une solution plus simple et nettement moins coûteuse : l'empaquetage des valeurs dans un seul « entier » Java de type <code>int</code>. Etant donné que les méthodes de l'UAL retournent une valeur de 8 (ou 16) bits plus 4 fanions de 1 bit chacun, seul 12 (ou 20) bits sont nécessaires pour représenter ces 5 valeurs, et il est donc tout à fait possible de les empaqueter dans un « entier » Java de type <code>int</code>.
+</p>
+
+<p>
+Les différentes méthodes de l'UAL retournent donc un entier <code>int</code> dont les 32 bits ont le contenu suivant :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">Bit(s)</th>
+<th scope="col" class="org-left">Contenu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">31 à 16 (ou 24)</td>
+<td class="org-left">toujours <code>0</code></td>
+</tr>
+
+<tr>
+<td class="org-right">15 (ou 23) à 8</td>
+<td class="org-left">résultat 8 (ou 16) bits</td>
+</tr>
+
+<tr>
+<td class="org-right">7</td>
+<td class="org-left">fanion <code>Z</code></td>
+</tr>
+
+<tr>
+<td class="org-right">6</td>
+<td class="org-left">fanion <code>N</code></td>
+</tr>
+
+<tr>
+<td class="org-right">5</td>
+<td class="org-left">fanion <code>H</code></td>
+</tr>
+
+<tr>
+<td class="org-right">4</td>
+<td class="org-left">fanion <code>C</code></td>
+</tr>
+
+<tr>
+<td class="org-right">3 à 0</td>
+<td class="org-left">toujours <code>0</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Par exemple, lorsqu'on demande à l'UAL de calculer la somme des deux entiers 91<sub>16</sub> et 83<sub>16</sub> déjà utilisés à la §<a href="https://cs108.epfl.ch/archive/18/p/02_alu.html#org0bb07a7">2.2</a>, elle retourne un « entier » <code>int</code> valant 00001410<sub>16</sub>. Cet entier contient, dans ses différents bits et selon la convention décrite plus haut, à la fois le résultat (14<sub>16</sub>) et les fanions (0001<sub>2</sub>).
+</p>
+
+<p>
+Il peut paraître étrange de stocker les fanions dans les bits 4 à 7 et de laisser les bits 3 à 0 inutilisés. Ce choix a été fait simplement car, comme nous le verrons à l'étape suivante, le processeur stocke les fanions sous la forme d'une valeur de 8 bits qui correspond directement aux 8 bits de poids faible d'une valeur encodée comme décrit ci-dessus.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org6add835" class="outline-3">
+<h3 id="org6add835"><span class="section-number-3">3.2</span> Calcul des bits de retenue et emprunt</h3>
+<div class="outline-text-3" id="text-3-2">
+<p>
+L'UAL du Game Boy effectue les opérations d'addition et de soustraction comme décrit plus haut, en procédant bit à bit, de droite à gauche. Ce faisant, elle détermine individuellement chacun des bits de retenue (dans le cas d'une addition) et d'emprunt (dans le cas d'une soustraction) et n'a donc aucune peine à connaître la valeur des fanions <code>H</code> et <code>C</code>.
+</p>
+
+<p>
+Pour simuler cette UAL en Java, il serait bien entendu possible d'effectuer également les additions et soustractions bit à bit, mais cela serait à la fois pénible à écrire et lent à exécuter. Il est beaucoup plus simple et efficace d'utiliser les opérations d'addition et de soustraction offertes par Java. La question se pose néanmoins de savoir comment déterminer la valeur des fanions <code>H</code> et <code>C</code>.
+</p>
+
+<p>
+Dans le cas d'une addition, la réponse est simple : une addition sur <i>n</i> bits produit une retenue si et seulement si le résultat est plus grand que la plus grande valeur représentable au moyen de <i>n</i> bits. Dès lors, en Java, on peut déterminer la valeur du fanion <code>C</code> suite à l'addition de deux valeurs 8 bits stockés dans les variables <code>x</code> et <code>y</code> ainsi :
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">boolean</span></span> c = (x + y) &gt; <span class="hljs-number"><span class="hljs-number">0xFF</span></span>;
+</pre>
+</div>
+<p>
+Notez qu'il est fondamental que l'addition soit faite sur des entiers comportant au moins <i>n</i> + 1 bits pour que le fanion <code>C</code> soit calculé correctement ! C'est une des raisons pour lesquelles nous avons décidé de représenter les valeurs 8 et 16 bits au moyen du type Java <code>int</code> (32 bits) dans ce projet.
+</p>
+
+<p>
+Dans le cas d'une soustraction, la réponse n'est pas beaucoup plus compliquée : une soustraction sur <i>n</i> bits produit un emprunt si et seulement si la seconde opérande de la soustraction est strictement plus grande que la première. Dès lors, en Java, on peut déterminer la valeur du fanion <code>C</code> suite à la soustraction de deux valeurs 8 bits stockées dans les variables <code>x</code> et <code>y</code> ainsi :
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">boolean</span></span> c = x &lt; y;
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga53e9ef" class="outline-3">
+<h3 id="orga53e9ef"><span class="section-number-3">3.3</span> Classe <code>Alu</code></h3>
+<div class="outline-text-3" id="text-3-3">
+<p>
+La classe <code>Alu</code> du paquetage <code>ch.epfl.gameboj.component.cpu</code>, publique, finale et <i>non instanciable</i>, contient principalement des méthodes statiques permettant d'effectuer des opérations sur des valeurs 8 ou 16 bits et d'obtenir à la fois le résultat et la valeur des fanions.
+</p>
+</div>
+
+<div id="outline-container-org5c82469" class="outline-4">
+<h4 id="org5c82469"><span class="section-number-4">3.3.1</span> Fanions</h4>
+<div class="outline-text-4" id="text-3-3-1">
+<p>
+Les fanions eux-mêmes sont définis sous la forme d'un type énuméré nommé <code>Flag</code> et défini <i>à l'intérieur</i> de la classe <code>Alu</code>. Etant donné que les valeurs de ce type énuméré représentent des bits, il implémente l'interface <code>Bit</code> écrite à l'étape précédente.
+</p>
+
+<p>
+Pour simplifier différentes parties du code, les fanions sont représentés comme une valeur de 8 bits dont les 4 bits de poids faible sont toujours 0. Dès lors, le type énuméré <code>Flag</code> contient 8 éléments au lieu des 4 correspondant aux fanions, et les 4 premiers de ces éléments portent un nom indiquant le fait qu'ils sont inutilisés (p.ex. <code>UNUSED_0</code> à <code>UNUSED_3</code>).
+</p>
+
+<p>
+Comme nous l'avons vu, la plupart des méthodes de la classe <code>Alu</code> retournent 5 valeurs — le résultat lui-même et les 4 fanions — empaquetées dans un entier <code>int</code>. Dans la description qui suit, les fanions retournés par une méthode sont spécifiés de manière compacte en donnant, dans l'ordre <code>ZNHC</code>, la valeur des différents fanions, représentée par une seule lettre. Ces lettres peuvent être :
+</p>
+
+<ul class="org-ul">
+<li>la lettre correspondant au fanions (<code>Z</code>, <code>N</code>, <code>H</code> ou <code>C</code>) si ce fanion a une valeur qui dépend du résultat, ou</li>
+<li>0 si ce fanion vaut toujours 0 (faux),</li>
+<li>1 si ce fanion vaut toujours 1 (vrai).</li>
+</ul>
+
+<p>
+Par exemple, dans la description de la méthode <code>and</code> ci-dessous, il est mentionné que les fanions qu'elle retourne valent <code>Z010</code>, ce qui signifie que :
+</p>
+
+<ul class="org-ul">
+<li>le fanion <code>Z</code> dépend du résultat et vaut 1 ssi celui-ci est nul,</li>
+<li>le fanion <code>N</code> est toujours faux (<code>0</code>),</li>
+<li>le fanion <code>H</code> est toujours vrai (<code>1</code>),</li>
+<li>le fanion <code>C</code> est toujours faux.</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org9a8d720" class="outline-4">
+<h4 id="org9a8d720"><span class="section-number-4">3.3.2</span> Direction de rotation</h4>
+<div class="outline-text-4" id="text-3-3-2">
+<p>
+En plus de l'énumération correspondant aux fanions, la classe <code>Alu</code> définit une seconde énumération publique nommée <code>RotDir</code> et possédant deux valeurs nommées <code>LEFT</code> et <code>RIGHT</code>. Les valeurs de cette énumération sont utilisées pour spécifier aux méthodes de rotation de bits décrites plus bas dans quelle direction la rotation doit être effectuée.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orge41b315" class="outline-4">
+<h4 id="orge41b315"><span class="section-number-4">3.3.3</span> Méthodes</h4>
+<div class="outline-text-4" id="text-3-3-3">
+<p>
+La classe <code>Alu</code> offre les méthodes publiques (et statiques) ci-dessous. Pour faciliter leur compréhension, des exemples numériques d'utilisation de ces méthodes sont donnés plus bas à la §<a href="https://cs108.epfl.ch/archive/18/p/02_alu.html#org51541ca">3.3.5</a>.
+</p>
+
+<p>
+Afin de ne pas alourdir la description qui suit, la validation de la plupart des arguments n'est pas spécifiée explicitement. Toutefois, sachez que chaque fois qu'une méthode est décrite comme acceptant une valeur de 8 ou 16 bits, celle-ci doit être validée au moyen de la méthode correspondante de l'interface <code>Preconditions</code>.
+</p>
+
+<p>
+Cela dit, les méthodes de la classe <code>Alu</code> sont :
+</p>
+
+<ul class="org-ul">
+<li><code>int maskZNHC(boolean z, boolean n, boolean h, boolean c)</code>, qui retourne une valeur dont les bits correspondant aux différents fanions valent 1 ssi l'argument correspondant est vrai,</li>
+
+<li><code>int unpackValue(int valueFlags)</code>, qui retourne la valeur contenue dans le paquet valeur/fanion donné,</li>
+
+<li><code>int unpackFlags(int valueFlags)</code>, qui retourne les fanions contenus dans le paquet valeur/fanion donné,</li>
+
+<li><code>int add(int l, int r, boolean c0)</code>, qui retourne la somme des deux valeurs 8 bits données et du bit de retenue initial <code>c0</code> (voir §<a href="https://cs108.epfl.ch/archive/18/p/02_alu.html#org1e6bf7d">2.4</a>), et les fanions <code>Z0HC</code>,</li>
+
+<li><code>int add(int l, int r)</code>, identique à la méthode précédente mais avec <code>false</code> comme dernier argument,</li>
+
+<li><code>int add16L(int l, int r)</code>, qui retourne la somme des deux valeurs 16 bits données et les fanions <code>00HC</code>, où <code>H</code> et <code>C</code> sont les fanions correspondant à l'addition des 8 bits de poids <i>faible</i>,</li>
+
+<li><code>int add16H(int l, int r)</code>, identique à <code>add16L</code>, si ce n'est que les fanions <code>H</code> et <code>C</code> correspondent à l'addition des 8 bits de poids <i>fort</i>,</li>
+
+<li><code>int sub(int l, int r, boolean b0)</code>, qui retourne la différence des valeurs de 8 bits données et du bit d'emprunt initial <code>b0</code> (voir §<a href="https://cs108.epfl.ch/archive/18/p/02_alu.html#org1e6bf7d">2.4</a>), et les fanions <code>Z1HC</code>,</li>
+
+<li><code>int sub(int l, int r)</code>, identique à la méthode précédente, mais avec <code>false</code> comme dernier argument,</li>
+
+<li><code>int bcdAdjust(int v, boolean n, boolean h, boolean c)</code>, qui ajuste la valeur 8 bits donnée en argument afin qu'elle soit au format DCB, selon l'algorithme décrit à la §<a href="https://cs108.epfl.ch/archive/18/p/02_alu.html#orgc08d17e">2.7</a>,</li>
+
+<li><code>int and(int l, int r)</code>, qui retourne le « et » bit à bit des deux valeurs 8 bits données et les fanions <code>Z010</code>,</li>
+
+<li><code>int or(int l, int r)</code>, qui retourne le « ou inclusif » bit à bit des deux valeurs 8 bits données et les fanions <code>Z000</code>,</li>
+
+<li><code>int xor(int l, int r)</code>, qui retourne le « ou exclusif » bit à bit des deux valeurs 8 bits données et les fanions <code>Z000</code>,</li>
+
+<li><code>int shiftLeft(int v)</code>, qui retourne la valeur 8 bits donnée décalée à gauche d'un bit, et les fanions <code>Z00C</code> où le fanion <code>C</code> contient le bit éjecté par le décalage (c-à-d que <code>C</code> est vrai ssi le bit en question valait 1),</li>
+
+<li><code>int shiftRightA(int v)</code>, qui retourne la valeur 8 bits donnée décalée à droite d'un bit, de manière arithmétique, et les fanions <code>Z00C</code> où <code>C</code> contient le bit éjecté par le décalage,</li>
+
+<li><code>int shiftRightL(int v)</code>, qui retourne la valeur 8 bits donnée décalée à droite d'un bit, de manière logique, et les fanions <code>Z00C</code> où <code>C</code> contient le bit éjecté par le décalage,</li>
+
+<li><code>int rotate(RotDir d, int v)</code>, qui retourne la rotation de la valeur 8 bits donnée, d'une distance de un bit dans la direction donnée, et les fanions <code>Z00C</code> où <code>C</code> contient le bit qui est passé d'une extrémité à l'autre lors de la rotation,</li>
+
+<li><code>int rotate(RotDir d, int v, boolean c)</code>, qui retourne la rotation à travers la retenue, dans la direction donnée, de la combinaison de la valeur 8 bits et du fanion de retenue donnés, ainsi que les fanions <code>Z00C</code> ; comme expliqué à la §<a href="https://cs108.epfl.ch/archive/18/p/02_alu.html#org29a5069">2.6</a>, cette opération consiste à construire une valeur 9 bits à partir de la retenue et de la valeur 8 bits, la faire tourner dans la direction donnée, puis retourner les 8 bits de poids faible comme résultat, et le bit de poids le plus fort comme nouvelle retenue (fanion <code>C</code>),</li>
+
+<li><code>int swap(int v)</code>, qui retourne la valeur obtenue en échangeant les 4 bits de poids faible et de poids fort de la valeur 8 bits donnée, et les fanions <code>Z000</code>,</li>
+
+<li><code>int testBit(int v, int bitIndex)</code>, qui retourne la valeur 0 et les fanions <code>Z010</code> où <code>Z</code> est vrai ssi le bit d'index donné de la valeur 8 bits donnée vaut 0 ; en plus de la validation de la valeur 8 bits reçue, cette méthode valide l'index reçu et lève <code>IndexOutOfBoundsException</code> s'il n'est pas compris entre 0 et 7.</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgb1685c6" class="outline-4">
+<h4 id="orgb1685c6"><span class="section-number-4">3.3.4</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-3-3-4">
+<p>
+Etant donné que la plupart des méthodes retournant un « paquet » contenant une valeur 8/16 bits et les fanions, il est conseillé de définir une méthode privée permettant de facilement créer un tel paquet. Cette méthode pourrait avoir le profil suivant :
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">int</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">packValueZNHC</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(</span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">int</span></span></span></span><span class="hljs-function"><span class="hljs-params"> v,
+		  </span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">boolean</span></span></span></span><span class="hljs-function"><span class="hljs-params"> z,
+		  </span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">boolean</span></span></span></span><span class="hljs-function"><span class="hljs-params"> n,
+		  </span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">boolean</span></span></span></span><span class="hljs-function"><span class="hljs-params"> h,
+		  </span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">boolean</span></span></span></span><span class="hljs-function"><span class="hljs-params"> c)</span></span></span><span class="hljs-function"> </span></span>{ <span class="hljs-comment"><span class="hljs-comment">/* … */</span></span> }
+</pre>
+</div>
+
+<p>
+D'autres méthodes privées pourraient également être utiles. N'hésitez pas à en définir lorsque vous constatez que vous écrivez plusieurs fois le même code !
+</p>
+</div>
+</div>
+
+<div id="outline-container-org51541ca" class="outline-4">
+<h4 id="org51541ca"><span class="section-number-4">3.3.5</span> Exemples</h4>
+<div class="outline-text-4" id="text-3-3-5">
+<p>
+Pour faciliter la compréhension des différentes méthodes décrites ci-dessus, quelques exemples d'utilisation sont donnés ici.
+</p>
+
+<p>
+Toutes les méthodes de calcul de la classe <code>Alu</code> retournent à la fois un résultat 8 ou 16 bits, et la valeur des 4 fanions, le tout empaqueté dans un entier de 32 bits. La valeur d'un tel paquet peut être extraite au moyen de la méthode <code>unpackValue</code>, les fanions au moyen de la méthode <code>unpackFlags</code>. La table ci-dessous illustre le fonctionnement de ces deux méthodes, ainsi que de la méthode <code>maskZNHC</code>. Notez que les valeurs utilisées dans cette table se rapportent à la ligne signalée par un obèle (†) dans la table plus bas.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Appel</th>
+<th scope="col" class="org-left">Résultat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>unpackValue(0xFF70)</code></td>
+<td class="org-left"><code>0xFF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>unpackFlags(0xFF70)</code></td>
+<td class="org-left"><code>0x70</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>maskZNHC(false, true, true, true)</code></td>
+<td class="org-left"><code>0x70</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+La table ci-dessous donne quelques exemples d'utilisation des méthodes de calcul 8 bits. Pour faciliter la lecture, le résultat est donné dans deux colonnes : la première donne la valeur, obtenue par l'application de la méthode <code>unpackValue</code> au résultat de l'appel ; la seconde donne les fanions, obtenus par l'application de la méthode <code>unpackFlags</code> à ce même résultat. Les fanions sont donnés à la fois sous forme numérique et sous forme textuelle, dans l'ordre <code>ZNHC</code>, où une lettre indique que le fanion correspondant est vrai, et un tiret indique qu'il est faux.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">&nbsp;</th>
+<th scope="col" class="org-left">Appel</th>
+<th scope="col" class="org-left">Valeur</th>
+<th scope="col" class="org-left">Fanions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>add(0x10, 0x15)</code></td>
+<td class="org-left"><code>0x25</code></td>
+<td class="org-left"><code>0x00 (----)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>add(0x08, 0x08)</code></td>
+<td class="org-left"><code>0x10</code></td>
+<td class="org-left"><code>0x20 (--H-)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>add(0x80, 0x7F, true)</code></td>
+<td class="org-left"><code>0x00</code></td>
+<td class="org-left"><code>0xB0 (Z-HC)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>sub(0x10, 0x10)</code></td>
+<td class="org-left"><code>0x00</code></td>
+<td class="org-left"><code>0xC0 (ZN--)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>sub(0x10, 0x80)</code></td>
+<td class="org-left"><code>0x90</code></td>
+<td class="org-left"><code>0x50 (-N-C)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">†</td>
+<td class="org-left"><code>sub(0x01, 0x01, true)</code></td>
+<td class="org-left"><code>0xFF</code></td>
+<td class="org-left"><code>0x70 (-NHC)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>bcdAdjust(0x6D, false, false, false)</code></td>
+<td class="org-left"><code>0x73</code></td>
+<td class="org-left"><code>0x00 (----)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>bcdAdjust(0x0F, true, true, false)</code></td>
+<td class="org-left"><code>0x09</code></td>
+<td class="org-left"><code>0x40 (-N--)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>and(0x53, 0xA7)</code></td>
+<td class="org-left"><code>0x03</code></td>
+<td class="org-left"><code>0x20 (--H-)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>or(0x53, 0xA7)</code></td>
+<td class="org-left"><code>0xF7</code></td>
+<td class="org-left"><code>0x00 (----)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>xor(0x53, 0xA7)</code></td>
+<td class="org-left"><code>0xF4</code></td>
+<td class="org-left"><code>0x00 (----)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>shiftLeft(0x80)</code></td>
+<td class="org-left"><code>0x00</code></td>
+<td class="org-left"><code>0x90 (Z--C)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>shiftRightL(0x80)</code></td>
+<td class="org-left"><code>0x40</code></td>
+<td class="org-left"><code>0x00 (----)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>shiftRightA(0x80)</code></td>
+<td class="org-left"><code>0xC0</code></td>
+<td class="org-left"><code>0x00 (----)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>rotate(LEFT, 0x80)</code></td>
+<td class="org-left"><code>0x01</code></td>
+<td class="org-left"><code>0x10 (---C)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>rotate(LEFT, 0x80, false)</code></td>
+<td class="org-left"><code>0x00</code></td>
+<td class="org-left"><code>0x90 (Z--C)</code></td>
+</tr>
+
+<tr>
+<td class="org-left">&nbsp;</td>
+<td class="org-left"><code>rotate(LEFT, 0x00, true)</code></td>
+<td class="org-left"><code>0x01</code></td>
+<td class="org-left"><code>0x00 (----)</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Finalement, la table ci-dessous illustre la différence entre les deux méthodes d'addition 16 bits.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Appel</th>
+<th scope="col" class="org-left">Valeur</th>
+<th scope="col" class="org-left">Fanions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>add16L(0x11FF, 0x0001)</code></td>
+<td class="org-left"><code>0x1200</code></td>
+<td class="org-left"><code>0x30 (--HC)</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>add16H(0x11FF, 0x0001)</code></td>
+<td class="org-left"><code>0x1200</code></td>
+<td class="org-left"><code>0x00 (----)</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgd1fb0cd" class="outline-3">
+<h3 id="orgd1fb0cd"><span class="section-number-3">3.4</span> Classe <code>GameBoy</code></h3>
+<div class="outline-text-3" id="text-3-4">
+<p>
+En plus de la classe <code>Alu</code>, une seconde classe nommée <code>GameBoy</code> est à commencer pour cette étape. Comme son nom l'indique, cette classe modélise un Game Boy et a pour but d'instancier les différents composants de la console et de les attacher à un bus commun.
+</p>
+
+<p>
+Cette classe sera augmentée au cours des étapes, mais pour l'instant elle contient déjà :
+</p>
+
+<ul class="org-ul">
+<li>un bus, auquel tous les composants sont connectés,</li>
+
+<li>une mémoire vive, appelée la mémoire de travail (<i>work RAM</i>) d'une taille de 8192 octets et accessible depuis l'adresse C000<sub>16</sub>,</li>
+
+<li>une copie des 7680 premiers octets de cette mémoire de travail, accessible depuis l'adresse E000<sub>16</sub>.</li>
+</ul>
+
+<p>
+Ce que l'on entend par « copie » est que les <i>mêmes</i> données sont accessibles au moyen de deux adresses différentes. Ainsi, aussi bien l'adresse C000<sub>16</sub> que l'adresse E000<sub>16</sub> désignent le premier octet de la mémoire de travail, et une valeur écrite à l'une ou l'autre de ces adresses peut être relue par la suite à travers l'autre adresse.
+</p>
+
+<p>
+La mémoire de travail et sa copie sont mentionnées dans la carte des adresses du Game Boy, présentée à l'étape précédente. Pour faciliter votre travail, nous mettons à votre disposition <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_addr_map.zip">une archive Zip</a> à importer dans votre projet et contenant une interface nommée <code>AddressMap</code> décrivant cette carte des adresses. Les constantes utiles pour cette étape sont :
+</p>
+
+<ul class="org-ul">
+<li><code>WORK_RAM_START</code>, <code>WORK_RAM_END</code> et <code>WORK_RAM_SIZE</code> qui caractérisent la mémoire de travail,</li>
+<li><code>ECHO_RAM_START</code>, <code>ECHO_RAM_END</code> et <code>ECHO_RAM_SIZE</code> qui caractérisent sa copie partielle (généralement désignée par <i>echo</i> en anglais).</li>
+</ul>
+
+<p>
+Il faut noter que dans la documentation officielle du Game Boy, la zone <i>echo</i> est décrite comme inutilisable. En pratique, elle se comporte comme décrit ci-dessus, et comme certains programmes font usage de ce comportement non documenté, nous devons le simuler.
+</p>
+
+<p>
+La version initiale de la classe <code>GameBoy</code> est très simple et ne comporte qu'un constructeur et une méthode d'accès. Le constructeur a le profil suivant :
+</p>
+
+<ul class="org-ul">
+<li><code>GameBoy(Object cartridge)</code>, qui construit un Game Boy en créant les composants nécessaires (actuellement, seule la mémoire de travail et sa copie) et en les attachant à un bus commun ; l'argument <code>cartridge</code> est à ignorer totalement dans la version actuelle, mais sera utilisé plus tard pour représenter la cartouche attachée au Game Boy ; son type sera alors changé.</li>
+</ul>
+
+<p>
+L'unique méthode publique de la version actuelle de la classe <code>GameBoy</code> est un accesseur :
+</p>
+
+<ul class="org-ul">
+<li><code>Bus bus()</code>, qui retourne le bus du Game Boy.</li>
+</ul>
+
+<p>
+A ce bus doivent être attachés les deux contrôleurs pour la mémoire de travail, qui y donnent accès via les deux plages d'adresses susmentionnées.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org947fcca" class="outline-3">
+<h3 id="org947fcca"><span class="section-number-3">3.5</span> Tests</h3>
+<div class="outline-text-3" id="text-3-5">
+<p>
+À partir de cette étape, nous ne vous fournissons plus de tests unitaires. Il vous faut donc les écrire vous-même si vous désirez en avoir, ce qui est fortement conseillé.
+</p>
+
+<p>
+Si nous ne vous fournissons pas de tests JUnit, nous vous fournissons néanmoins <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_sigchecks_2.zip">une archive Zip</a> à importer dans votre projet et contenant un fichier nommé <code>SignatureChecks_2.java</code>. La classe qu'il contient fait référence à la totalité des classes, interfaces et méthodes de cette étape, ce qui vous permet de vérifier que leurs noms et types sont corrects. Cela est capital, car la moindre faute à ce niveau empêcherait l'exécution de nos tests unitaires.
+</p>
+
+<div class="cs108warning">
+<p>
+<b>Attention :</b> après avoir importé le contenu de cette archive, n'oubliez surtout pas d'ajouter le répertoire <code>sigcheck</code> qu'elle contient au <i>Java Build Path</i> de votre projet, comme expliqué aux points 5 à 7 de <a href="https://cs108.epfl.ch/archive/18/g/import.html">notre guide d'importation</a>. Si vous oubliez de faire cette manipulation, Eclipse ne prendra pas en compte le fichier de vérification de signature et ne vous signalera donc pas les erreurs qu'il contient, le rendant totalement inutile.
+</p>
+
+</div>
+
+<p>
+Nous vous fournirons de tels fichiers pour toutes les étapes jusqu'à la mi-semestre, et il vous faudra penser à vérifier systématiquement qu'Eclipse ne signale aucune erreur à leur sujet. Faute de cela, votre rendu se verra refusé par notre système.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org12cfe58" class="outline-2">
+<h2 id="org12cfe58"><span class="section-number-2">4</span> Résumé</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+Pour cette étape, vous devez :
+</p>
+
+<ul class="org-ul">
+<li>écrire les classes <code>Alu</code> et <code>GameBoy</code> selon les indications données plus haut,</li>
+
+<li>documenter la totalité des entités publiques que vous avez définies,</li>
+
+<li>rendre votre code au plus tard le <b>2 mars 2018 à 16h30</b>, via <a href="https://cs108.epfl.ch/archive/18/p/submit.html">le système de rendu</a>.</li>
+</ul>
+
+<p>
+Ce rendu est un rendu testé, auquel 18 points sont attribués, au prorata des tests unitaires passés avec succès. Notez que la documentation de votre code ne sera <i>pas</i> évaluée avant le rendu intermédiaire. Dès lors, si vous êtes en retard, ne vous en préoccupez pas pour l'instant.
+</p>
+
+<div class="cs108warning">
+<p>
+N'attendez surtout pas le dernier moment pour effectuer votre rendu, car vous n'êtes pas à l'abri d'imprévus. <b>Souvenez-vous qu'aucun retard, aussi insignifiant soit-il, ne sera toléré !</b>
+</p>
+
+</div>
+</div>
+</div>
+<div id="footnotes">  <h2 class="footnotes">Notes de bas de page</h2>  <div id="text-footnotes">
+<div class="footdef"><sup><a id="fn.1" class="footnum" href="https://cs108.epfl.ch/archive/18/p/02_alu.html#fnr.1">1</a></sup> <div class="footpara"><p class="footpara">
+Au niveau électronique, l'UAL du Game Boy manipule en réalité des « entiers » de 4 bits seulement, mais elle est présentée au niveau logiciel comme une UAL de 8 bits. Chaque opération sur des données de 8 bits est donc décomposée en deux opérations sur des données de 4 bits. Par exemple, une addition de deux « entiers » de 8 bits est effectuée en chaînant une première addition des 4 bits de poids faible et une seconde addition des 4 bits de poids fort et de l'éventuelle retenue produite par la première addition.
+</p></div></div>
+
+<div class="footdef"><sup><a id="fn.2" class="footnum" href="https://cs108.epfl.ch/archive/18/p/02_alu.html#fnr.2">2</a></sup> <div class="footpara"><p class="footpara">
+Intuitivement, la raison pour laquelle la correction à apporter vaut 6 est que le DCB n'utilise pas 6 des 16 valeurs représentables avec 4 bits. Il faut donc leur « sauter par dessus » en ajoutant ou soustrayant 6, selon l'opération effectuée.
+</p></div></div>
+
+</div></div></div>
+
+
+</body></html>

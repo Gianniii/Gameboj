@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="62.36221 51.61418 193.25593 86.69292" width="193.25593" height="86.69292">
+  <defs>
+    <font-face font-family="Fira Sans" font-size="16" panose-1="2 11 5 3 5 0 0 2 0 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="527" cap-height="689" ascent="935.0019" descent="-265.00054" font-weight="400">
+      <font-face-src>
+        <font-face-name name="FiraSans-Regular"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.7.1 
+    <dc:date>2018-04-04 08:34:51 +0000</dc:date>
+  </metadata>
+  <g id="Canevas_1" fill-opacity="1" stroke-dasharray="none" stroke="none" stroke-opacity="1" fill="none">
+    <title>Canevas 1</title>
+    <g id="Canevas_1: Calque 1">
+      <title>Calque 1</title>
+      <g id="Group_5">
+        <g id="Graphic_8">
+          <rect x="226.77168" y="56.69292" width="28.34646" height="19.842522" fill="white"/>
+          <rect x="226.77168" y="56.69292" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(231.77168 57.11418)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="5.70923" y="15">1</tspan>
+          </text>
+        </g>
+        <g id="Graphic_7">
+          <rect x="198.42522" y="56.69292" width="28.34646" height="19.842522" fill="white"/>
+          <rect x="198.42522" y="56.69292" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(203.42522 57.11418)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="5.70923" y="15">1</tspan>
+          </text>
+        </g>
+        <g id="Graphic_6">
+          <rect x="170.07876" y="56.69292" width="28.34646" height="19.842522" fill="white"/>
+          <rect x="170.07876" y="56.69292" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(175.07876 57.11418)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="4.70923" y="15">0</tspan>
+          </text>
+        </g>
+        <g id="Graphic_4">
+          <rect x="141.7323" y="56.69292" width="28.34646" height="19.842522" fill="white"/>
+          <rect x="141.7323" y="56.69292" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(146.7323 57.11418)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="4.70923" y="15">0</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Group_9">
+        <g id="Graphic_13">
+          <rect x="226.77168" y="85.03938" width="28.34646" height="19.842522" fill="white"/>
+          <rect x="226.77168" y="85.03938" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(231.77168 85.46064)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="5.70923" y="15">1</tspan>
+          </text>
+        </g>
+        <g id="Graphic_12">
+          <rect x="198.42522" y="85.03938" width="28.34646" height="19.842522" fill="white"/>
+          <rect x="198.42522" y="85.03938" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(203.42522 85.46064)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="4.70923" y="15">0</tspan>
+          </text>
+        </g>
+        <g id="Graphic_11">
+          <rect x="170.07876" y="85.03938" width="28.34646" height="19.842522" fill="white"/>
+          <rect x="170.07876" y="85.03938" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(175.07876 85.46064)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="5.70923" y="15">1</tspan>
+          </text>
+        </g>
+        <g id="Graphic_10">
+          <rect x="141.7323" y="85.03938" width="28.34646" height="19.842522" fill="white"/>
+          <rect x="141.7323" y="85.03938" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+          <text transform="translate(146.7323 85.46064)" fill="black">
+            <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="4.70923" y="15">0</tspan>
+          </text>
+        </g>
+      </g>
+      <g id="Group_14">
+        <g id="Graphic_18">
+          <rect x="226.77168" y="113.38584" width="28.34646" height="19.842522" fill="black"/>
+          <rect x="226.77168" y="113.38584" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Graphic_17">
+          <rect x="198.42522" y="113.38584" width="28.34646" height="19.842522" fill="#666"/>
+          <rect x="198.42522" y="113.38584" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Graphic_16">
+          <rect x="170.07876" y="113.38584" width="28.34646" height="19.842522" fill="#ccc"/>
+          <rect x="170.07876" y="113.38584" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+        <g id="Graphic_15">
+          <rect x="141.7323" y="113.38584" width="28.34646" height="19.842522" fill="white"/>
+          <rect x="141.7323" y="113.38584" width="28.34646" height="19.842522" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        </g>
+      </g>
+      <g id="Graphic_19">
+        <text transform="translate(98.36221 57.11418)" fill="black">
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x=".816" y="15">MSB</tspan>
+        </text>
+      </g>
+      <g id="Graphic_20">
+        <text transform="translate(103.36221 85.46064)" fill="black">
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x=".584" y="15">LSB</tspan>
+        </text>
+      </g>
+      <g id="Graphic_21">
+        <text transform="translate(67.36221 113.8071)" fill="black">
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x=".728" y="15">couleurs</tspan>
+        </text>
+      </g>
+    </g>
+  </g>
+</svg>

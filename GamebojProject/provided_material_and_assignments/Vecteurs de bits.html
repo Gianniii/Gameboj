@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<!-- saved from url=(0053)https://cs108.epfl.ch/archive/18/p/07_bit_vector.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-04-16 Lun 08:40 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vecteurs de bits</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Vecteurs de bits_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Vecteurs de bits_files/github.min.css">
+<script src="./Vecteurs de bits_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Vecteurs de bits
+<br>
+<span class="subtitle">Gameboj – Étape 7</span>
+</h1>
+<div class="cs108warning">
+<p>
+Cette étape est la première de la seconde partie du projet, durant laquelle vous serez plus libres et moins guidés que durant la première. En particulier, vous avez maintenant le droit de modifier ou augmenter l'interface publique des classes et interfaces proposées, pour peu bien entendu que vous ayez une bonne raison de le faire. De plus, nous nous attendons à ce que vous lisiez et compreniez la documentation des parties de la bibliothèque Java que vous devez utiliser.
+</p>
+
+</div>
+
+<div id="outline-container-org8e0111f" class="outline-2">
+<h2 id="org8e0111f"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Le but de cette étape est d'écrire une classe représentant les vecteurs de bits de taille (presque) quelconque. Elle sera utile pour représenter les images affichées sur l'écran du Game Boy, sujet de l'étape suivante.
+</p>
+
+<p>
+Afin de comprendre l'utilité de cette classe, une rapide introduction à la représentation des images du Game Boy s'impose.
+</p>
+</div>
+
+<div id="outline-container-org857c72b" class="outline-3">
+<h3 id="org857c72b"><span class="section-number-3">1.1</span> Images Game Boy</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+L'écran du Game Boy est capable d'afficher une image de 160 par 144 pixels en 4 teintes de gris — noir, gris foncé, gris clair ou blanc. D'après les standards actuels, une telle image est très petite (et peu colorée), comme l'illustre la copie d'écran du jeu <i>Super Mario Land</i> ci-dessous.
+</p>
+
+
+<div class="figure">
+<p><img src="./Vecteurs de bits_files/sml-screen.png" alt="sml-screen.png" class="shadowed">
+</p>
+<p><span class="figure-number">Figure&nbsp;1&nbsp;: </span>Super Mario Land en résolution réelle</p>
+</div>
+
+<p>
+L'image affichée à l'écran n'est toutefois qu'une petite portion d'une image carrée de 256 pixels de côté, stockée dans une partie de la mémoire du Game Boy que l'on nomme la mémoire graphique. La figure ci-dessous montre à quoi ressemble l'image complète présente dans la mémoire graphique lorsque l'image ci-dessus est affichée à l'écran. La zone invisible à l'écran est teintée en bleu pour faciliter son identification.
+</p>
+
+
+<div class="figure">
+<p><img src="./Vecteurs de bits_files/sml-vram.png" alt="sml-vram.png" class="shadowed">
+</p>
+<p><span class="figure-number">Figure&nbsp;2&nbsp;: </span>Contenu de la mémoire vidéo pour l'image de la figure précédente</p>
+</div>
+
+<p>
+En comparant les deux images, on constate que le personnage de Mario manque sur la seconde. Cela est dû au fait qu'il est dessiné séparément, au moyen de ce que l'on nomme un <i>sprite</i>, notion qui sera décrite dans une étape ultérieure.
+</p>
+
+<p>
+La raison pour laquelle l'écran du Game Boy n'affiche qu'une petite portion d'une image stockée en mémoire est que cela facilite la réalisation de certains effets. Par exemple, pour faire défiler le paysage lorsque le personnage de Mario se déplace, il suffit — dans un premier temps en tout cas — de changer la portion de l'image affichée à l'écran. Cela peut se faire par une simple modification d'un registre du contrôleur d'écran, comme nous le verrons plus tard.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgc115b81" class="outline-3">
+<h3 id="orgc115b81"><span class="section-number-3">1.2</span> Représentation des images dans le simulateur</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Dans le simulateur, nous représenterons les images du Game Boy par une liste de lignes. Chaque ligne sera composée soit de 256 pixels — si l'image dont elle fait partie est celle stockée en mémoire — soit de 160 pixels — si l'image dont elle fait partie est celle affichée à l'écran.
+</p>
+
+<p>
+Etant donné que l'écran n'est capable d'afficher que quatre couleurs, deux bits suffisent pour représenter la couleur d'un pixel. Dès lors, une ligne d'une image de 256 pixels peut être représentée au moyen de 512 bits, tandis qu'une ligne d'une image de 160 pixels peut l'être au moyen de 320 bits.
+</p>
+
+<p>
+La question qui se pose est de savoir comment organiser ces bits en mémoire. La solution la plus naturelle serait probablement de placer côte à côte les 2 bits d'un pixel donné. Toutefois, sur le Game Boy, une organisation différente est utilisée, et nous nous en inspirerons pour notre simulateur. Elle consiste à stocker séparément les bits de poids fort et les bits de poids faible de chaque pixel.
+</p>
+
+<p>
+Cette organisation est illustrée par la figure ci-dessous, qui montre la représentation d'une ligne composée de 4 pixels dont la couleur est — de gauche à droite — 0 (blanc), 1 (gris clair), 2 (gris foncé) et 3 (noir). Les 8 bits nécessaires à la représentation de la couleur de chacun des 4 pixels sont séparés en deux vecteurs de 4 bits chacun : MSB (pour <i>most-significant bits</i>) contient les bits de poids fort, tandis que LSB (pour <i>least-significant bits</i>) contient ceux de poids faible.
+</p>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="./Vecteurs de bits_files/gb-colors.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+<p><span class="figure-number">Figure&nbsp;3&nbsp;: </span>Représentation d'une ligne de 4 pixels de couleur 0, 1, 2 et 3</p>
+</div>
+
+<p>
+Comme nous le verrons ultérieurement, nous ajouterons généralement un troisième vecteur de bits aux deux contenant les bits de poids faible et de poids fort. Ce troisième vecteur contiendra l'opacité de chacun des pixels, et sera utile pour superposer deux images.
+</p>
+
+<p>
+En conclusion, une image du Game Boy sera représentée dans notre simulateur par une liste de lignes, chacune d'entre elles étant constituée d'une paire ou d'un triplet de vecteurs de 256 ou 160 bits. En conséquence, il importe de savoir comment représenter de tels vecteurs de bits.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgbd76ccf" class="outline-3">
+<h3 id="orgbd76ccf"><span class="section-number-3">1.3</span> Vecteurs de bits de taille variable</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+Les vecteurs de bits utilisés jusqu'à présent dans ce projet avaient une taille de 8, 16 ou 32 bits. Ils pouvaient donc très facilement être représentés au moyen du type <code>int</code> de Java qui, pour mémoire, est un vecteur de 32 bits.
+</p>
+
+<p>
+Malheureusement, ni le type <code>int</code>, ni même le type <code>long</code> (64 bits) de Java ne suffisent pour représenter directement un vecteur de 256 ou 160 bits. Il faut donc trouver comment représenter de tels vecteurs de plus grande taille, et c'est le but de cette étape.
+</p>
+
+<p>
+L'idée consiste simplement à utiliser un <i>tableau</i> de valeurs de type <code>int</code> pour représenter un vecteur de <i>n</i> bits, chaque élément du tableau contenant donc 32 bits. Pour faciliter les choses, nous ferons l'hypothèse que <i>n</i> est toujours un multiple de 32, ce qui se trouve être le cas des vecteurs de 256 (32×8) et 160 (32×5) bits qui nous intéressent.
+</p>
+
+<p>
+La plupart des opérations dont nous aurons besoin sur ces vecteurs sont classiques et correspondent aux opérateurs fournis par Java : complément (<code>~</code>), conjonction (<code>&amp;</code>), disjonction (<code>|</code>), décalage (<code>&lt;&lt;</code> et <code>&gt;&gt;</code>), etc. Une opération importante, que nous nommerons <b>extraction généralisée</b>, échappe toutefois à cette règle et mérite d'être décrite en détail.
+</p>
+</div>
+
+<div id="outline-container-org58ad024" class="outline-4">
+<h4 id="org58ad024"><span class="section-number-4">1.3.1</span> Extraction généralisée</h4>
+<div class="outline-text-4" id="text-1-3-1">
+<p>
+Comme son nom l'indique, l'extraction généralisée est une généralisation de l'opération d'extraction « normale » décrite à <a href="https://cs108.epfl.ch/archive/18/p/01_bus_memories_bits.html">l'étape 1</a> et mise en œuvre — pour les vecteurs de 32 bits — par la méthode <code>extract</code> de la classe <code>Bits</code>.
+</p>
+
+<p>
+L'opération d'extraction « normale » exige que les index des bits qu'on lui demande d'extraire soient compris entre 0 et la taille du vecteur (exclue). Par exemple, la méthode <code>extract</code> de <code>Bits</code> lève une exception si on lui passe une valeur négative comme index de départ (<code>start</code>).
+</p>
+
+<p>
+L'idée de l'extraction généralisée est de supprimer cette contrainte, en considérant que les bits à extraire proviennent d'un vecteur de longueur infinie, obtenu à partir du vecteur sur lequel on désire effectuer l'extraction, et appelé son <b>extension (infinie)</b>. La question qui se pose est de savoir comment calculer cette extension.
+</p>
+
+<p>
+On peut imaginer de nombreuses manières de calculer l'extension infinie d'un vecteur, mais pour ce projet nous n'en aurons besoin que de deux :
+</p>
+
+<ol class="org-ol">
+<li>l'extension par 0, qui consiste à étendre le vecteur original en ajoutant un nombre infini de 0 à sa gauche et à sa droite,</li>
+
+<li>l'extension par enroulement, qui consiste à étendre le vecteur original en lui ajoutant un nombre infinie de copies de lui-même à sa gauche et à sa droite.</li>
+</ol>
+
+<p>
+Ces deux techniques d'extensions peuvent s'illustrer au moyen d'un exemple. Soit un vecteur de 4 bits, <code>abcd</code>, où <code>a</code>, <code>b</code>, <code>c</code> et <code>d</code> sont les bits individuels :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><b>Bit</b></th>
+<th scope="col" class="org-right">3</th>
+<th scope="col" class="org-right">2</th>
+<th scope="col" class="org-right">1</th>
+<th scope="col" class="org-right">0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><b>Valeur</b></td>
+<td class="org-right"><code>a</code></td>
+<td class="org-right"><code>b</code></td>
+<td class="org-right"><code>c</code></td>
+<td class="org-right"><code>d</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+L'extension par 0 de ce vecteur est un vecteur infini valant :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><b>Bit</b></th>
+<th scope="col" class="org-left">…</th>
+<th scope="col" class="org-right">5</th>
+<th scope="col" class="org-right">4</th>
+<th scope="col" class="org-right">3</th>
+<th scope="col" class="org-right">2</th>
+<th scope="col" class="org-right">1</th>
+<th scope="col" class="org-right">0</th>
+<th scope="col" class="org-right">-1</th>
+<th scope="col" class="org-right">-2</th>
+<th scope="col" class="org-left">…</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><b>Valeur</b></td>
+<td class="org-left"><code>0</code></td>
+<td class="org-right"><code>0</code></td>
+<td class="org-right"><code>0</code></td>
+<td class="org-right"><code>a</code></td>
+<td class="org-right"><code>b</code></td>
+<td class="org-right"><code>c</code></td>
+<td class="org-right"><code>d</code></td>
+<td class="org-right"><code>0</code></td>
+<td class="org-right"><code>0</code></td>
+<td class="org-left"><code>0</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+tandis que l'extension par enroulement est un vecteur infini valant :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><b>Bit</b></th>
+<th scope="col" class="org-left">…</th>
+<th scope="col" class="org-right">5</th>
+<th scope="col" class="org-right">4</th>
+<th scope="col" class="org-right">3</th>
+<th scope="col" class="org-right">2</th>
+<th scope="col" class="org-right">1</th>
+<th scope="col" class="org-right">0</th>
+<th scope="col" class="org-right">-1</th>
+<th scope="col" class="org-right">-2</th>
+<th scope="col" class="org-left">…</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><b>Valeur</b></td>
+<td class="org-left">…</td>
+<td class="org-right"><code>c</code></td>
+<td class="org-right"><code>d</code></td>
+<td class="org-right"><code>a</code></td>
+<td class="org-right"><code>b</code></td>
+<td class="org-right"><code>c</code></td>
+<td class="org-right"><code>d</code></td>
+<td class="org-right"><code>a</code></td>
+<td class="org-right"><code>b</code></td>
+<td class="org-left">…</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+L'extraction généralisée consiste (conceptuellement en tout cas) à extraire des vecteurs de bits de taille finie de ces extensions infinies. Par exemple, en extrayant le sous-vecteur de 4 bits commençant au bit d'index -2 de l'extension par 0 ci-dessus, on obtient :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><b>Bit</b></th>
+<th scope="col" class="org-right">3</th>
+<th scope="col" class="org-right">2</th>
+<th scope="col" class="org-right">1</th>
+<th scope="col" class="org-right">0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><b>Valeur</b></td>
+<td class="org-right"><code>c</code></td>
+<td class="org-right"><code>d</code></td>
+<td class="org-right"><code>0</code></td>
+<td class="org-right"><code>0</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+tandis qu'en extrayant le même sous-vecteur de l'extension par enroulement, on obtient :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><b>Bit</b></th>
+<th scope="col" class="org-right">3</th>
+<th scope="col" class="org-right">2</th>
+<th scope="col" class="org-right">1</th>
+<th scope="col" class="org-right">0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><b>Valeur</b></td>
+<td class="org-right"><code>c</code></td>
+<td class="org-right"><code>d</code></td>
+<td class="org-right"><code>a</code></td>
+<td class="org-right"><code>b</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Notez que le premier de ces deux vecteurs est aussi celui qu'on obtient en effectuant un décalage à gauche de 2 bits du vecteur original, tandis que le second est celui qu'on obtient en effectuant une rotation à gauche de 2 bits ! L'extraction généralisée peut donc également être vue comme une généralisation des opérations de décalage et de rotation.
+</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orge3bdd1d" class="outline-2">
+<h2 id="orge3bdd1d"><span class="section-number-2">2</span> Mise en œuvre Java</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+A partir de cette étape, la mise en œuvre Java est moins guidée qu'auparavant. En particulier, l'interface publique des classes et interfaces est décrite de manière plus succincte.
+</p>
+
+<p>
+Les noms des classes, interfaces et méthodes donnés ne sont dorénavant que des propositions, libre à vous d'en choisir d'autres. Cela dit, afin de ne pas compliquer inutilement le processus de correction, il vous est demandé de ne pas trop vous éloigner de la mise en œuvre que nous vous proposons.
+</p>
+</div>
+
+<div id="outline-container-org7ce2c95" class="outline-3">
+<h3 id="org7ce2c95"><span class="section-number-3">2.1</span> Classe <code>BitVector</code></h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+La classe <code>BitVector</code>, du paquetage <code>ch.epfl.gameboj.bits</code>, publique, finale et <i>immuable</i>, représente un vecteur de bits dont la taille est un multiple de 32 strictement positif.
+</p>
+
+<p>
+Cette classe offre deux constructeurs publics : le premier prend une taille (en bits) et une valeur initiale (sous forme d'un booléen) et construit un vecteur de bits de la taille donnée, dont tous les bits ont la valeur donnée ; le second ne prend qu'une taille en argument et initialise tous les bits à 0. Ces deux constructeurs lèvent une exception si la taille n'est pas un multiple de 32 strictement positif.
+</p>
+
+<p>
+De plus, la classe <code>BitVector</code> offre des méthodes publiques permettant de :
+</p>
+
+<ul class="org-ul">
+<li>connaître la taille du vecteur, en bits (<code>size</code>),</li>
+<li>déterminer si le bit d'index donné est vrai ou faux (<code>testBit</code>),</li>
+<li>calculer le complément du vecteur de bits (<code>not</code>),</li>
+<li>calculer la conjonction et la disjonction bit à bit avec un autre vecteur <i>de même taille</i> (<code>and</code>, <code>or</code>),</li>
+<li>extraire un vecteur de taille donnée de l'extension par 0 du vecteur (<code>extractZeroExtended</code>),</li>
+<li>extraire un vecteur de taille donnée de l'extension par enroulement du vecteur (<code>extractWrapped</code>),</li>
+<li>décaler le vecteur d'une distance quelconque, en utilisant la convention habituelle qu'une distance positive représente un décalage à gauche, une distance négative un décalage à droite (<code>shift</code>).</li>
+</ul>
+
+<p>
+N'oubliez pas que cette classe est immuable, ce qui implique que les méthodes <code>not</code>, <code>and</code>, <code>or</code>, <code>shift</code> et les deux variantes de <code>extract</code> retournent un <i>nouveau</i> vecteur de bits.
+</p>
+
+<p>
+Finalement, étant donné que la classe <code>BitVector</code> est immuable, elle redéfinit les méthodes <code>equals</code> et <code>hashCode</code> afin que ses instances soient comparées de manière structurelle. En d'autres termes, deux vecteurs de bits sont considérés comme égaux si et seulement si ils ont la même taille et leurs bits sont égaux deux à deux.
+</p>
+
+<p>
+Il est également conseillé de redéfinir la méthode <code>toString</code>, qui peut p.ex. retourner une représentation du vecteur sous la forme d'une chaîne composée uniquement de caractères <code>0</code> et <code>1</code>.
+</p>
+</div>
+
+<div id="outline-container-org176c784" class="outline-4">
+<h4 id="org176c784"><span class="section-number-4">2.1.1</span> Exemple</h4>
+<div class="outline-text-4" id="text-2-1-1">
+<p>
+L'exemple ci-dessous illustre l'utilisation de quelques méthodes de la classe <code>BitVector</code>, en admettant que les noms proposés plus haut aient été choisis :
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs">BitVector v1 = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> BitVector(<span class="hljs-number"><span class="hljs-number">32</span></span>, <span class="hljs-keyword"><span class="hljs-keyword">true</span></span>);
+BitVector v2 = v1.extractZeroExtended(-<span class="hljs-number"><span class="hljs-number">17</span></span>, <span class="hljs-number"><span class="hljs-number">32</span></span>).not();
+BitVector v3 = v2.extractWrapped(<span class="hljs-number"><span class="hljs-number">11</span></span>, <span class="hljs-number"><span class="hljs-number">64</span></span>);
+<span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (BitVector v: List.of(v1, v2, v3))
+  System.out.println(v);
+</pre>
+</div>
+
+<p>
+En exécutant cet extrait de programme, les trois lignes ci-dessous, correspondant aux vecteurs <code>v1</code> à <code>v3</code>, sont affichées sur la console :
+</p>
+
+<p>
+<small>
+</small></p><small>
+<pre class="example">11111111111111111111111111111111
+00000000000000011111111111111111
+1111111111100000000000000011111111111111111000000000000000111111
+</pre>
+</small><p><small>
+</small>
+</p>
+</div>
+</div>
+
+<div id="outline-container-org445b163" class="outline-4">
+<h4 id="org445b163"><span class="section-number-4">2.1.2</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-1-2">
+<p>
+Certains aspects de la classe <code>BitVector</code> ne sont pas évidents à mettre en œuvre, et quelques conseils vous sont donc donnés ci-après.
+</p>
+</div>
+
+<ol class="org-ol">
+<li><a id="org38273e3"></a>Constructeurs<br>
+<div class="outline-text-5" id="text-2-1-2-1">
+<p>
+En plus des deux constructeurs publics, il est conseillé d'en définir un privé, qui prenne en argument un tableau de type <code>int[]</code> contenant les éléments du vecteur, et qui se contente de le stocker — <i>sans</i> le copier — dans un attribut de l'instance. Ce constructeur facilite la définition des constructeurs publics, de nombreuses méthodes de la classe <code>BitVector</code>, ainsi que celle de la méthode <code>build</code> du bâtisseur décrit plus bas.
+</p>
+</div>
+</li>
+
+<li><a id="orge7e9312"></a>Classe <code>Arrays</code><br>
+<div class="outline-text-5" id="text-2-1-2-2">
+<p>
+Plusieurs méthodes de la classe <a href="https://docs.oracle.com/javase/9/docs/api/java/util/Arrays.html"><code>Arrays</code></a> de la bibliothèque Java peuvent faciliter la mise en œuvre de la classe <code>BitVector</code>. En particulier, <a href="https://docs.oracle.com/javase/9/docs/api/java/util/Arrays.html#fill-int:A-int-"><code>fill</code></a> peut être utile dans l'un des constructeurs, tandis que <a href="https://docs.oracle.com/javase/9/docs/api/java/util/Arrays.html#hashCode-java.lang.Object:A-"><code>hashCode</code></a> et <a href="https://docs.oracle.com/javase/9/docs/api/java/util/Arrays.html#equals-java.lang.Object:A-java.lang.Object:A-"><code>equals</code></a> peuvent l'être dans les méthodes du même nom — mais de <code>BitVector</code>.
+</p>
+</div>
+</li>
+
+<li><a id="orgf2c1899"></a>Méthodes d'extraction<br>
+<div class="outline-text-5" id="text-2-1-2-3">
+<p>
+L'écriture des méthodes d'extraction n'est pas triviale et demande de <i>très bien</i> réfléchir avant de commencer à programmer. Il est fortement conseillé de s'aider de dessins pour cela, qui facilitent beaucoup la compréhension.
+</p>
+
+<p>
+Pour commencer, il est important de constater que les deux méthodes d'extraction sont quasi-identiques, seule change la manière dont l'extension infinie du vecteur est calculée. Dès lors, il est possible d'écrire une seule méthode d'extraction générale, privée et nommée p.ex. <code>extract</code>, prenant un argument supplémentaire décrivant le type d'extraction à effectuer. Elle peut ensuite être utilisée pour mettre en œuvre (trivialement) les deux méthodes d'extraction spécifiées plus haut.
+</p>
+
+<p>
+Dans les grandes lignes, la méthode <code>extract</code> procède ainsi : elle crée un tableau de type <code>int[]</code> destiné à contenir les groupes de bits du vecteur résultant de l'extraction, remplit un à un les éléments de ce tableau, et finalement construit et retourne le vecteur dont les bits sont ceux du tableau. La plupart de ces opérations sont triviales, le principal problème étant de calculer les éléments du tableau.
+</p>
+
+<p>
+Avant de considérer ce problème-là, posons-nous toutefois la question de savoir comment prendre en compte le fait que l'extraction se fait sur l'extension infinie du vecteur et pas sur le vecteur lui-même.
+</p>
+
+<p>
+Une idée naïve serait de représenter effectivement cette extension infinie sous la forme d'un vecteur, mais cela n'est bien entendu pas possible car il faudrait avoir une quantité infinie de mémoire à disposition.
+</p>
+
+<p>
+Une meilleure idée consiste à définir une méthode privée qui, étant donné le type d'extension désiré et un index, retourne l'élément du tableau de l'extension infine se trouvant à cet index. Notez bien que les éléments dont il est question ici sont des groupes de 32 bits représentés par des valeurs de type <code>int</code>.
+</p>
+
+<p>
+Reste maintenant à déterminer comment effectuer l'extraction proprement dite. Avant de considérer le problème dans toute sa généralité, il est utile d'en considérer un cas particulier : celui dans lequel le premier bit à extraire a un index qui est un multiple de 32, p.ex. 0, 64 ou -32. Dans ce cas, chaque élément du tableau à remplir est simplement une copie d'un élément du tableau correspondant à l'extension infinie du vecteur original.
+</p>
+
+<p>
+La figure ci-dessous illustre cela au moyen d'un exemple dans lequel un vecteur de 96 bits est extrait à partir du bit d'index -32 de l'extension par 0 d'un autre vecteur de 96 bits dont les 32 premiers bits sont désignés par A, les 32 suivants par B et les 32 derniers par C.
+</p>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="./Vecteurs de bits_files/extract-special.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+<p><span class="figure-number">Figure&nbsp;4&nbsp;: </span>Extraction d'un vecteur de 96 bits à partir du bit -32</p>
+</div>
+
+<p>
+Ce cas particulier mérite d'être traité séparément dans le code, d'une part car il peut être mis en œuvre de manière plus efficace que le cas général, et d'autre part car la définition du cas général s'en trouve simplifiée.
+</p>
+
+<p>
+Le cas général est un peu plus complexe, mais pas beaucoup. Ce qu'il faut constater, c'est que lorsque le premier bit à extraire a un index qui n'est pas un multiple de 32, alors chaque élément du tableau s'obtient en combinant <i>exactement deux</i> éléments du tableau correspondant à l'extension infinie du vecteur original.
+</p>
+
+<p>
+La figure ci-dessous illustre ce cas au moyen d'un exemple similaire au précédent mais où l'extraction se fait à partir du bit d'index -8.
+</p>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="./Vecteurs de bits_files/extract-general.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+<p><span class="figure-number">Figure&nbsp;5&nbsp;: </span>Extraction d'un vecteur de 96 bits à partir du bit -8</p>
+</div>
+
+<p>
+Il reste encore à savoir comment calculer l'index des deux éléments à combiner, ainsi que le décalage à appliquer à ces éléments avant de les combiner. Assez naturellement, ces valeurs s'obtiennent au moyen d'une division entière par 32, et de son reste, de l'index du premier bit à extraire. Attention toutefois : pour que les calculs soient corrects également avec les index négatifs, il est impératif d'utiliser les méthodes <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/Math.html#floorDiv-int-int-"><code>floorDiv</code></a> et <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/Math.html#floorMod-int-int-"><code>floorMod</code></a> de la classe <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/Math.html"><code>Math</code></a> en lieu et place des opérateurs <code>/</code> et <code>%</code>.
+</p>
+</div>
+</li>
+
+<li><a id="orgbcda49f"></a>Méthode de décalage<br>
+<div class="outline-text-5" id="text-2-1-2-4">
+<p>
+Une fois les méthodes d'extraction définies, la méthode de décalage (<code>shift</code>) est triviale à mettre en œuvre, et s'écrit en une ligne. En effet, comme nous l'avons vu plus haut, un décalage est équivalent à une extraction effectuée sur l'extension par 0 du vecteur.
+</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org5b2ce92" class="outline-3">
+<h3 id="org5b2ce92"><span class="section-number-3">2.2</span> Classe <code>BitVector.Builder</code></h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+La classe <code>Builder</code>, publique et finale, est imbriquée statiquement dans <code>BitVector</code> et représente un bâtisseur de vecteur de bits. Son but principal est de permettre la construction d'une vecteur de bits de manière incrémentale, octet par octet.
+</p>
+
+<p>
+Le constructeur de la classe <code>Builder</code> prend en argument la taille du vecteur de bits à construire, qui doit être un multiple de 32 strictement positif. La totalité des bits du vecteur à construire valent initialement 0. En plus de ce constructeur, la classe <code>Builder</code> offre deux méthodes publiques permettant de :
+</p>
+
+<ul class="org-ul">
+<li>définir la valeur d'un octet désigné par son index (<code>setByte</code>),</li>
+<li>construire le vecteur de bits (<code>build</code>).</li>
+</ul>
+
+<p>
+La méthode <code>setByte</code> lève <code>IndexOutOfBoundsException</code> si l'index de l'octet qu'on lui donne est invalide. De plus, elle retourne le bâtisseur afin de pouvoir chaîner les appels.
+</p>
+
+<p>
+(La raison pour laquelle ce bâtisseur n'offre que la méthode <code>setByte</code> pour modifier les bits du vecteur en construction est que cela suffit aux besoins de ce projet. Il aurait bien entendu aussi été possible de définir d'autres méthodes permettant p.ex. de modifier les bits individuellement, ou alors 32 à la fois, etc.)
+</p>
+</div>
+
+<div id="outline-container-orga9a9e0d" class="outline-4">
+<h4 id="orga9a9e0d"><span class="section-number-4">2.2.1</span> Exemple</h4>
+<div class="outline-text-4" id="text-2-2-1">
+<p>
+L'exemple ci-dessous illustre l'utilisation du bâtisseur pour construire un vecteur de 32 bits :
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs">BitVector v = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> BitVector.Builder(<span class="hljs-number"><span class="hljs-number">32</span></span>)
+  .setByte(<span class="hljs-number"><span class="hljs-number">0</span></span>, <span class="hljs-number"><span class="hljs-number">0b1111_0000</span></span>)
+  .setByte(<span class="hljs-number"><span class="hljs-number">1</span></span>, <span class="hljs-number"><span class="hljs-number">0b1010_1010</span></span>)
+  .setByte(<span class="hljs-number"><span class="hljs-number">3</span></span>, <span class="hljs-number"><span class="hljs-number">0b1100_1100</span></span>)
+  .build();
+System.out.println(v);
+</pre>
+</div>
+
+<p>
+En exécutant cet extrait de programme, la ligne suivante est affichée sur la console :
+<small>
+</small></p><small>
+<pre class="example">11001100000000001010101011110000
+</pre>
+</small><p><small>
+</small>
+</p>
+</div>
+</div>
+
+<div id="outline-container-org1c61543" class="outline-4">
+<h4 id="org1c61543"><span class="section-number-4">2.2.2</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-2-2">
+<p>
+La méthode <code>build</code> doit appeler directement le constructeur <i>privé</i> de la classe <code>BitVector</code> en lui passant le tableau contenant les bits du vecteur en construction.
+</p>
+
+<p>
+Pour mémoire, ce constructeur ne copie pas le tableau qu'on lui passe, pour des raisons de performance. Dès lors, pour garantir l'immuabilité de la classe <code>BitVector</code>, il faut s'assurer que l'utilisateur du bâtisseur n'ait plus la possibilité de modifier ce tableau une fois la méthode <code>build</code> appelée.
+</p>
+
+<p>
+Cela implique que l'appel à la méthode <code>build</code> rende le bâtisseur invalide, et que tout appel ultérieur à <code>setByte</code> ou à <code>build</code> lève une exception — en général, <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/IllegalStateException.html"><code>IllegalStateException</code></a> est utilisée dans cette situation.
+</p>
+
+<p>
+Une technique simple pour mettre en œuvre ce comportement consiste à s'assurer que <code>build</code> stocke <code>null</code> dans l'attribut du bâtisseur contenant le tableau des bits du vecteur en construction, une fois celui-ci passé au constructeur de <code>BitVector</code>. Ensuite, <code>setByte</code> et <code>build</code> peuvent simplement détecter cette situation et lever une exception.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org8b4ad87" class="outline-3">
+<h3 id="org8b4ad87"><span class="section-number-3">2.3</span> Tests</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+A partir de cette étape, aucun fichier de vérification de signatures ne vous est fourni, étant donné que la signature des différentes méthodes n'est plus spécifiée en détail.
+</p>
+
+<p>
+Pour la même raison, aucun test unitaire ne sera plus fourni à l'avenir, à vous d'écrire les vôtres. Notez que cela est <b>fortement</b> recommandé en général, et en particulier pour cette étape-ci, car la classe <code>BitVector</code> est à la base de toute la partie graphique de ce projet. La moindre erreur dans l'une de ses méthodes provoquera des erreurs d'affichage dont l'origine sera très difficile à déterminer.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org2fe6770" class="outline-2">
+<h2 id="org2fe6770"><span class="section-number-2">3</span> Résumé</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Pour cette étape, vous devez :
+</p>
+
+<ul class="org-ul">
+<li>écrire la classe <code>BitVector</code> (ou équivalent) en fonction des indications données plus haut,</li>
+
+<li>tester votre code,</li>
+
+<li>documenter la totalité des entités publiques que vous avez définies.</li>
+</ul>
+
+<p>
+Aucun rendu n'est à faire pour cette étape avant le rendu final. N'oubliez pas de faire régulièrement des copies de sauvegarde de votre travail en suivant <a href="https://cs108.epfl.ch/archive/18/g/backups.html">nos indications à ce sujet</a>.
+</p>
+</div>
+</div>
+</div>
+
+
+</body></html>

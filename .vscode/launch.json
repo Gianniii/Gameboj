@@ -1,0 +1,54 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Main",
+            "request": "launch",
+            "vmArgs": "--module-path C:/Users/giann/Downloads/openjfx-17.0.2_windows-x64_bin-sdk/javafx-sdk-17.0.2/lib --add-modules javafx.controls,javafx.fxml",
+            "mainClass": "ch.epfl.gameboj.gui.Main",
+            "projectName": "Gameboj_8eefaa69"
+        },
+        {
+            "type": "java",
+            "name": "Launch javaFXTestApp",
+            "vmArgs": "--module-path C:/Users/giann/Downloads/openjfx-17.0.2_windows-x64_bin-sdk/javafx-sdk-17.0.2/lib --add-modules javafx.controls,javafx.fxml",
+            "request": "launch",
+            "mainClass": "javaFXTestApp",
+            "projectName": "GamebojJavaFX_5361a088"
+        },
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "vmArgs": "--module-path C:/Users/giann/Downloads/openjfx-17.0.2_windows-x64_bin-sdk/javafx-sdk-17.0.2/lib --add-modules javafx.controls,javafx.fxml",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Launch App",
+            "request": "launch",
+            "vmArgs": "--module-path C:/Users/giann/Downloads/openjfx-17.0.2_windows-x64_bin-sdk/javafx-sdk-17.0.2/lib --add-modules javafx.controls,javafx.fxml",
+            "mainClass": "App",
+            "projectName": "GamebojJavaFX_5361a088"
+        },
+        {
+            "type": "java",
+            "name": "Launch GameBoyTestis",
+            "request": "launch",
+            "mainClass": "ch.epfl.gameboj.gui.GameBoyTestis",
+            "projectName": "GamebojJavaFX_5361a088"
+        },
+        {
+            "type": "java",
+            "name": "Launch Main",
+            "request": "launch",
+            "vmArgs": "--module-path C:/Users/giann/Downloads/openjfx-17.0.2_windows-x64_bin-sdk/javafx-sdk-17.0.2/lib --add-modules javafx.controls,javafx.fxml",
+            "mainClass": "ch.epfl.gameboj.gui.Main",
+            "projectName": "GamebojJavaFX_5361a088"
+        }
+    ]
+}

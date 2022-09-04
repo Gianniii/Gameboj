@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<!-- saved from url=(0057)https://cs108.epfl.ch/archive/18/p/09_lcd-controller.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-05-07 Lun 09:18 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contrôleur d'écran</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Contrôleur d&#39;écran_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Contrôleur d&#39;écran_files/github.min.css">
+<script src="./Contrôleur d&#39;écran_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Contrôleur d'écran
+<br>
+<span class="subtitle">Gameboj – Étape 9</span>
+</h1>
+
+<div id="outline-container-org56b009c" class="outline-2">
+<h2 id="org56b009c"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Le but de cette étape est de commencer à écrire le composant simulant le contrôleur de l'écran à cristaux liquide. Ce composant est chargé de calculer l'image affichée à l'écran en combinant les images mentionnées à l'étape précédente : image de fond, fenêtre et <i>sprites</i>. A l'exception du processeur, il s'agit du composant le plus complexe à simuler, et sa réalisation est dès lors répartie sur deux étapes.
+</p>
+
+<p>
+Avant de décrire le contrôleur lui-même, il est toutefois nécessaire d'expliquer le découpage en tuiles des images du Game Boy.
+</p>
+</div>
+
+<div id="outline-container-orgd1f7472" class="outline-3">
+<h3 id="orgd1f7472"><span class="section-number-3">1.1</span> Tuiles</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Comme nous l'avons vu, l'image de fond du Game Boy est une image carrée de 256 pixels de côté. Ce qui n'a toutefois pas été mentionné jusqu'à présent est que cette image — comme toutes les autres images du Game Boy — est constituée de plusieurs petites images carrées de 8 pixels de côté, nommées <b>tuiles</b> (<i>tiles</i>)<sup><a id="fnr.1" class="footref" href="https://cs108.epfl.ch/archive/18/p/09_lcd-controller.html#fn.1">1</a></sup>.
+</p>
+
+<p>
+Etant donné que les tuiles font 8 pixels de côté, l'image de fond est composée de 32×32 tuiles. Cette organisation en tuiles est bien visible sur la figure ci-dessous, qui montre l'image de fond initiale de <i>Super Mario Land</i> sur laquelle a été superposé un échiquier dont les cellules — rouges et bleues — font 8 pixels de côté. Chaque case correspond donc à une tuile.
+</p>
+
+
+<div class="figure">
+<p><img src="./Contrôleur d&#39;écran_files/sml-tiles.png" alt="sml-tiles.png" class="shadowed">
+</p>
+<p><span class="figure-number">Figure&nbsp;1&nbsp;: </span>Tuiles composant l'image de fond de <i>Super Mario Land</i></p>
+</div>
+
+<p>
+L'image de fond peut être composée d'au maximum 256 tuiles différentes, car chaque tuile est identifiée par un octet. Etant donné que cette image comporte un total de 1 024 (32×32) tuiles, cela implique que certaines d'entre elles apparaissent plus d'une fois. Le découpage des images en tuiles impose donc une contrainte sur le contenu des images, qui doivent forcément comporter certaines répétitions, mais permet en contrepartie de réduire la taille des données nécessaires à leur description.
+</p>
+
+<p>
+La nécessité de réutiliser des tuiles implique que les différents éléments constituant les images sont généralement alignés sur des multiples de 8 pixels. Par exemple, on constate bien ci-dessus que les lettres du texte se trouvant au sommet de l'image occupent chacune une tuile. Il en découle que la même tuile peut être réutilisée chaque fois qu'une lettre donnée apparaît plusieurs fois dans l'image.
+</p>
+
+<p>
+Une autre exemple de réutilisation de tuiles est visible dans la partie de l'image contenant les palmiers. La figure ci-dessous montre un agrandissement des 12 tuiles la composant. L'index de chaque tuile est donné, en hexadécimal, dans son coin bas-gauche. On constate ainsi, par exemple, que la tuile d'index <code>31</code> représente un morceau de tronc de palmier, et qu'elle apparaît au total trois fois.
+</p>
+
+
+<div class="figure">
+<p><img src="./Contrôleur d&#39;écran_files/sml-tiles-detail.png" alt="sml-tiles-detail.png" class="shadowed">
+</p>
+<p><span class="figure-number">Figure&nbsp;2&nbsp;: </span>Tuiles constituant les palmiers de <i>Super Mario Land</i></p>
+</div>
+
+<p>
+Il est important de ne pas confondre la notion de tuile et la notion de <i>sprite</i>. Une tuile n'est rien d'autre qu'une image carrée de 8 pixels de côté qui sert de composant de base à <i>toutes</i> les images affichées à l'écran, y compris les <i>sprites</i> justement. Un <i>sprite</i> est toutefois plus qu'une tuile, puisqu'il possède d'autres attributs comme sa position à l'écran, comme nous le verrons à l'étape suivante.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org23092fd" class="outline-3">
+<h3 id="org23092fd"><span class="section-number-3">1.2</span> Contrôleur d'écran</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Le <b>contrôleur d'écran à cristaux liquides</b> (<i>liquid cristal display controller</i>), souvent appelé contrôleur d'écran ou contrôleur LCD, a pour fonction principale de combiner les différentes images formant l'image finale, puis de l'afficher à l'écran.
+</p>
+
+<p>
+Comme d'autres composants, le contrôleur LCD se configure au moyen de différents registres exposés via le bus. En plus de ces registres, il contient deux mémoires vives, elles aussi exposées via le bus : la mémoire vidéo et la mémoire d'attributs d'objets. La première d'entre elles est présentée plus bas, la seconde le sera à l'étape suivante.
+</p>
+</div>
+
+<div id="outline-container-orga26e444" class="outline-4">
+<h4 id="orga26e444"><span class="section-number-4">1.2.1</span> Registres</h4>
+<div class="outline-text-4" id="text-1-2-1">
+<p>
+Le contrôleur LCD possède un total de 12 registres 8 bits visibles sur le bus à partir de l'adresse <code>FF40</code>. La table ci-dessous les résume :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Addr.</th>
+<th scope="col" class="org-left">Nom</th>
+<th scope="col" class="org-left">Fonction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>FF40</code></td>
+<td class="org-left"><code>LCDC</code></td>
+<td class="org-left">Configuration du contrôleur</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF41</code></td>
+<td class="org-left"><code>STAT</code></td>
+<td class="org-left">État du contrôleur</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF42</code></td>
+<td class="org-left"><code>SCY</code></td>
+<td class="org-left">Coordonnée Y de la zone de fond à afficher</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF43</code></td>
+<td class="org-left"><code>SCX</code></td>
+<td class="org-left">Coordonnée X de la zone de fond à afficher</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF44</code></td>
+<td class="org-left"><code>LY</code></td>
+<td class="org-left">Numéro de la ligne en cours de dessin</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF45</code></td>
+<td class="org-left"><code>LYC</code></td>
+<td class="org-left">Numéro de ligne à comparer</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF46</code></td>
+<td class="org-left"><code>DMA</code></td>
+<td class="org-left">Adresse de la source de copie mémoire</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF47</code></td>
+<td class="org-left"><code>BGP</code></td>
+<td class="org-left">Palette de l'image de fond et de la fenêtre</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF48</code></td>
+<td class="org-left"><code>OBP0</code></td>
+<td class="org-left">Palette 0 des <i>sprites</i></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF49</code></td>
+<td class="org-left"><code>OBP1</code></td>
+<td class="org-left">Palette 1 des <i>sprites</i></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF4A</code></td>
+<td class="org-left"><code>WY</code></td>
+<td class="org-left">Coordonnée Y du coin haut-gauche de la fenêtre</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>FF4B</code></td>
+<td class="org-left"><code>WX</code></td>
+<td class="org-left">Coordonnée X du coin haut-gauche de la fenêtre</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Tous ces registres valent 0 au démarrage du système. Ils peuvent être lus et écrits via le bus, à l'exception de <code>LY</code> et des trois bits de poids faible de <code>STAT</code>, qui ne sont accessibles qu'en lecture.
+</p>
+
+<p>
+L'utilité de ces différents registres est décrite soit plus bas, soit à l'étape suivante. Les registres <code>LCDC</code> et <code>STAT</code> sont constitués de bits ayant une signification individuelle qu'il est important de détailler.
+</p>
+
+<p>
+Le registre <code>LCDC</code> est constitué de 8 bits individuels qui permettent chacun de configurer un aspect du contrôleur LCD. Il est principalement destiné à être écrit par le programme exécuté par le processeur, mais peut également être lu. L'index, le nom et la fonction de ces différents bits sont résumés dans la table ci-dessous :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">Bit</th>
+<th scope="col" class="org-left">Nom</th>
+<th scope="col" class="org-left">Fonction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">0</td>
+<td class="org-left"><code>BG</code></td>
+<td class="org-left">Activation de l'image de fond</td>
+</tr>
+
+<tr>
+<td class="org-right">1</td>
+<td class="org-left"><code>OBJ</code></td>
+<td class="org-left">Activation des <i>sprites</i></td>
+</tr>
+
+<tr>
+<td class="org-right">2</td>
+<td class="org-left"><code>OBJ_SIZE</code></td>
+<td class="org-left">Hauteur des <i>sprites</i> (8 ou 16 pixels)</td>
+</tr>
+
+<tr>
+<td class="org-right">3</td>
+<td class="org-left"><code>BG_AREA</code></td>
+<td class="org-left">Provenance des tuiles de l'image de fond</td>
+</tr>
+
+<tr>
+<td class="org-right">4</td>
+<td class="org-left"><code>TILE_SOURCE</code></td>
+<td class="org-left">Provenance des images des tuiles</td>
+</tr>
+
+<tr>
+<td class="org-right">5</td>
+<td class="org-left"><code>WIN</code></td>
+<td class="org-left">Activation de la fenêtre</td>
+</tr>
+
+<tr>
+<td class="org-right">6</td>
+<td class="org-left"><code>WIN_AREA</code></td>
+<td class="org-left">Provenance des tuiles de la fenêtre</td>
+</tr>
+
+<tr>
+<td class="org-right">7</td>
+<td class="org-left"><code>LCD_STATUS</code></td>
+<td class="org-left">Activation de l'écran LCD</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Le registre <code>STAT</code> est lui aussi constitué d'un certain nombre de bits individuels, à l'exception des deux de poids faible qui représentent un nombre de 2 bits appelé le <i>mode</i> et décrit plus bas. La table ci-dessous résume l'utilité des différents bits du registre <code>STAT</code> :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">Bit</th>
+<th scope="col" class="org-left">Nom</th>
+<th scope="col" class="org-left">Fonction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">0</td>
+<td class="org-left"><code>MODE0</code></td>
+<td class="org-left">Mode (bit 0)</td>
+</tr>
+
+<tr>
+<td class="org-right">1</td>
+<td class="org-left"><code>MODE1</code></td>
+<td class="org-left">Mode (bit 1)</td>
+</tr>
+
+<tr>
+<td class="org-right">2</td>
+<td class="org-left"><code>LYC_EQ_LY</code></td>
+<td class="org-left">Vrai ssi <code>LYC</code> = <code>LY</code></td>
+</tr>
+
+<tr>
+<td class="org-right">3</td>
+<td class="org-left"><code>INT_MODE0</code></td>
+<td class="org-left">Activation de l'interruption mode 0</td>
+</tr>
+
+<tr>
+<td class="org-right">4</td>
+<td class="org-left"><code>INT_MODE1</code></td>
+<td class="org-left">Activation de l'interruption mode 1</td>
+</tr>
+
+<tr>
+<td class="org-right">5</td>
+<td class="org-left"><code>INT_MODE2</code></td>
+<td class="org-left">Activation de l'interruption mode 2</td>
+</tr>
+
+<tr>
+<td class="org-right">6</td>
+<td class="org-left"><code>INT_LYC</code></td>
+<td class="org-left">Activation de l'interruption <code>LYC</code> = <code>LY</code></td>
+</tr>
+
+<tr>
+<td class="org-right">7</td>
+<td class="org-left"><i>aucun</i></td>
+<td class="org-left"><i>inutilisé</i></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Les 3 bits de poids faible sont accessibles en lecture seule à travers le bus. Cela signifie que lorsqu'une valeur est écrite, via le bus, dans le registre <code>STAT</code>, les 3 bits de poids faible de la valeur écrite sont ignorés, et leur valeur actuelle préservée.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org583d5a8" class="outline-4">
+<h4 id="org583d5a8"><span class="section-number-4">1.2.2</span> Interruptions</h4>
+<div class="outline-text-4" id="text-1-2-2">
+<p>
+Le contrôleur LCD a la possibilité de lever deux interruptions du processeur :
+</p>
+
+<ol class="org-ol">
+<li><code>VBLANK</code>, qui est levée au début de la période appelée <i>vertical blank</i>,</li>
+
+<li><code>LCD_STAT</code>, qui est levée pour différentes raisons, en fonction des bits 3 à 6 du registre <code>STAT</code>.</li>
+</ol>
+
+<p>
+Pour mémoire, ces interruptions ont été introduites à <a href="https://cs108.epfl.ch/archive/18/p/05_cpu_control.html">l'étape 5</a> et portent respectivement les numéros 0 et 1. Les conditions exactes dans lesquelles ces interruptions sont levées sont décrites à la section <a href="https://cs108.epfl.ch/archive/18/p/09_lcd-controller.html#sec:image-draw">1.2.8</a>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgc869d41" class="outline-4">
+<h4 id="orgc869d41"><span class="section-number-4">1.2.3</span> Mémoire vidéo</h4>
+<div class="outline-text-4" id="text-1-2-3">
+<p>
+La <b>mémoire vidéo</b> (<i>video RAM</i>) est une mémoire vive de 8 192 octets, visible sur le bus entre les adresses 8000<sub>16</sub> et A000<sub>16</sub> (exclu). Elle contient deux types de données : d'une part les images de la totalité des 384 tuiles disponibles, et d'autre part les index des tuiles constituant l'image de fond et la fenêtre, dont il existe deux variantes.
+</p>
+
+<p>
+La mémoire vidéo est donc constituée, en gros, de trois zones différentes qui sont résumées dans la table ci-dessous et expliquées de manière détaillée plus bas.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Plage</th>
+<th scope="col" class="org-left">Contenu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>8000-97FF</code></td>
+<td class="org-left">Images des 384 (3×128) tuiles</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>9800-9BFF</code></td>
+<td class="org-left">Index des tuiles de fond/fenêtre (variante 1)</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>9C00-9FFF</code></td>
+<td class="org-left">Index des tuiles de fond/fenêtre (variante 2)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-orga3cb2d7" class="outline-4">
+<h4 id="orga3cb2d7"><span class="section-number-4">1.2.4</span> Tuiles</h4>
+<div class="outline-text-4" id="text-1-2-4">
+<p>
+Les 6 144 octets situés au début de la mémoire vidéo et accessibles via le bus entre les adresses 8000<sub>16</sub> et 9800<sub>16</sub> (exclu) contiennent les images des 384 tuiles utilisables à un instant donné pour construire les différentes images.
+</p>
+
+<p>
+L'image d'une tuile occupe un total de 16 octets. Le premier octet de chaque image contient les 8 bits de poids faible de la première ligne de la tuile, c-à-d celle se trouvant tout en haut. Le second octets contient les 8 bits de poids fort de cette même ligne. Le troisième octet contient les 8 bits de poids faible de la deuxième ligne de la tuile, et ainsi de suite.
+</p>
+
+<p>
+Il faut toutefois faire attention à la correspondance entre les bits individuels de chacun de ces octets et les pixels de l'image. La convention utilisée sur le Game Boy est que le bit de poids le plus <i>fort</i>, c-à-d celui d'index 7, correspond au pixel le plus à gauche. Cette convention est malheureusement incompatible avec celle que nous avons utilisée à l'étape précédente pour faire correspondre les bits des trois vecteurs représentant une ligne et les pixels ! En effet, nous avions alors décidé que le bit <i>i</i> d'un vecteur correspondait au pixel <i>i</i>. Or la convention utilisée sur le Game Boy est que le bit 7 du premier octet correspond au pixel 0, son bit 6 au pixel 1, et ainsi de suite jusqu'au bit 0 qui correspond au pixel 7.
+</p>
+
+<p>
+Une manière simple de rétablir la correspondance est d'inverser l'ordre des octets lus depuis la mémoire graphique avant de les placer dans les vecteurs représentant les lignes, et c'est ce que nous ferons dans le simulateur. C'est aussi la raison pour laquelle l'ordre des bits des octets de l'image de test fournie à l'étape précédente avait été inversé.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgbeb3759" class="outline-4">
+<h4 id="orgbeb3759"><span class="section-number-4">1.2.5</span> Tuiles de fond et de fenêtre</h4>
+<div class="outline-text-4" id="text-1-2-5">
+<p>
+L'image de fond et la fenêtre sont constituées chacune de 32×32 (soit 1 024) tuiles. Chaque tuile est identifiée par un octet, ce qui implique que la description d'une image de 1 024 tuiles occupe 1 024 octets.
+</p>
+
+<p>
+La mémoire graphique comporte deux plages de 1 024 octets pouvant contenir la description de l'image de fond ou de la fenêtre :
+</p>
+
+<ol class="org-ol">
+<li>la plage allant de 9800<sub>16</sub> à 9C00<sub>16</sub> (exclu),</li>
+<li>la plage allant de 9C00<sub>16</sub> à A000<sub>16</sub> (exclu).</li>
+</ol>
+
+<p>
+Pour l'image de fond, c'est le bit <code>BG_AREA</code> (3) du registre <code>LCDC</code> qui détermine laquelle de ces deux plages utiliser : s'il vaut 0, la première est utilisée, sinon la seconde l'est. Pour la fenêtre, c'est le bit <code>WIN_AREA</code> (6) du registre <code>LCDC</code> qui détermine laquelle des deux plages utiliser, selon la même convention.
+</p>
+
+<p>
+Dans ces deux plages, chaque tuile est identifiée par un index de 8 bits, ce qui signifie que 256 tuiles différentes peuvent être utilisées pour une image. Or nous avons vu qu'un total de 384 tuiles sont disponibles dans la mémoire vidéo ! La correspondance entre les index des tuiles et les tuiles n'est donc pas évidente au premier abord.
+</p>
+
+<p>
+La manière dont cette correspondance est faite dépend du bit <code>TILE_SOURCE</code> (4) du registre <code>LCDC</code>. Lorsqu'il vaut 0, les 256 <i>dernières</i> tuiles sont utilisables pour l'image de fond et la fenêtre, alors que lorsqu'il vaut 1, les 256 <i>premières</i> tuiles le sont.
+</p>
+
+<p>
+Attention toutefois : la manière dont les tuiles sont indexées dépend également de la valeur de ce bit ! S'il vaut 0, alors les 128 premières tuiles sont désignées par les index allant de 80<sub>16</sub> à FF<sub>16</sub>, les 128 suivantes par les index allant de 0 à 7F<sub>16</sub>. S'il vaut 1, alors les 128 premières tuiles sont désignées par les index allant de 0 à 7F<sub>16</sub>, les 128 suivantes par les index allant de 80<sub>16</sub> à FF<sub>16</sub>.
+</p>
+
+<p>
+La table ci-dessous résume ces conventions en montrant lesquelles des trois plages de 128 tuiles sont accessibles, et avec quels index, en fonction de la valeur du bit <code>TILE_SOURCE</code> du registre <code>LCDC</code>.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Plage</th>
+<th scope="col" class="org-left"><code>TILE_SOURCE</code> = 0</th>
+<th scope="col" class="org-left"><code>TILE_SOURCE</code> = 1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>8000-87FF</code></td>
+<td class="org-left"><i>inaccessible</i></td>
+<td class="org-left"><code>00-7F</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>8800-8FFF</code></td>
+<td class="org-left"><code>80-FF</code></td>
+<td class="org-left"><code>80-FF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>9000-97FF</code></td>
+<td class="org-left"><code>00-7F</code></td>
+<td class="org-left"><i>inaccessible</i></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Cette organisation peut sembler inutilement compliquée, mais on peut supposer qu'elle a été choisie pour que les 128 tuiles de la plage intermédiaire aient un index identique indépendamment de la valeur du bit <code>TILE_SOURCE</code>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgfa53a3b" class="outline-4">
+<h4 id="orgfa53a3b"><span class="section-number-4">1.2.6</span> Image de fond</h4>
+<div class="outline-text-4" id="text-1-2-6">
+<p>
+L'image de fond complète est, comme nous venons de le voir, constituée de 32×32 tuiles, ce qui correspond à une taille de 256×256 pixels. Plusieurs registres déterminent quelle partie de cette image complète est affichée à l'écran, et avec quelles couleurs :
+</p>
+
+<ol class="org-ol">
+<li>le bit <code>BG</code> (0) du registre <code>LCDC</code> détermine si l'image de fond est visible ou non : s'il vaut 1, l'image de fond est affichée, s'il vaut 0 elle ne l'est pas,</li>
+
+<li>le registre <code>BGP</code> contient une palette qui est utilisée pour transformer la couleur des pixels de l'image de fond,</li>
+
+<li>les registres <code>SCX</code> et <code>SCY</code> déterminent quelle zone de l'image de fond complète est affichée à l'écran ; ils contiennent l'index du pixel de l'image de fond complète qui apparaît dans le coin haut-gauche de l'écran.</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-orgd992390" class="outline-4">
+<h4 id="orgd992390"><span class="section-number-4">1.2.7</span> Fenêtre</h4>
+<div class="outline-text-4" id="text-1-2-7">
+<p>
+Tout comme l'image de fond, la fenêtre complète est constituée de 32×32 tuiles, donc de 256×256 pixels.
+</p>
+
+<p>
+Elle aussi peut être activée ou désactivée au moyen d'un bit du registre <code>LCDC</code>, qui est cette fois le bit <code>WIN</code> (5), et ses couleurs sont transformées par la même palette que celle utilisée pour l'image de fond, à savoir celle contenue dans le registre <code>BGP</code>.
+</p>
+
+<p>
+Par contre, une grosse différence par rapport à l'image de fond est que la zone (éventuellement) affichée de la fenêtre commence <i>toujours</i> dans le coin haut-gauche de son image, car il n'existe pas d'équivalents aux registres <code>SCX</code> et <code>SCY</code> pour la fenêtre. En d'autres termes, même si conceptuellement l'image de la fenêtre fait 256×256 pixels de côté, seuls ceux figurant dans le rectangle de 160×144 pixels se trouvant en haut à gauche de cette image peuvent apparaître à l'écran.
+</p>
+
+<p>
+Cela dit, deux registres — <code>WX</code> et <code>WY</code> — permettent de configurer un aspect de la fenêtre qui n'est pas configurable pour l'image de fond, à savoir la position <i>à l'écran</i> du coin haut-gauche de la fenêtre. Attention toutefois : pour une raison inconnue, le registre <code>WX</code> contient en réalité la position à l'écran du pixel de la fenêtre d'index (7,0), et il faut donc systématiquement soustraire 7 à <code>WX</code> pour obtenir la position à l'écran du coin haut-gauche de la fenêtre. Dans ce qui suit, nous écrirons <code>WX'</code> pour la valeur ajustée de <code>WX</code> (c-à-d <code>WX' = WX - 7</code>).
+</p>
+
+<p>
+Il est très important de comprendre la différence entre <code>SCX</code> et <code>SCY</code> (utilisés pour l'image de fond) d'un côté, et <code>WX'</code> et <code>WY</code> (utilisés pour la fenêtre) de l'autre : <code>SCX</code> et <code>SCY</code> donnent la position <i>dans l'image de fond complète</i> du pixel qui apparaîtra tout en haut à gauche de l'écran ; <code>WX'</code> et <code>WY</code> donnent la position <i>à l'écran</i> du pixel haut gauche de l'image complète de la fenêtre. Cette différence est illustrée dans la figure ci-dessous, qui montre comment l'image affichée à l'écran (au centre) est obtenue par combinaison d'une partie de l'image de fond (à gauche) et d'une partie de l'image de la fenêtre (à droite). Pour faciliter la compréhension, deux pixels (P1 et P2) sont nommés.
+</p>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="./Contrôleur d&#39;écran_files/bg-win-screen.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+<p><span class="figure-number">Figure&nbsp;3&nbsp;: </span>Combinaison de l'image de fond et de la fenêtre</p>
+</div>
+
+<p>
+En plus de positionner la fenêtre à l'écran, le registre <code>WX</code> permet également de désactiver son dessin, au même titre que le bit <code>WIN</code> du registre <code>LCDC</code>. En effet, si la valeur de <code>WX</code> n'est pas comprise entre 7 (inclus) et 167 (exclu), c-à-d si celle de <code>WX'</code> n'est pas comprise entre 0 et 160 (exclu), alors le dessin de la fenêtre est désactivé exactement comme si le bit <code>WIN</code> du registre <code>LCDC</code> valait 0.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgd11eccb" class="outline-4">
+<h4 id="sec:image-draw"><a id="orgd11eccb"></a><span class="section-number-4">1.2.8</span> Processus de dessin</h4>
+<div class="outline-text-4" id="text-sec:image-draw">
+<p>
+Tout comme le processeur passe sont temps à exécuter les instructions du programme, le contrôleur LCD passe son temps à dessiner les images successives qui sont affichées à l'écran. C'est-à-dire que dès que le dessin d'une image est terminé, le dessin de la suivante commence, et ainsi de suite — tant et aussi longtemps que l'écran est allumé.
+</p>
+
+<p>
+Le dessin d'une image complète dure 17 556 cycles. Etant donné qu'il y a 2<sup>20</sup> cycles par secondes, il faut un peu moins d'un soixantième de seconde au contrôleur pour dessiner une image. En d'autres termes, une nouvelle image est affichée à l'écran 60 fois par secondes environ.
+</p>
+
+<p>
+Le dessin procède ligne à ligne, du haut en bas de l'écran. A chaque instant du dessin, le contrôleur LCD se trouve dans un <b>mode</b> donné, qui décrit ce qu'il est en train de faire. Il y a en tout 4 modes, qui sont :
+</p>
+
+<ul class="org-ul">
+<li>le mode 0, appelé <i>horizontal blank</i>, qui signifie que le contrôleur LCD a terminé le dessin d'une ligne mais pas encore commencé celui de la suivante,</li>
+
+<li>le mode 1, appelé <i>vertical blank</i>, qui signifie que le contrôleur LCD a terminé le dessin d'une image mais pas encore commencé celui de la suivante,</li>
+
+<li>le mode 2, qui signifie que le contrôleur LCD accède à la mémoire contenant les <i>sprites</i> afin de dessiner ceux de la ligne courante,</li>
+
+<li>le mode 3, qui signifie que le contrôleur LCD accède à la mémoire contenant les <i>sprites</i> et la mémoire graphique, afin de dessiner la ligne courante.</li>
+</ul>
+
+<p>
+Le numéro du mode courant est stocké dans les deux bits de poids faible du registre <code>STAT</code>, nommés <code>MODE0</code> et <code>MODE1</code> plus haut. Il faut noter que sur un Game Boy réel, le programme qui s'exécute sur le processeur n'a pas le droit d'accéder aux mémoires du contrôleur LCD durant les modes 2 et 3, mais nous ignorerons ce détail dans notre simulation.
+</p>
+
+<p>
+Le dessin d'une ligne prend 114 cycles durant lesquels le contrôleur LCD passe par trois modes différents, selon le schéma suivant :
+</p>
+
+<ol class="org-ol">
+<li>durant les 20 premiers cycles, il est en mode 2,</li>
+<li>durant les 43 cycles suivants, il est en mode 3,</li>
+<li>durant les 51 cycles restants, il est en mode 0 (<i>horizontal blank</i>).</li>
+</ol>
+
+<p>
+A noter que, sur un Game Boy réel, les durées de ces trois modes ne sont en fait pas constantes et dépendent de très nombreux détails non documentés. Toutefois, nous ferons l'hypothèse que la durée de chaque mode est celle donnée ci-dessus.
+</p>
+
+<p>
+Après avoir dessiné la totalité des 144 lignes de l'écran en alternant entre les trois modes susmentionnés, le contrôleur LCD passe en mode 1 (<i>vertical blank</i>) et y reste durant 1 140 cycles, soit exactement le même temps que celui nécessaire au dessin de 10 lignes. Une fois ces cycles écoulés, il commence le dessin de la prochaine image, selon le même schéma.
+</p>
+
+<p>
+Lorsqu'il commence le dessin de chacune des ligne, le contrôleur LCD stocke l'index de cette ligne dans le registre <code>LY</code>. Cela est vrai aussi lorsqu'il se trouve en mode 1 (<i>vertical blank</i>), et le registre <code>LY</code> prend donc des valeurs allant de 0 à 153, même si l'écran ne fait que 144 lignes de haut.
+</p>
+
+<p>
+Chaque fois qu'il change le contenu du registre <code>LY</code>, le contrôleur LCD compare sa valeur avec celle stockée dans le registre <code>LYC</code>. Si les deux sont égales, alors il met à 1 le bit <code>LYC_EQ_LY</code> (2) du registre <code>STAT</code>. De plus, si le bit <code>INT_LYC</code> (6) de ce même registre vaut 1, alors il lève l'interruption <code>LCD_STAT</code> du processeur. Si <code>LY</code> et <code>LYC</code> contiennent des valeurs différentes, alors le bit <code>LYC_EQ_LY</code> de <code>STAT</code> vaut 0.
+</p>
+
+<p>
+L'interruption <code>LCD_STAT</code> peut également être levée lors d'un changement de mode. En effet, lorsqu'il entre en mode 0, 1 ou 2, le contrôleur LCD lève cette interruption si et seulement si le bit correspondant du registre <code>STAT</code> (<code>INT_MODE0</code>, <code>INT_MODE1</code> ou <code>INT_MODE2</code>) vaut 1. Finalement, lorsqu'il passe en mode 1 (<i>vertical blank</i>), il lève de manière inconditionnelle l'interruption <code>VBLANK</code>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org51cd39f" class="outline-4">
+<h4 id="sec:sfx"><a id="org51cd39f"></a><span class="section-number-4">1.2.9</span> Effets spéciaux</h4>
+<div class="outline-text-4" id="text-sec:sfx">
+<p>
+Les interruptions <code>LCD_STAT</code> et <code>VBLANK</code> ouvrent la porte à différents effets spéciaux du type de ceux mentionnés à l'étape précédente. Par exemple, l'interruption liée au mode 0 (<i>horizontal blank</i>) est levée au moment où le dessin d'une ligne est terminé. Durant les 51 cycles que dure ce mode, le programme a la possibilité de modifier les registres du contrôleur, p.ex. <code>SCX</code> pour influencer la zone de l'image de fond affichée à l'écran. C'est de cette manière qu'il est possible d'afficher à l'écran une image qui n'est pas une simple portion rectangulaire de l'image stockée en mémoire.
+</p>
+
+<p>
+De manière similaire, il est possible de faire en sorte que la fenêtre n'occupe pas simplement une portion du coin bas-droite de l'écran, en l'activant et la désactivant au cours du processus de dessin. Il est très important de noter que dans ce cas, lorsque la fenêtre est réactivée, son dessin reprend là où il s'était interrompu.
+</p>
+
+<p>
+Par exemple, admettons que <code>WX'</code> et <code>WY</code> valent 0, puis que durant le dessin des 10 premières lignes, la fenêtre soit activée (c-à-d que le bit <code>WIN</code> de <code>LCDC</code> vaut 1). Les lignes affichées au sommet de l'écran seront les 10 lignes du haut de l'image complète de la fenêtre. Si la fenêtre est ensuite désactivée pour les 124 lignes suivantes, puis réactivée, alors la première ligne affichée après cette réactivation sera la 11<sup>e</sup> (!) de l'image complète de la fenêtre.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org4829bdb" class="outline-4">
+<h4 id="org4829bdb"><span class="section-number-4">1.2.10</span> Allumage et extinction de l'écran</h4>
+<div class="outline-text-4" id="text-1-2-10">
+<p>
+L'écran du Game Boy n'est allumé que si le bit <code>LCD_STATUS</code> du registre <code>LCDC</code> vaut 1.
+</p>
+
+<p>
+Lorsque l'écran est éteint, le contrôleur LCD est en mode 0 — ce qui, au passage, n'est pas très logique — et le registre <code>LY</code> vaut 0.
+</p>
+
+<p>
+Dès que l'écran est allumé, le dessin de la première image débute immédiatement et, à supposer que l'écran ne soit pas à nouveau éteint avant, son calcul est donc terminé 17 556 cycles plus tard.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org3bc8b05" class="outline-4">
+<h4 id="org3bc8b05"><span class="section-number-4">1.2.11</span> Simulation du dessin</h4>
+<div class="outline-text-4" id="text-1-2-11">
+<p>
+Tout comme nous l'avons fait pour le processeur, nous simulerons les aspects importants du contrôleur LCD en faisant abstraction de ceux qui ne le sont pas dans la majorité des cas.
+</p>
+
+<p>
+La simplification principale que nous ferons dans notre simulateur est que chaque ligne sera dessinée en <i>un seul</i> cycle, le premier du mode 3. L'avantage de procéder ainsi est que cela nous permet de dessiner une ligne d'un coup plutôt que de devoir procéder de manière plus incrémentale, p.ex. pixel par pixel.
+</p>
+
+<p>
+Durant le reste du temps, le contrôleur LCD simulé sera donc assez oisif, se contentant de changer de mode au bon moment et de lever, le cas échéant, les exceptions correspondantes.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgbefc13f" class="outline-3">
+<h3 id="orgbefc13f"><span class="section-number-3">1.3</span> Référence</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+Une très bonne description du Game Boy dans son ensemble, et du contrôleur LCD en particulier, est donnée par Michael Steil dans sa présentation <a href="https://media.ccc.de/v/33c3-8029-the_ultimate_game_boy_talk"><i>The Ultimate Game Boy Talk</i></a> (en anglais, environ 1h). Les différents concepts expliqués plus haut y sont illustrés au moyen de nombreux exemples de jeux, qui peuvent considérablement faciliter la compréhension.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgcf0eac8" class="outline-2">
+<h2 id="orgcf0eac8"><span class="section-number-2">2</span> Mise en œuvre Java</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+La mise en œuvre de cette étape n'étant pas des plus simples, il est conseillé de la faire en trois phases :
+</p>
+
+<ol class="org-ol">
+<li>Écrire un embryon de la classe <code>LcdController</code> qui gère tous les aspects décrits plus haut sauf le dessin de l'image proprement dit ; compléter la classe <code>GameBoy</code> pour y intégrer le contrôleur LCD ; tester le tout.</li>
+
+<li>Compléter la classe <code>LcdController</code> pour gérer correctement le dessin de l'image de fond uniquement (sans la fenêtre), et tester à nouveau.</li>
+
+<li>Compléter la classe <code>LcdController</code> en ajoutant la gestion de la fenêtre.</li>
+</ol>
+
+<p>
+Les conseils de programmation donnés plus bas suivent ce découpage en trois phases.
+</p>
+
+<p>
+A la fin de la première phase, il devrait déjà être possible de faire fonctionner les tests de Blargg au moyen du programme de test fourni plus bas, et de vérifier que leur sortie <i>textuelle</i> est correcte. A la fin de la seconde phase, il devrait être possible de vérifier que leur sortie graphique (c-à-d l'image affichée à l'écran du Game Boy) est correcte, de même que celle des jeux FlappyBoy et Tetris — voir plus bas. Il est difficile de tester à ce stade le résultat de la troisième phase, car les programmes de test à notre disposition n'utilisent pas la fenêtre tant que l'on interagit pas avec eux via le clavier, qui n'est pas encore simulé.
+</p>
+</div>
+
+<div id="outline-container-org1125b49" class="outline-3">
+<h3 id="org1125b49"><span class="section-number-3">2.1</span> Classe <code>LcdController</code></h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+La classe <code>LcdController</code> du paquetage <code>ch.epfl.gameboj.component.lcd</code>, publique et finale, représente un contrôleur LCD. Etant donné que ce contrôleur est un composant connecté au bus et piloté par l'horloge, la classe <code>LcdController</code> implémente les interfaces <code>Component</code> et <code>Clocked</code>.
+</p>
+
+<p>
+La classe <code>LcdController</code> possède deux attributs publics, statiques et finaux donnant la largeur (<code>LCD_WIDTH</code>) et la hauteur (<code>LCD_HEIGHT</code>) de l'écran, en pixels. Pour mémoire, celui-ci fait 160×144 pixels.
+</p>
+
+<p>
+Le constructeur de la classe <code>LcdController</code> prend en argument le processeur du Game Boy auquel il appartient, de type <code>Cpu</code>. Cela est nécessaire, car le contrôleur LCD lève des interruptions dans certaines conditions, comme décrit plus haut.
+</p>
+
+<p>
+En dehors des méthodes <code>read</code>, <code>write</code> et <code>cycle</code> des interfaces <code>Component</code> et <code>Clocked</code>, la classe <code>LcdController</code> n'offre qu'une seule méthode publique. Celle-ci, nommée p.ex. <code>currentImage</code>, ne prend aucun argument et retourne l'image actuellement affichée à l'écran, de type <code>LcdImage</code>.
+</p>
+
+<p>
+Faites bien attention à ce que cette méthode retourne <i>toujours</i> une image non nulle de 160×144 pixels, même si la simulation n'a pas encore été effectuée assez longtemps pour que la première image ait été dessinée. Dans ce dernier cas, l'image retournée sera simplement vide, c-à-d que tous ses pixels seront de couleur 0.
+</p>
+
+<p>
+Garantir que l'image retournée par la méthode <code>currentImage</code> n'est jamais nulle permet aux utilisateurs de la classe <code>LcdController</code> de ne pas devoir traiter ce cas, ce qui évite beaucoup de problèmes.
+</p>
+</div>
+
+<div id="outline-container-org22cc18e" class="outline-4">
+<h4 id="org22cc18e"><span class="section-number-4">2.1.1</span> Conseils de programmation (phase 1)</h4>
+<div class="outline-text-4" id="text-2-1-1">
+<p>
+Avant de donner des conseils de programmation précis, il est important de constater deux points communs importants entre le processeur et le contrôleur LCD (simulés) :
+</p>
+
+<ol class="org-ol">
+<li>ils n'ont pas forcément quelque chose à faire à chaque cycle,</li>
+
+<li>ils peuvent être désactivés pour une durée indéterminée — le premier au moyen de l'instruction <code>HALT</code>, le second au moyen du bit <code>LCD_STATUS</code> du registre <code>LCDC</code>.</li>
+</ol>
+
+<p>
+Cette similarité implique que plusieurs techniques utilisées pour simuler le processeur, en particulier l'utilisation d'un attribut contenant le prochain cycle d'activité (<code>nextNonIdleCycle</code>) et le découpage de la méthode <code>cycle</code> en deux (<code>cycle</code> elle-même et <code>reallyCycle</code>), peuvent être réutilisées ici. C'est ce que nous vous conseillons de faire.
+</p>
+</div>
+
+<ol class="org-ol">
+<li><a id="org1ab495a"></a>Méthodes <code>read</code> et <code>write</code><br>
+<div class="outline-text-5" id="text-2-1-1-1">
+<p>
+Les méthodes <code>read</code> et <code>write</code>, redéfinissant celles de <code>Component</code>, sont probablement les plus simples à mettre en œuvre car elles ressemblent à celles des autres composants. Pour cette étape, elles doivent donner accès aux différents registres et à la mémoire vidéo. Notez que comme d'habitude l'interface <code>AddressMap</code> offre des constantes liées à ces différents éléments : <code>VIDEO_RAM_START</code>, <code>VIDEO_RAM_END</code> et <code>VIDEO_RAM_SIZE</code> pour la mémoire vidéo, et <code>REGS_LCDC_START</code> et <code>REGS_LCDC_END</code> pour la plage dédiée aux registres du contrôleur LCD.
+</p>
+
+<p>
+Il faut toutefois noter que la méthode <code>write</code> doit traiter l'écriture dans les registres <code>LCDC</code>, <code>STAT</code> et <code>LYC</code> de manière particulière :
+</p>
+
+<ul class="org-ul">
+<li>lorsqu'une écriture dans <code>LCDC</code> provoque l'extinction de l'écran, il faut que le contrôleur LCD passe en mode 0, force <code>LY</code> à 0, et se place en attente indéterminée (<code>nextNonIdleCycle = Long.MAX_VALUE</code>),</li>
+
+<li>lorsqu'une écritures est faite dans <code>STAT</code>, les 3 bits de poids faible ne doivent pas être modifiés,</li>
+
+<li>lorsqu'une écriture est faite dans <code>LYC</code>, le bit <code>LYC_EQ_LY</code> de <code>STAT</code> doit éventuellement être mis à jour, et l'interruption <code>LCD_STAT</code> levée sous certaines conditions (décrites plus haut).</li>
+</ul>
+
+<p>
+Pour gérer ce dernier cas, nous vous conseillons d'écrire une méthode privée permettant de modifier <code>LYC</code> ou <code>LY</code> et se chargeant de la mise à jour du bit susmentionné, et de la levée éventuelle de l'interruption.
+</p>
+</div>
+</li>
+
+<li><a id="org6c4bdbc"></a>Méthodes <code>cycle</code> et <code>reallyCycle</code><br>
+<div class="outline-text-5" id="text-2-1-1-2">
+<p>
+Les méthodes <code>cycle</code> et <code>reallyCycle</code> ont un comportement similaire à celles du processeur : <code>cycle</code> détermine si le contrôleur LCD a quelque chose à faire durant le cycle courant et appelle <code>reallyCycle</code> si tel est le cas. La méthode <code>cycle</code> se charge aussi de gérer l'allumage de l'écran en détectant le cas où <code>nextNonIdleCycle</code> vaut <code>Long.MAX_VALUE</code> et l'écran est allumé.
+</p>
+
+<p>
+La méthode <code>reallyCycle</code> se charge d'effectuer les changements de mode et de lever, le cas échéant, les interruptions correspondantes.
+</p>
+</div>
+</li>
+
+<li><a id="org7bc00cc"></a>Test<br>
+<div class="outline-text-5" id="text-2-1-1-3">
+<p>
+Une fois les méthodes <code>read</code>, <code>write</code> et <code>cycle</code> écrites, en ignorant tous les aspects liés au dessin de l'image, il est conseillé de tester une première fois votre code, ce qui implique tout d'abord de compléter la classe <code>GameBoy</code> de la manière décrite à la §<a href="https://cs108.epfl.ch/archive/18/p/09_lcd-controller.html#sec:gameboy">2.2</a>.
+</p>
+
+<p>
+Cela fait, utilisez le programme de test donné plus bas pour exécuter tous les tests de Blargg et vérifier que leur sortie textuelle, c-à-d celle affichée sur la console par le programme de test, est correcte.
+</p>
+</div>
+</li>
+</ol>
+</div>
+
+<div id="outline-container-orgd7512aa" class="outline-4">
+<h4 id="orgd7512aa"><span class="section-number-4">2.1.2</span> Conseils de programmation (phase 2)</h4>
+<div class="outline-text-4" id="text-2-1-2">
+<p>
+Une fois la phase 1 terminée et testée, vous pouvez passer à la phase 2, dédiée au dessin de l'image à afficher à l'écran — pour l'instant composée uniquement de l'image de fond.
+</p>
+
+<p>
+Le dessin de l'image à afficher à l'écran se faisant ligne après ligne, il est conseillé d'ajouter à la classe un attribut, nommé p.ex. <code>nextImageBuilder</code>, contenant un bâtisseur d'image.
+</p>
+
+<p>
+Un nouveau bâtisseur est stocké dans cet attribut au début du dessin de chaque image, c-à-d lorsque le contrôleur entre en mode 2 pour la première ligne.
+</p>
+
+<p>
+Lorsque le contrôleur a terminé le dessin de l'image à afficher, c-à-d lorsqu'il entre en mode 1, l'image en cours de construction dans le bâtisseur est effectivement construite et stockée dans l'attribut donnant l'image courante, retourné par la méthode <code>currentImage</code>.
+</p>
+
+<p>
+Le calcul de la prochaine ligne à ajouter au bâtisseur d'image peut être confié à une méthode séparée, nommée p.ex. <code>computeLine</code>. Son but est de calculer la ligne d'index qu'on lui passe, en combinant l'image de fond, la fenêtre et les <i>sprites</i>. Pour cette phase, elle ne se charge toutefois que de l'image de fond. Cette méthode est appelée chaque fois que le contrôleur entre en mode 3.
+</p>
+
+<p>
+Notez que l'interface <code>AddressMap</code> définit les tableaux <code>TILE_SOURCE</code> et <code>BG_DISPLAY_DATA</code> qui contiennent respectivement les adresses de début des plages contenant les images des tuiles et celles des plages contenant la description des images de l'image de fond et de la fenêtre. Pensez à les utiliser pour clarifier votre code !
+</p>
+
+<p>
+A ce stade, il est conseillé de tester une seconde fois votre code, en vérifiant que les images produites par le programme de test donné plus bas sont celles attendues.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgc81af0d" class="outline-4">
+<h4 id="orgc81af0d"><span class="section-number-4">2.1.3</span> Conseils de programmation (phase 3)</h4>
+<div class="outline-text-4" id="text-2-1-3">
+<p>
+Une fois la phase 2 terminée et testée, vous pouvez passez à la phase 3, dédiée au dessin de la fenêtre.
+</p>
+
+<p>
+Le gros du code à rajouter doit l'être dans la méthode <code>computeLine</code>, et il faut noter que passablement de ce code peut être partagé avec celui gérant l'image de fond. En effet, plusieurs aspects de la gestion de ces deux images, en particulier la manière dont elles sont construites à partir des tuiles les composant, sont similaires et méritent d'être extraits dans une méthode auxiliaire.
+</p>
+
+<p>
+Rappelez-vous que la fenêtre est désactivée lorsque le bit <code>WIN</code> du registre <code>LCDC</code> vaut 0, mais aussi lorsque <code>WX'</code> n'est pas compris entre 0 et 160 (exclu).
+</p>
+
+<p>
+Comme décrit à la §<a href="https://cs108.epfl.ch/archive/18/p/09_lcd-controller.html#sec:sfx">1.2.9</a>, lorsque le dessin de la fenêtre est interrompu durant une partie du processus de dessin, il reprend là où il s'était arrêté. La manière la plus simple de gérer cela consiste à ajouter un attribut à la classe du contrôleur, nommé p.ex. <code>winY</code>, remis à 0 au début du processus de dessin et incrémenté chaque fois qu'une ligne de la fenêtre est dessinée. Sa valeur est utilisée pour déterminer quelle ligne de l'image complète de la fenêtre dessiner à un moment donné.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org80bffe8" class="outline-3">
+<h3 id="sec:gameboy"><a id="org80bffe8"></a><span class="section-number-3">2.2</span> Classe <code>GameBoy</code></h3>
+<div class="outline-text-3" id="text-sec:gameboy">
+<p>
+La classe <code>GameBoy</code> doit être modifiée pour ajouter le contrôleur LCD au système. Cela implique de :
+</p>
+
+<ul class="org-ul">
+<li>créer une instance de <code>LcdController</code> et l'attacher au bus,</li>
+
+<li>ajouter un appel à sa méthode <code>cycle</code> dans la méthode <code>runUntil</code>, entre la méthode <code>cycle</code> du minuteur et celle du processeur,</li>
+
+<li>ajouter une méthode d'accès, nommée p.ex. <code>lcdController</code>, permettant d'obtenir le contrôleur LCD.</li>
+</ul>
+
+<p>
+Attention : il est important d'attacher le contrôleur au bus au moyen de sa méthode <code>attachTo</code>, et <i>pas</i> au moyen de la méthode <code>attach</code> de bus. Cela est nécessaire car à l'étape suivante, la méthode <code>attachTo</code> de <code>LcdController</code> sera redéfinie de la même manière que celle de la classe <code>Cpu</code> l'a été, afin que le contrôleur LCD ait accès au bus.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org8c81555" class="outline-3">
+<h3 id="org8c81555"><span class="section-number-3">2.3</span> Tests</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+A la fin de cette étape, le système est assez complet pour pouvoir simuler facilement différents programmes, entre autres les tests de Blargg et certains jeux. Le programme ci-dessous, qui combine des éléments de ceux des étapes <a href="https://cs108.epfl.ch/archive/18/p/06_cartridge_timer.html">6</a> et <a href="https://cs108.epfl.ch/archive/18/p/08_lcd-image.html">8</a>, constitue un bon point de départ pour effectuer des tests.
+</p>
+
+<p>
+Tout comme le programme de test de l'étape 6, il accepte deux arguments sur la ligne de commande : le nom d'un fichier ROM à charger, et le nombre de cycles durant lequel effectuer la simulation. Après avoir créé un Game Boy avec le contenu du fichier ROM, il exécute la simulation jusqu'au cycle donné, au moyen de <code>runUntil</code>. Notez que contrairement au programme de test de l'étape 6, celui-ci ne lève pas l'interruption <code>VBLANK</code> tous les 17 556 cycles, car cela est fait désormais par le contrôleur LCD.
+</p>
+
+<p>
+Une fois la simulation terminée, le programme fait deux choses :
+</p>
+
+<ol class="org-ol">
+<li>il affiche sur la console les index des 20×18 tuiles en haut à gauche de l'image de fond, obtenus de la zone débutant à l'adresse 9800<sub>16</sub> et interprétés comme des caractères (!),</li>
+
+<li>il écrit dans le fichier nommé <code>gb.png</code> l'image affichée à l'écran à la fin de la simulation.</li>
+</ol>
+
+<p>
+Interpréter les index de tuiles comme des caractères avant de les afficher peut sembler très étrange, mais s'avère fort utile avec les tests de Blargg. En effet, leur auteur a eu la bonne idée d'indexer les tuiles correspondant aux différents caractères au moyen de leur code ASCII, ce qui signifie qu'en interprétant ces index de tuiles comme des caractères, on sait quelles lettres sont affichées à l'écran !
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-class"><span class="hljs-keyword"><span class="hljs-class"><span class="hljs-keyword">class</span></span></span><span class="hljs-class"> </span><span class="hljs-title"><span class="hljs-class"><span class="hljs-title">DebugMain2</span></span></span><span class="hljs-class"> </span></span>{
+  <span class="hljs-keyword"><span class="hljs-keyword">private</span></span> <span class="hljs-keyword"><span class="hljs-keyword">static</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> <span class="hljs-keyword"><span class="hljs-keyword">int</span></span>[] COLOR_MAP = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> <span class="hljs-keyword"><span class="hljs-keyword">int</span></span>[] {
+    <span class="hljs-number"><span class="hljs-number">0xFF_FF_FF</span></span>, <span class="hljs-number"><span class="hljs-number">0xD3_D3_D3</span></span>, <span class="hljs-number"><span class="hljs-number">0xA9_A9_A9</span></span>, <span class="hljs-number"><span class="hljs-number">0x00_00_00</span></span>
+  };
+
+  <span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">static</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">void</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">main</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(String[] args)</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">throws</span></span></span><span class="hljs-function"> IOException </span></span>{
+    File romFile = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> File(args[<span class="hljs-number"><span class="hljs-number">0</span></span>]);
+    <span class="hljs-keyword"><span class="hljs-keyword">long</span></span> cycles = Long.parseLong(args[<span class="hljs-number"><span class="hljs-number">1</span></span>]);
+
+    GameBoy gb = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> GameBoy(Cartridge.ofFile(romFile));
+    gb.runUntil(cycles);
+
+    System.out.println(<span class="hljs-string"><span class="hljs-string">"+--------------------+"</span></span>);
+    <span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (<span class="hljs-keyword"><span class="hljs-keyword">int</span></span> y = <span class="hljs-number"><span class="hljs-number">0</span></span>; y &lt; <span class="hljs-number"><span class="hljs-number">18</span></span>; ++y) {
+      System.out.print(<span class="hljs-string"><span class="hljs-string">"|"</span></span>);
+      <span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (<span class="hljs-keyword"><span class="hljs-keyword">int</span></span> x = <span class="hljs-number"><span class="hljs-number">0</span></span>; x &lt; <span class="hljs-number"><span class="hljs-number">20</span></span>; ++x) {
+	<span class="hljs-keyword"><span class="hljs-keyword">char</span></span> c = (<span class="hljs-keyword"><span class="hljs-keyword">char</span></span>) gb.bus().read(<span class="hljs-number"><span class="hljs-number">0x9800</span></span> + <span class="hljs-number"><span class="hljs-number">32</span></span>*y + x);
+	System.out.print(Character.isISOControl(c) ? <span class="hljs-string"><span class="hljs-string">" "</span></span> : c);
+      }
+      System.out.println(<span class="hljs-string"><span class="hljs-string">"|"</span></span>);
+    }
+    System.out.println(<span class="hljs-string"><span class="hljs-string">"+--------------------+"</span></span>);
+
+    LcdImage li = gb.lcdController().currentImage();
+    BufferedImage i =
+      <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> BufferedImage(li.width(),
+			li.height(),
+			BufferedImage.TYPE_INT_RGB);
+    <span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (<span class="hljs-keyword"><span class="hljs-keyword">int</span></span> y = <span class="hljs-number"><span class="hljs-number">0</span></span>; y &lt; li.height(); ++y)
+      <span class="hljs-keyword"><span class="hljs-keyword">for</span></span> (<span class="hljs-keyword"><span class="hljs-keyword">int</span></span> x = <span class="hljs-number"><span class="hljs-number">0</span></span>; x &lt; li.width(); ++x)
+	i.setRGB(x, y, COLOR_MAP[li.get(x, y)]);
+    ImageIO.write(i, <span class="hljs-string"><span class="hljs-string">"png"</span></span>, <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> File(<span class="hljs-string"><span class="hljs-string">"gb.png"</span></span>));
+  }
+}
+</pre>
+</div>
+
+<p>
+En exécutant ce programme en lui passant le fichier ROM du 7<sup>e</sup> test de Blargg et 30 millions de cycles, on obtient le texte suivant dans la console (un certain nombre de lignes vides ont été supprimées pour alléger la présentation) :
+</p>
+
+<pre class="example">+--------------------+
+|07-jr,jp,call,ret,rs|
+|t                   |
+|                    |
+|                    |
+|Passed              |
+|                    |
+          ……
+|                    |
++--------------------+
+</pre>
+
+<p>
+Notez que même si le texte affiché par le programme ci-dessus lors de l'exécution des tests de Blargg est identique à celui qui était affiché par le programme de l'étape 6, il est obtenu de manière totalement différente ! En effet, le programme de l'étape 6 attachait au bus un composant (de type <code>DebugPrintComponent</code>) affichant les écritures faites à l'adresse FF01<sub>16</sub>, alors que le programme ci-dessus affiche le contenu de la mémoire vidéo à la fin de la simulation.
+</p>
+
+<p>
+En dehors des tests de Blargg, vous devriez être capables de simuler l'exécution de programmes plus intéressants, en particulier quelques jeux. Pour ces derniers, la sortie textuelle ne suffit toutefois plus — et est en général incompréhensible. Il faut dès lors avoir terminé au moins la phase 2 décrite plus haut avant de pouvoir les exécuter, puis visualiser l'image écrite dans le fichier <code>gb.png</code>.
+</p>
+
+<p>
+La figure ci-dessous présente côte à côte les images générées par le programme de test donné plus haut après simulation de 30 millions de cycles pour trois fichiers ROM différents. De gauche à droite, il s'agit de :
+</p>
+
+<ol class="org-ol">
+<li>le 7<sup>e</sup> test de Blargg (<code>07-jr,jp,call,ret,rst.gb</code>),</li>
+<li>le jeu libre <a href="https://github.com/bitnenfer/flappy-boy-asm">Flappy Boy</a> de Felipe Alfonso,</li>
+<li>Tetris.</li>
+</ol>
+
+
+<div class="figure">
+<p><img src="./Contrôleur d&#39;écran_files/blargg-flappy-tetris.png" alt="blargg-flappy-tetris.png">
+</p>
+<p><span class="figure-number">Figure&nbsp;4&nbsp;: </span>Images générées par le 7e test de Blargg, FlappyBoy et Tetris</p>
+</div>
+
+<p>
+Le fichier ROM de Flappy Boy est disponible au téléchargement <a href="https://github.com/bitnenfer/flappy-boy-asm/blob/master/build/flappyboy.gb">sur github</a>. Celui de Tetris l'est <a href="https://www.loveroms.com/download/gameboy/tetris-jue-v11-/105666">sur le site LoveROMs</a>, mais il faut noter qu'il n'est pas évident qu'une personne ne possédant pas la cartouche du jeu ait légalement le droit de le télécharger.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgef3c8da" class="outline-2">
+<h2 id="orgef3c8da"><span class="section-number-2">3</span> Résumé</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Pour cette étape, vous devez :
+</p>
+
+<ul class="org-ul">
+<li>commencer à écrire la classe <code>LcdController</code> (ou équivalent) en fonction des indications données plus haut, puis augmenter la classe <code>GameBoy</code> pour ajouter un contrôleur LCD au système,</li>
+
+<li>tester votre code,</li>
+
+<li>documenter la totalité des entités publiques que vous avez définies.</li>
+</ul>
+
+<p>
+Aucun rendu n'est à faire pour cette étape avant le rendu final. N'oubliez pas de faire régulièrement des copies de sauvegarde de votre travail en suivant <a href="https://cs108.epfl.ch/archive/18/g/backups.html">nos indications à ce sujet</a>.
+</p>
+</div>
+</div>
+<div id="footnotes">  <h2 class="footnotes">Notes de bas de page</h2>  <div id="text-footnotes">
+<div class="footdef"><sup><a id="fn.1" class="footnum" href="https://cs108.epfl.ch/archive/18/p/09_lcd-controller.html#fnr.1">1</a></sup> <div class="footpara"><p class="footpara">
+La documentation officielle du Game Boy utilise le terme <b>caractère</b> (<i>character</i>) pour nommer les tuiles. Nous préférons le terme de tuile, d'une part car il est standard, et d'autre part car « caractère » fait penser que ces images représentent des lettres, ce qui n'est (en général) pas le cas.
+</p></div></div>
+
+</div></div></div>
+
+
+</body></html>

@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xl="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="7.838584 28.34646 531.81106 211.24936" width="531.81106" height="211.24936">
+  <defs>
+    <font-face font-family="Fira Sans" font-size="16" panose-1="2 11 5 3 5 0 0 2 0 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="527" cap-height="689" ascent="935.0019" descent="-265.00054" font-weight="400">
+      <font-face-src>
+        <font-face-name name="FiraSans-Regular"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Source Code Pro" font-size="16" panose-1="2 11 5 9 3 4 3 2 2 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="480" cap-height="660" ascent="984.002" descent="-273.00055" font-weight="400">
+      <font-face-src>
+        <font-face-name name="SourceCodePro-Regular"/>
+      </font-face-src>
+    </font-face>
+    <font-face font-family="Fira Sans" font-size="12" panose-1="2 11 5 3 5 0 0 2 0 4" units-per-em="1000" underline-position="-75" underline-thickness="50" slope="0" x-height="527" cap-height="689" ascent="935.0019" descent="-265.00054" font-weight="400">
+      <font-face-src>
+        <font-face-name name="FiraSans-Regular"/>
+      </font-face-src>
+    </font-face>
+  </defs>
+  <metadata> Produced by OmniGraffle 7.7.1 
+    <dc:date>2018-04-22 06:59:35 +0000</dc:date>
+  </metadata>
+  <g id="Canevas_1" fill-opacity="1" stroke-dasharray="none" stroke="none" stroke-opacity="1" fill="none">
+    <title>Canevas 1</title>
+    <g id="Canevas_1: Calque 1">
+      <title>Calque 1</title>
+      <g id="Graphic_133">
+        <text transform="translate(277.13782 215.09582)" fill="black">
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x=".308" y="15">écran</tspan>
+        </text>
+      </g>
+      <g id="Graphic_132">
+        <text transform="translate(69.25591 215.09582)" fill="black">
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x=".388" y="15">image de fond</tspan>
+        </text>
+      </g>
+      <g id="Graphic_131">
+        <text transform="translate(440.0827 215.09582)" fill="black">
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x=".116" y="15">fenêtre</tspan>
+        </text>
+      </g>
+      <g id="Graphic_130">
+        <rect x="252.2835" y="125.15574" width="90.70866" height="81.6378" fill="#c0c0ff"/>
+        <rect x="252.2835" y="125.15574" width="90.70866" height="81.6378" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Line_129">
+        <line x1="300.47247" y1="116.6518" x2="300.47247" y2="173.34472" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.0,2.0" stroke-width="1"/>
+      </g>
+      <g id="Graphic_128">
+        <text transform="translate(285.97247 96.63999)" fill="black">
+          <tspan font-family="Source Code Pro" font-size="16" font-weight="400" fill="black" x=".1" y="16">WX’</tspan>
+        </text>
+      </g>
+      <g id="Line_127">
+        <line x1="243.77955" y1="173.34472" x2="300.47247" y2="173.34472" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.0,2.0" stroke-width="1"/>
+      </g>
+      <g id="Graphic_126">
+        <text transform="translate(223.6024 161.83685)" fill="black">
+          <tspan font-family="Source Code Pro" font-size="16" font-weight="400" fill="black" x=".4" y="16">WY</tspan>
+        </text>
+      </g>
+      <g id="Line_125">
+        <line x1="342.99216" y1="125.15574" x2="320.315" y2="125.15574" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_124">
+        <rect x="300.47247" y="173.34472" width="42.51969" height="33.448816" fill="#ffc0c0"/>
+        <rect x="300.47247" y="173.34472" width="42.51969" height="33.448816" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_121">
+        <text transform="translate(302.13783 159.5022)" fill="black">
+          <tspan font-family="Fira Sans" font-size="12" font-weight="400" fill="black" x=".044" y="11">P2</tspan>
+        </text>
+      </g>
+      <g id="Graphic_120">
+        <text transform="translate(238.52562 111.31322)" fill="black">
+          <tspan font-family="Fira Sans" font-size="12" font-weight="400" fill="black" x=".416" y="11">P1</tspan>
+        </text>
+      </g>
+      <g id="Graphic_119">
+        <rect x="49.18898" y="62.36221" width="145.13385" height="145.13385" fill="#c0c0ff"/>
+        <rect x="49.18898" y="62.36221" width="145.13385" height="145.13385" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_118">
+        <rect x="71.86615" y="82.20473" width="90.70866" height="81.6378" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(76.86615 94.52363)" fill="black">
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="23.09833" y="15">zone </tspan>
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="4.938331" y="34">affichée à </tspan>
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="16.074331" y="53">l’écran</tspan>
+        </text>
+      </g>
+      <g id="Line_117">
+        <line x1="71.86615" y1="53.858274" x2="71.86615" y2="82.20473" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.0,2.0" stroke-width="1"/>
+      </g>
+      <g id="Line_116">
+        <line x1="40.685044" y1="82.20473" x2="71.86615" y2="82.20473" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2.0,2.0" stroke-width="1"/>
+      </g>
+      <g id="Graphic_115">
+        <text transform="translate(57.36615 33.84646)" fill="black">
+          <tspan font-family="Source Code Pro" font-size="16" font-weight="400" fill="black" x=".1" y="16">SCX</tspan>
+        </text>
+      </g>
+      <g id="Graphic_114">
+        <text transform="translate(12.838584 70.62009)" fill="black">
+          <tspan font-family="Source Code Pro" font-size="16" font-weight="400" fill="black" x=".1" y="16">SCY</tspan>
+        </text>
+      </g>
+      <g id="Graphic_112">
+        <text transform="translate(56.52363 67.86221)" fill="black">
+          <tspan font-family="Fira Sans" font-size="12" font-weight="400" fill="black" x=".416" y="11">P1</tspan>
+        </text>
+      </g>
+      <g id="Graphic_111">
+        <rect x="394.0158" y="62.61221" width="145.13385" height="145.13385" fill="#ffc0c0"/>
+        <rect x="394.0158" y="62.61221" width="145.13385" height="145.13385" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_106">
+        <text transform="translate(392.0965 48.51969)" fill="black">
+          <tspan font-family="Fira Sans" font-size="12" font-weight="400" fill="black" x=".044" y="11">P2</tspan>
+        </text>
+      </g>
+      <g id="Graphic_109">
+        <rect x="394.0158" y="62.61221" width="90.70866" height="81.6378" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+        <text transform="translate(399.0158 74.93111)" fill="black">
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="23.09833" y="15">zone </tspan>
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="4.938331" y="34">affichée à </tspan>
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="16.074331" y="53">l’écran</tspan>
+        </text>
+      </g>
+      <g id="Graphic_139">
+        <path d="M 394.0158 144.00001 L 394.0158 207.49607 L 539.14965 207.49607 L 539.14965 62.36221 L 484.72445 62.36221 L 484.72445 144.00001 Z" fill="black" fill-opacity=".3360741"/>
+      </g>
+      <g id="Graphic_108">
+        <text transform="translate(418.8583 146.7323)" fill="black">
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="35.30921" y="15">zone </tspan>
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="3.23721" y="34">inaffichable à </tspan>
+          <tspan font-family="Fira Sans" font-size="16" font-weight="400" fill="black" x="28.28521" y="53">l’écran</tspan>
+        </text>
+      </g>
+      <g id="Graphic_123">
+        <circle cx="300.30515" cy="173.1774" r="1.41732525802162" fill="white"/>
+        <circle cx="300.30515" cy="173.1774" r="1.41732525802162" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_122">
+        <circle cx="252.45082" cy="125.19806" r="1.4173252580216" fill="white"/>
+        <circle cx="252.45082" cy="125.19806" r="1.4173252580216" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_113">
+        <circle cx="72.03347" cy="82.37206" r="1.4173252580216" fill="white"/>
+        <circle cx="72.03347" cy="82.37206" r="1.4173252580216" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+      <g id="Graphic_107">
+        <circle cx="394.1831" cy="62.654535" r="1.41732525802161" fill="white"/>
+        <circle cx="394.1831" cy="62.654535" r="1.41732525802161" stroke="black" stroke-linecap="round" stroke-linejoin="round" stroke-width="1"/>
+      </g>
+    </g>
+  </g>
+</svg>

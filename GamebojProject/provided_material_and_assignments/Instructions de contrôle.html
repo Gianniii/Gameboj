@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<!-- saved from url=(0054)https://cs108.epfl.ch/archive/18/p/05_cpu_control.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-03-12 Lun 09:31 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instructions de contrôle</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Instructions de contrôle_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Instructions de contrôle_files/github.min.css">
+<script src="./Instructions de contrôle_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Instructions de contrôle
+<br>
+<span class="subtitle">Gameboj – Étape 5</span>
+</h1>
+
+<div id="outline-container-org17d3580" class="outline-2">
+<h2 id="org17d3580"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Le but de cette étape est de terminer la classe <code>Cpu</code> modélisant le processeur du Game Boy en lui ajoutant :
+</p>
+
+<ol class="org-ol">
+<li>la gestion de la mémoire vive qu'il contient,</li>
+<li>la gestion des instructions dites « de contrôle »,</li>
+<li>la gestion des interruptions.</li>
+</ol>
+
+<p>
+Cela fait, la classe <code>GameBoy</code> doit également être complétée afin d'y ajouter le processeur, désormais totalement fonctionnel.
+</p>
+
+<p>
+Ces différentes notions sont introduites ci-dessous, de même que la pile, qui joue un rôle important pour les instructions de contrôle et la gestion des interruptions.
+</p>
+</div>
+
+<div id="outline-container-org86b52c2" class="outline-3">
+<h3 id="org86b52c2"><span class="section-number-3">1.1</span> Mémoire haute</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Le processeur du Game Boy a la particularité de contenir une mémoire vive de 127 octets, nommée mémoire haute (<i>high RAM</i>). Etant donné que cette mémoire est interne au processeur, il peut y accéder sans devoir passer par le bus. Comme nous le verrons ultérieurement, cela peut être utile dans certaines situations.
+</p>
+
+<p>
+Le processeur expose la mémoire haute sur le bus, de l'adresse FF80<sub>16</sub> à l'adresse FFFE<sub>16</sub> (incluse) — voir la carte mémoire de <a href="https://cs108.epfl.ch/archive/18/p/01_bus_memories_bits.html">l'étape 1</a>. La mémoire haute se trouve donc tout en haut de l'espace d'adressage du Game Boy, d'où son nom.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org4f4ea94" class="outline-3">
+<h3 id="org4f4ea94"><span class="section-number-3">1.2</span> Pile</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Pour mémoire, en informatique on appelle <b>pile</b> (<i>stack</i>) une collection dont les éléments sont toujours ajoutés ou supprimés de la même extrémité, que l'on nomme le <b>sommet de la pile</b> (<i>top of stack</i>).
+</p>
+
+<p>
+La plupart des processeurs, dont celui du Game Boy, utilisent une pile pour sauvegarder temporairement des valeurs, et il est utile de comprendre comment cette pile fonctionne.
+</p>
+</div>
+
+<div id="outline-container-org3932b18" class="outline-4">
+<h4 id="org3932b18"><span class="section-number-4">1.2.1</span> Pile du Game Boy</h4>
+<div class="outline-text-4" id="text-1-2-1">
+<p>
+La pile du processeur du Game Boy ne peut contenir que des valeurs 16 bits. Elles sont stockées côte à côte en mémoire, celles insérées le plus récemment se trouvant aux adresses les plus <i>basses</i>. Dès lors, la pile croît vers le bas de l'espace d'adressage, ce qui est légèrement contre-intuitif (mais fréquent pour les piles de processeurs).
+</p>
+
+<p>
+L'adresse du sommet de la pile est stockée dans le registre (16 bits) <code>SP</code>, que l'on nomme le <b>pointeur de pile</b> (<i>stack pointer</i>) pour cette raison. L'adresse qu'il contient est donc toujours celle du premier octet de la valeur 16 bits se trouvant au sommet de la pile. Attention toutefois, comme les octets des valeurs 16 bits sont placés en mémoire en ordre petit-boutien, cet octet est l'octet de poids <i>faible</i> de la valeur au sommet de la pile.
+</p>
+
+<p>
+Pour faciliter la gestion de la pile, le processeur offre plusieurs instructions permettant de manipuler le registre <code>SP</code> et/ou la mémoire à l'adresse qu'il désigne. Par exemple, les instructions <code>PUSH</code> et <code>POP</code> décrites à <a href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html">l'étape 3</a> permettent respectivement de placer une paire de registres sur la pile, et de l'en retirer. Pour mémoire, l'effet de ces instructions est le suivant :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>PUSH r16</code></td>
+<td class="org-left"><code>SP -= 2; BUS[SP] = r</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>POP r16</code></td>
+<td class="org-left"><code>r = BUS[SP]; SP += 2</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Ainsi, <code>PUSH</code> décrémente <code>SP</code> de deux unités afin de faire de la place pour les deux octets de la paire de registres à stocker, puis les stocke. Pour sa part, <code>POP</code> lit les deux octets au sommet de la pile, les place dans la paire de registres, puis ajuste <code>SP</code> afin de tenir compte de leur suppression de la pile.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org7779c40" class="outline-4">
+<h4 id="org7779c40"><span class="section-number-4">1.2.2</span> Exemple d'utilisation de la pile</h4>
+<div class="outline-text-4" id="text-1-2-2">
+<p>
+Le programme assembleur ci-dessous illustre le fonctionnement de la pile en stockant 1234<sub>16</sub> dans la paire de registre <code>BC</code>, 5678<sub>16</sub> dans la paire <code>DE</code>, puis en échangeant le contenu des deux paires via la pile. Remarquez que la première instruction initialise le registre <code>SP</code> de manière à ce que la pile commence au sommet de la mémoire haute.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-asm hljs"><span class="linenr">1: </span>LD SP, $FFFF
+<span class="linenr">2: </span>LD BC, $1234
+<span class="linenr">3: </span>LD DE, $5678
+<span class="linenr">4: </span>PUSH BC
+<span class="linenr">5: </span>PUSH DE
+<span class="linenr">6: </span>POP BC
+<span class="linenr">7: </span>POP DE
+<span class="linenr">8: </span>HALT
+</pre>
+</div>
+
+<p>
+Le fonctionnement de ce programme est illustré par la table ci-dessous, qui montre l'état des (paires de) registres <code>BC</code>, <code>DE</code> et <code>SP</code>, ainsi que de la mémoire aux adresses allant de FFFB<sub>16</sub> à FFFE<sub>16</sub>, <i>après</i> l'exécution de chacune des 7 premières instructions du programme. (Les points d'interrogation représentent des valeurs inconnues stockées dans la mémoire haute au moment où ce bout de programme est exécuté).
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">&nbsp;</th>
+<th scope="col" class="org-left"><code>BC</code></th>
+<th scope="col" class="org-left"><code>DE</code></th>
+<th scope="col" class="org-left"><code>SP</code></th>
+<th scope="col" class="org-left"><code>FFFB</code></th>
+<th scope="col" class="org-left"><code>FFFC</code></th>
+<th scope="col" class="org-left"><code>FFFD</code></th>
+<th scope="col" class="org-left"><code>FFFE</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">1:</td>
+<td class="org-left"><code>0000</code></td>
+<td class="org-left"><code>0000</code></td>
+<td class="org-left"><code>FFFF</code></td>
+<td class="org-left">?</td>
+<td class="org-left">?</td>
+<td class="org-left">?</td>
+<td class="org-left">?</td>
+</tr>
+
+<tr>
+<td class="org-right">2:</td>
+<td class="org-left"><code>1234</code></td>
+<td class="org-left"><code>0000</code></td>
+<td class="org-left"><code>FFFF</code></td>
+<td class="org-left">?</td>
+<td class="org-left">?</td>
+<td class="org-left">?</td>
+<td class="org-left">?</td>
+</tr>
+
+<tr>
+<td class="org-right">3:</td>
+<td class="org-left"><code>1234</code></td>
+<td class="org-left"><code>5678</code></td>
+<td class="org-left"><code>FFFF</code></td>
+<td class="org-left">?</td>
+<td class="org-left">?</td>
+<td class="org-left">?</td>
+<td class="org-left">?</td>
+</tr>
+
+<tr>
+<td class="org-right">4:</td>
+<td class="org-left"><code>1234</code></td>
+<td class="org-left"><code>5678</code></td>
+<td class="org-left"><code>FFFD</code></td>
+<td class="org-left">?</td>
+<td class="org-left">?</td>
+<td class="org-left"><code>34</code></td>
+<td class="org-left"><code>12</code></td>
+</tr>
+
+<tr>
+<td class="org-right">5:</td>
+<td class="org-left"><code>1234</code></td>
+<td class="org-left"><code>5678</code></td>
+<td class="org-left"><code>FFFB</code></td>
+<td class="org-left"><code>78</code></td>
+<td class="org-left"><code>56</code></td>
+<td class="org-left"><code>34</code></td>
+<td class="org-left"><code>12</code></td>
+</tr>
+
+<tr>
+<td class="org-right">6:</td>
+<td class="org-left"><code>5678</code></td>
+<td class="org-left"><code>5678</code></td>
+<td class="org-left"><code>FFFD</code></td>
+<td class="org-left"><code>78</code></td>
+<td class="org-left"><code>56</code></td>
+<td class="org-left"><code>34</code></td>
+<td class="org-left"><code>12</code></td>
+</tr>
+
+<tr>
+<td class="org-right">7:</td>
+<td class="org-left"><code>5678</code></td>
+<td class="org-left"><code>1234</code></td>
+<td class="org-left"><code>FFFF</code></td>
+<td class="org-left"><code>78</code></td>
+<td class="org-left"><code>56</code></td>
+<td class="org-left"><code>34</code></td>
+<td class="org-left"><code>12</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Il est important de noter que l'instruction <code>POP</code> ne fait aucune écriture en mémoire ! Dès lors, les deux octets qui se trouvaient au sommet de la pile sont toujours présents en mémoire après une instruction <code>POP</code>, par contre ils ne sont plus considérés comme faisant partie de la pile car le registre <code>SP</code> contient une adresse plus haute que la leur.
+</p>
+
+<p>
+Pour bien comprendre le fonctionnement du programme assembleur ci-dessus, on peut en écrire un similaire en Java, en utilisant une instance de <a href="https://docs.oracle.com/javase/9/docs/api/java/util/ArrayDeque.html"><code>ArrayDeque</code></a> pour représenter la pile. Les instructions <code>PUSH</code> et <code>POP</code> ont alors pour équivalent les méthodes <a href="https://docs.oracle.com/javase/9/docs/api/java/util/ArrayDeque.html#addFirst-E-"><code>addFirst</code></a> et <a href="https://docs.oracle.com/javase/9/docs/api/java/util/ArrayDeque.html#removeFirst--"><code>removeFirst</code></a>.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="linenr"><span class="hljs-number"><span class="hljs-number">1</span></span>: </span>Deque&lt;Short&gt; stack = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> ArrayDeque&lt;&gt;();
+<span class="linenr"><span class="hljs-number"><span class="hljs-number">2</span></span>: </span><span class="hljs-keyword"><span class="hljs-keyword">short</span></span> BC = <span class="hljs-number"><span class="hljs-number">0x1234</span></span>;
+<span class="linenr"><span class="hljs-number"><span class="hljs-number">3</span></span>: </span><span class="hljs-keyword"><span class="hljs-keyword">short</span></span> DE = <span class="hljs-number"><span class="hljs-number">0x5678</span></span>;
+<span class="linenr"><span class="hljs-number"><span class="hljs-number">4</span></span>: </span>stack.addFirst(BC);
+<span class="linenr"><span class="hljs-number"><span class="hljs-number">5</span></span>: </span>stack.addFirst(DE);
+<span class="linenr"><span class="hljs-number"><span class="hljs-number">6</span></span>: </span>BC = stack.removeFirst();
+<span class="linenr"><span class="hljs-number"><span class="hljs-number">7</span></span>: </span>DE = stack.removeFirst();
+</pre>
+</div>
+
+<p>
+En affichant les valeurs de <code>BC</code>, <code>DE</code> et de la pile après chaque ligne, on obtient :
+</p>
+<pre class="example"><span class="linenr">1: </span>BC = 0000   DE = 0000   stack = [  ]
+<span class="linenr">2: </span>BC = 1234   DE = 0000   stack = [  ]
+<span class="linenr">3: </span>BC = 1234   DE = 5678   stack = [  ]
+<span class="linenr">4: </span>BC = 1234   DE = 5678   stack = [ 0x1234 ]
+<span class="linenr">5: </span>BC = 1234   DE = 5678   stack = [ 0x5678, 0x1234 ]
+<span class="linenr">6: </span>BC = 5678   DE = 5678   stack = [ 0x1234 ]
+<span class="linenr">7: </span>BC = 5678   DE = 1234   stack = [  ]
+</pre>
+<p>
+ce qui correspond assez directement à la table plus haut.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgf324d48" class="outline-4">
+<h4 id="orgf324d48"><span class="section-number-4">1.2.3</span> Dépassement de capacité</h4>
+<div class="outline-text-4" id="text-1-2-3">
+<p>
+Lors du développement d'un programme pour Game Boy, il faut décider quelle zone mémoire dédier à la pile, d'une part afin de correctement initialiser <code>SP</code>, et d'autre part pour connaître la capacité maximale de la pile.
+</p>
+
+<p>
+Dans l'exemple ci-dessus, on pourrait décider de dédier la totalité de la mémoire haute du processeur à la pile, ce qui implique qu'elle aurait une capacité maximale de 64 valeurs 16 bits (127 octets/2). Si on tentait d'y stocker plus de 64 valeurs, il se produirait ce que l'on nomme un <b>dépassement de capacité de la pile</b> — <i>stack overflow</i> en anglais, d'où le nom du <a href="https://stackoverflow.com/">fameux site Web</a>.
+</p>
+
+<p>
+Il faut bien noter qu'en cas de dépassement de capacité, aucune erreur ne sera détectée par le processeur, qui n'a aucune idée de l'endroit où la portion de mémoire dédiée à la pile se termine. Il écrira donc joyeusement des valeurs aux adresses précédant la mémoire haute — dans notre exemple — ce qui aura des effets probablement catastrophiques mais dont l'origine sera difficile à diagnostiquer.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgb6bdae4" class="outline-4">
+<h4 id="orgb6bdae4"><span class="section-number-4">1.2.4</span> Utilisation</h4>
+<div class="outline-text-4" id="text-1-2-4">
+<p>
+La pile d'un processeur est utilisée pour sauvegarder le contenu de registres que l'on désire temporairement utiliser à d'autres fins.
+</p>
+
+<p>
+Par exemple, un programme désirant temporairement utiliser les registres <code>B</code> et <code>C</code> afin de faire un calcul — sans autant perdre définitivement leur contenu actuel — peut stocker leur valeur actuelle sur la pile au moyen d'une instruction <code>PUSH</code>, utiliser <code>B</code> et <code>C</code> à sa guise, puis restaurer leur ancienne valeur au moyen d'une instruction <code>POP</code>.
+</p>
+
+<p>
+D'autre part, comme nous le verrons plus bas, la pile est aussi utilisée pour sauvegarder le compteur de programme lors d'un appel de fonction, afin de pouvoir le restaurer une fois la fonction terminée.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org3f0f633" class="outline-3">
+<h3 id="org3f0f633"><span class="section-number-3">1.3</span> Instructions de contrôle</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+La totalité des instructions décrites dans les deux précédentes étapes s'exécutent en séquence. Cela signifie que dès que le processeur a terminé l'exécution d'une instruction, il continue avec celle qui la suit directement en mémoire.
+</p>
+
+<p>
+Pour pouvoir écrire des programmes intéressants, il est toutefois nécessaire d'avoir à disposition des instructions dites « de contrôle », qui permettent de changer le cours de l'exécution. Ces instructions permettent p.ex. d'exécuter du code différent selon le résultat d'un test, d'effectuer des boucles, ou d'appeler des fonctions. Leur but est d'exprimer le même genre de choses que l'on exprime en Java avec des constructions comme le <code>if</code> ou le <code>switch</code>, les différents types de boucles — <code>while</code>, <code>do…while</code>, <code>for</code> — et les appels de méthodes.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orge98abf3" class="outline-3">
+<h3 id="orge98abf3"><span class="section-number-3">1.4</span> Instructions conditionnelles</h3>
+<div class="outline-text-3" id="text-1-4">
+<p>
+Les instructions de contrôle du processeur du Game Boy existent généralement en deux variantes : inconditionnelle et conditionnelle.
+</p>
+
+<p>
+Une instruction inconditionnelle est une instruction dont l'effet sur l'état du processeur est toujours réalisé. Toutes les instructions examinées dans les étapes précédentes sont de ce type.
+</p>
+
+<p>
+Une instruction conditionnelle, par contre, a un effet qui n'est réalisé que si une condition donnée est vraie. Si cette condition est fausse, rien ne se passe, et l'instruction se comporte en gros comme une instruction <code>NOP</code> — à la différence près qu'elle peut prendre plus d'un cycle pour s'exécuter.
+</p>
+
+<p>
+Sur le processeur du Game Boy, la condition attachée aux instructions conditionnelles est très simple et ne peut rien faire d'autre que tester l'un ou l'autre des fanions <code>Z</code> et <code>C</code> stockés dans le registre <code>F</code>. Au total, il y a quatre conditions différentes, qui sont encodées au moyen de 2 bits de l'<i>opcode</i> des instructions conditionnelles, selon la table ci-dessous :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left"><code>cc</code></th>
+<th scope="col" class="org-left">Condition</th>
+<th scope="col" class="org-left">Signification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>00</code></td>
+<td class="org-left"><code>NZ</code></td>
+<td class="org-left">Fanion <code>Z</code> faux (<i>not zero</i>)</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>01</code></td>
+<td class="org-left"><code>Z</code></td>
+<td class="org-left">Fanion <code>Z</code> vrai (<i>zero</i>)</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>10</code></td>
+<td class="org-left"><code>NC</code></td>
+<td class="org-left">Fanion <code>C</code> faux (<i>no carry</i>)</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>11</code></td>
+<td class="org-left"><code>C</code></td>
+<td class="org-left">Fanion <code>C</code> vrai (<i>carry</i>)</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Un exemple d'instruction conditionnelle est l'instruction de saut, <code>JP</code>, décrite plus bas. Cette instruction a été utilisée dans le programme donné en exemple à <a href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html">l'étape 3</a> et qui calcule le douzième terme de la suite de Fibonacci. Pour mémoire, elle y était utilisée ainsi :
+</p>
+<pre class="example">JP NZ, 0006
+</pre>
+
+<p>
+La signification de cette instruction conditionnelle est la suivante : si la condition <code>NZ</code> est vraie, c-à-d si le fanion <code>Z</code> est faux, alors elle effectue un saut à l'adresse 6 ; sinon, c-à-d si le fanion <code>Z</code> est vrai, alors elle n'a aucun effet et se comporte comme une instruction <code>NOP</code> d'une durée de 3 cycles.
+</p>
+
+<p>
+Il faut noter que les instructions conditionnelles ont la particularité importante de s'exécuter en un nombre de cycles qui dépend de si la condition qui leur est attachée est vraie ou non. Par exemple, l'instruction <code>JP</code> s'exécute en 3 cycles si la condition est fausse, mais en 4 cycles si elle est vraie.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orge674466" class="outline-3">
+<h3 id="orge674466"><span class="section-number-3">1.5</span> Sauts</h3>
+<div class="outline-text-3" id="text-1-5">
+<p>
+Les <b>sauts</b> (<i>jumps</i>) sont les instructions de contrôle les plus simples, et leur but est de changer le cours de l'exécution du programme en modifiant le contenu du compteur de programme.
+</p>
+
+<p>
+Les instructions de saut du processeur du Game Boy peuvent être conditionnelles ou non, et la destination du saut — c-à-d l'adresse à placer dans le registre <code>PC</code> — peut être spécifiée de deux manières différentes :
+</p>
+
+<ol class="org-ol">
+<li>de manière absolue (instruction <code>JP</code>), c-à-d sous forme d'une valeur de 16 bits,</li>
+
+<li>de manière relative (instruction <code>JR</code>, pour <i>jump relative</i>), c-à-d sous forme d'une valeur de 8 bits signée à ajouter à l'adresse de l'instruction <b>suivant</b> celle de saut.</li>
+</ol>
+
+<p>
+Chaque type de saut a ses avantages et inconvénient :
+</p>
+
+<ul class="org-ul">
+<li>les sauts absolus ont l'avantage de pouvoir sauter à n'importe quelle adresse, mais l'inconvénient de nécessiter 3 octets pour être encodées (1 pour l'<i>opcode</i>, 2 pour l'adresse 16 bits),</li>
+
+<li>les sauts relatifs ont l'inconvénient de ne pouvoir sauter que à une adresse se trouvant à une distance de -128 à +127 octets de l'instruction suivant le saut, mais l'avantage de ne nécessiter que 2 octets pour être encodées (1 pour l'<i>opcode</i>, 1 pour la distance de saut).</li>
+</ul>
+
+<p>
+Les instructions de saut sont décrites par la table ci-dessous, dans laquelle <code>PC'</code> représente l'adresse de l'instruction qui suit celle en cours d'exécution :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>JP n16</code></td>
+<td class="org-left"><code>11000011</code></td>
+<td class="org-left"><code>PC = nn</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>JP cc, n16</code></td>
+<td class="org-left"><code>110cc010</code></td>
+<td class="org-left"><code>PC = nn</code> (ssi <code>cc</code> est vrai)</td>
+</tr>
+
+<tr>
+<td class="org-left"><code>JP HL</code></td>
+<td class="org-left"><code>11101001</code></td>
+<td class="org-left"><code>PC = HL</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>JR e8</code></td>
+<td class="org-left"><code>00011000</code></td>
+<td class="org-left"><code>PC = PC' + e</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>JR cc, e8</code></td>
+<td class="org-left"><code>001cc000</code></td>
+<td class="org-left"><code>PC = PC' + e</code> (ssi <code>cc</code> est vrai)</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+L'utilité des sauts relatifs peut être illustrée au moyen du programme d'exemple donné dans l'énoncé de <a href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html">l'étape 3</a>. A l'adresse A<sub>16</sub>, celui-ci contient un saut absolu à l'adresse <code>6</code>, encodé de la manière illustrée par la table ci-dessous (qui est une version abrégée de celle de l'étape 3) :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Adresse</th>
+<th scope="col" class="org-left">Octet(s)</th>
+<th scope="col" class="org-left">Instruction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>…</code></td>
+<td class="org-left"><code>…</code></td>
+<td class="org-left"><code>…</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>0006</code></td>
+<td class="org-left"><code>57</code></td>
+<td class="org-left"><code>LD D, A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>…</code></td>
+<td class="org-left"><code>…</code></td>
+<td class="org-left"><code>…</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>000A</code></td>
+<td class="org-left"><code>C2 06 00</code></td>
+<td class="org-left"><code>JP NZ, 0006</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>000D</code></td>
+<td class="org-left"><code>76</code></td>
+<td class="org-left"><code>HALT</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Ce saut peut être remplacé par un saut relatif, encodé au moyen de 2 octets seulement. On obtient alors :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Adresse</th>
+<th scope="col" class="org-left">Octet(s)</th>
+<th scope="col" class="org-left">Instruction</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>…</code></td>
+<td class="org-left"><code>…</code></td>
+<td class="org-left"><code>…</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>0006</code></td>
+<td class="org-left"><code>57</code></td>
+<td class="org-left"><code>LD D, A</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>…</code></td>
+<td class="org-left"><code>…</code></td>
+<td class="org-left"><code>…</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>000A</code></td>
+<td class="org-left"><code>20 FA</code></td>
+<td class="org-left"><code>JR NZ, $FA</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>000C</code></td>
+<td class="org-left"><code>76</code></td>
+<td class="org-left"><code>HALT</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+L'opcode de l'instruction de saut relatif <code>JR</code> vaut 20<sub>16</sub> et son argument est FA<sub>16</sub>. Cet argument est une valeur 8 bits qui doit être interprétée en complément à deux, ce qui donne -6. Dès lors, l'adresse de destination du saut est C<sub>16</sub> - 6 = 6, comme attendu.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgb3b1f3b" class="outline-3">
+<h3 id="orgb3b1f3b"><span class="section-number-3">1.6</span> Appels et retours de fonctions</h3>
+<div class="outline-text-3" id="text-1-6">
+<p>
+En plus des instructions de saut, le processeur du Game Boy offre des instructions permettant d'effectuer des appels de fonctions. Les fonctions sont, en gros, l'équivalent assembleur des méthodes statiques en Java.
+</p>
+
+<p>
+Les instructions d'appel et de retour sont décrites dans la table ci-dessous. Les fonction <code>push</code> et <code>pop</code> utilisée dans la description de leur effet permettent respectivement de placer et de retirer une valeur 16 bits de la pile. Elles font exactement la même chose que les instructions <code>PUSH</code> et <code>POP</code> décrites à <a href="https://cs108.epfl.ch/archive/18/p/03_registers_cpu.html">l'étape 3</a>, si ce n'est qu'elles sont utilisées ici pour sauvegarder et restaurer le contenu du registre <code>PC</code>.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>CALL n16</code></td>
+<td class="org-left"><code>11001101</code></td>
+<td class="org-left"><code>push(PC'); PC = nn</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CALL cc, n16</code></td>
+<td class="org-left"><code>110cc100</code></td>
+<td class="org-left"><code>push(PC'); PC = nn</code> (ssi <code>cc</code> est vrai)</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>RST n3</code></td>
+<td class="org-left"><code>11nnn111</code></td>
+<td class="org-left"><code>push(PC'); PC = 8 × n</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>RET</code></td>
+<td class="org-left"><code>11001001</code></td>
+<td class="org-left"><code>PC = pop()</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RET cc</code></td>
+<td class="org-left"><code>110cc000</code></td>
+<td class="org-left"><code>PC = pop()</code> (ssi <code>cc</code> est vrai)</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Notez que l'instruction <code>RST</code> est presque identique à l'instruction <code>CALL</code>, la seule différence est que l'adresse de la fonction à appeler est calculée en fonction de la valeur de 3 bits fournie en paramètre et stockée dans l'<i>opcode</i>.
+</p>
+
+<p>
+Comme cette table l'illustre, les instructions d'appel (<code>CALL</code> et <code>RST</code>) sauvegardent l'adresse de la <i>prochaine</i> instruction sur la pile avant de sauter à l'adresse donnée. On appelle l'adresse sauvegardée <b>l'adresse de retour</b> (<i>return address</i>). C'est en effet l'adresse à laquelle l'exécution du programme doit continuer une fois la fonction terminée. Pour cette raison, l'instruction de retour (<code>RET</code>) ne fait rien d'autre que placer cette adresse dans le compteur de programme.
+</p>
+</div>
+
+<div id="outline-container-orgc1ec161" class="outline-4">
+<h4 id="orgc1ec161"><span class="section-number-4">1.6.1</span> Exemple de fonction</h4>
+<div class="outline-text-4" id="text-1-6-1">
+<p>
+L'exemple ci-dessous montre comment le douzième terme de la suite de Fibonacci (89) peut être calculé au moyen d'une fonction récursive en assembleur. Il n'est pas nécessaire de le comprendre en détail, mais l'idée est de définir une fonction <code>fib</code> calculant récursivement le terme de la suite de Fibonacci dont l'index lui est passé dans le registre <code>A</code>. Cette fonction retourne le résultat dans le registre <code>A</code>, et garantit qu'elle préserve le contenu de tous les registres 8 bits — sauf <code>A</code> lui-même, bien entendu.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-asm hljs">	LD SP, $FFFF  ; initialise le pointeur de pile
+	LD A, 11
+	CALL fib      ; calcule fib(11)
+	HALT          ; ici, A = 89
+
+	;; fib - calcule un terme de la suite de Fibonacci
+	;; argument :
+	;;   A = i, l'index du terme à calculer
+	;; retour :
+	;;   A = F(i), la valeur du terme d'index i
+fib:
+	CP A, 2       ; i &lt; 2 ?
+	RET C         ; si oui, on retourne i [car fib(i) = i]
+	PUSH BC       ; sauvegarde B et C
+	DEC A         ; A = i - 1
+	LD B, A       ; B = i - 1
+	CALL fib      ; A = fib(i - 1), calculé récursivement
+	LD C, A       ; C = fib(i - 1)
+	LD A, B       ; A = i - 1
+	DEC A         ; A = i - 2
+	CALL fib      ; A = fib(i - 2), calculé récursivement
+	ADD A, C      ; A = fib(i - 2) + fib(i - 1)
+	POP BC        ; restaure B et C
+	RET           ; retourne
+</pre>
+</div>
+
+<p>
+Attention, le <code>C</code> dans l'instruction <code>RET C</code> représente le <i>fanion</i> <code>C</code> et pas le registre <code>C</code>, et signifie qu'on ne retourne de la fonction à cet endroit que si ce fanion est vrai.
+</p>
+
+<p>
+Le programme Java ci-dessous calcule le même terme de la suite de Fibonacci que le programme assembleur ci-dessus, selon le même principe, et peut faciliter la compréhension de ce dernier.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">public</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">static</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">void</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">main</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(String[] args)</span></span></span><span class="hljs-function"> </span></span>{
+  System.out.println(fib(<span class="hljs-number"><span class="hljs-number">11</span></span>));
+}
+
+<span class="hljs-function"><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">static</span></span></span><span class="hljs-function"> </span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-keyword">int</span></span></span><span class="hljs-function"> </span><span class="hljs-title"><span class="hljs-function"><span class="hljs-title">fib</span></span></span><span class="hljs-params"><span class="hljs-function"><span class="hljs-params">(</span></span><span class="hljs-keyword"><span class="hljs-function"><span class="hljs-params"><span class="hljs-keyword">int</span></span></span></span><span class="hljs-function"><span class="hljs-params"> i)</span></span></span><span class="hljs-function"> </span></span>{
+  <span class="hljs-keyword"><span class="hljs-keyword">if</span></span> (i &lt; <span class="hljs-number"><span class="hljs-number">2</span></span>)
+    <span class="hljs-keyword"><span class="hljs-keyword">return</span></span> i;
+  <span class="hljs-keyword"><span class="hljs-keyword">else</span></span>
+    <span class="hljs-keyword"><span class="hljs-keyword">return</span></span> fib(i - <span class="hljs-number"><span class="hljs-number">1</span></span>) + fib(i - <span class="hljs-number"><span class="hljs-number">2</span></span>);
+}
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org892e5af" class="outline-3">
+<h3 id="org892e5af"><span class="section-number-3">1.7</span> Interruptions</h3>
+<div class="outline-text-3" id="text-1-7">
+<p>
+Il est fréquent que le programme exécuté par un processeur doive réagir rapidement à un événement externe. Par exemple, un jeu exécuté par le Game Boy doit pouvoir réagir immédiatement lorsqu'un bouton du clavier est pressé. De même, le pointeur de souris affiché sur l'écran d'un ordinateur de bureau doit se déplacer au moindre mouvement de la souris.
+</p>
+
+<p>
+La question se pose donc de savoir comment le programme actuellement en cours d'exécution sur le processeur peut être rapidement informé de l'occurrence d'un tel événement externe.
+</p>
+
+<p>
+La solution consiste à offrir ce que l'on appelle des <b>interruptions</b> (<i>interrupts</i>). Les composants externes au processeur ont la possibilité de <b>lever</b> (<i>raise</i>) une telle interruption, forçant ainsi le processeur à interrompre temporairement l'exécution normale du programme, et à exécuter à la place un <b>gestionnaire d'interruption</b> (<i>interrupt handler</i>). Ce gestionnaire est une espèce de fonction, dont le seul but est de traiter l'événement externe signalé par l'interruption. Lorsque ce gestionnaire se termine, l'exécution normale du programme se poursuit là où elle avait été interrompue par l'arrivée de l'interruption.
+</p>
+
+<p>
+Assez naturellement, le processeur utilise la pile pour sauvegarder l'adresse de l'instruction à laquelle poursuivre l'exécution lorsqu'une interruption se produit. On peut donc voir les interruptions comme des appels de fonction — la fonction appelée étant le gestionnaire correspondant à l'interruption — qui ne sont pas provoqués explicitement par le programme au moyen d'une instruction comme <code>CALL</code>, mais implicitement par l'arrivée d'un événement externe.
+</p>
+
+<p>
+Les interruptions d'un processeur sont similaires à celles de la vie réelle. Par exemple, lorsqu'une personne travaille à une tâche particulière et que son téléphone sonne, elle interrompt temporairement son travail pour y répondre et, une fois l'appel terminé, reprend son travail là où elle s'était interrompue.
+</p>
+</div>
+
+<div id="outline-container-org05556c7" class="outline-4">
+<h4 id="org05556c7"><span class="section-number-4">1.7.1</span> Interruptions sur le Game Boy</h4>
+<div class="outline-text-4" id="text-1-7-1">
+<p>
+Le processeur du Game Boy possède un total de cinq interruptions, levées par différents composants externes. Elles sont décrites par la table ci-dessous :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-right">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-right">N<sup>o</sup></th>
+<th scope="col" class="org-left">Nom</th>
+<th scope="col" class="org-left">Levée par</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-right">0</td>
+<td class="org-left"><code>VBLANK</code></td>
+<td class="org-left">Le contrôleur LCD</td>
+</tr>
+
+<tr>
+<td class="org-right">1</td>
+<td class="org-left"><code>LCD_STAT</code></td>
+<td class="org-left">Le contrôleur LCD</td>
+</tr>
+
+<tr>
+<td class="org-right">2</td>
+<td class="org-left"><code>TIMER</code></td>
+<td class="org-left">Le minuteur</td>
+</tr>
+
+<tr>
+<td class="org-right">3</td>
+<td class="org-left"><code>SERIAL</code></td>
+<td class="org-left">Le contrôleur sériel</td>
+</tr>
+
+<tr>
+<td class="org-right">4</td>
+<td class="org-left"><code>JOYPAD</code></td>
+<td class="org-left">Le clavier</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Le numéro associé à chaque interruption a deux buts : premièrement, il définit un ordre de priorité qui permet de résoudre les conflits lorsque plusieurs interruptions sont levées simultanément, et d'autre part il permet d'associer à chaque interruption un bit dans les registres <code>IE</code> et <code>IF</code> décrits ci-après.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgbe70002" class="outline-4">
+<h4 id="orgbe70002"><span class="section-number-4">1.7.2</span> Registres</h4>
+<div class="outline-text-4" id="text-1-7-2">
+<p>
+Pour gérer les interruptions, le processeur du Game Boy possède trois registres, qui n'ont pas encore été décrits jusqu'à présent et qui sont :
+</p>
+
+<ul class="org-ul">
+<li><code>IME</code> (pour <i>interrupt master enable</i>), qui est un registre 1 bit — une valeur booléenne — qui détermine si les interruptions sont activées ou non,</li>
+
+<li><code>IE</code> (pour <i>interrupt enable</i>), qui est un registre 8 bits dont les bits 4 à 0 déterminent si l'interruption correspondante est activée,</li>
+
+<li><code>IF</code> (pour <i>interrupt flags</i>), qui est un registre 8 bits dont les bits 4 à 0 déterminent si l'interruption correspondante est actuellement levée.</li>
+</ul>
+
+<p>
+Le registre <code>IME</code> a priorité sur le registre <code>IE</code>, c-à-d que si <code>IME</code> est faux, alors les interruptions sont totalement désactivées, indépendemment des bits de <code>IE</code>. Par contre, si <code>IME</code> est vrai, alors seules les interruptions dont le bit est à 1 dans le registre <code>IE</code> sont activées.
+</p>
+
+<p>
+Le registre <code>IME</code> n'est <i>pas</i> mappé en mémoire, par contre les deux autres le sont : <code>IE</code> à l'adresse FFFF<sub>16</sub> et <code>IF</code> à l'adresse FF0F<sub>16</sub>. Dès lors, il est possible de connaître leur valeur en effectuant une lecture à ces adresses, et de modifier leur valeur en écrivant à ces adresses. Notez que cela implique qu'il est tout à fait possible de provoquer une interruption en écrivant dans le registre <code>IF</code> !
+</p>
+</div>
+</div>
+
+<div id="outline-container-org0d6cb8b" class="outline-4">
+<h4 id="org0d6cb8b"><span class="section-number-4">1.7.3</span> Gestion</h4>
+<div class="outline-text-4" id="text-1-7-3">
+<p>
+Avant d'exécuter une instruction, le processeur détermine si une interruption doit être gérée. Pour cela, il regarde si :
+</p>
+
+<ul class="org-ul">
+<li><code>IME</code> est vrai, et</li>
+<li>il existe au moins un bit valant 1 à la fois dans <code>IE</code> et dans <code>IF</code>.</li>
+</ul>
+
+<p>
+Si tel est le cas, il gère l'interruption ainsi :
+</p>
+
+<ol class="org-ol">
+<li><code>IME</code> est mis à faux, pour éviter que le gestionnaire d'interruption ne soit lui-même interrompu,</li>
+
+<li>le numéro de l'interruption à gérer, <code>i</code>, est déterminé comme étant l'index du bit de poids le plus faible valant 1 à la fois dans <code>IE</code> et dans <code>IF</code> — ce qui implique que plus le numéro d'une interruption est bas, plus sa priorité est élevée,</li>
+
+<li>le bit d'index <code>i</code> de <code>IF</code> est mis à 0 pour exprimer le fait que l'interruption correspondante a été traitée — ou, plus exactement, est sur le point de l'être,</li>
+
+<li>le compteur de programme actuel est sauvegardé sur la pile,</li>
+
+<li>l'adresse du gestionnaire d'interruption, valant 40<sub>16</sub> + 8 × <code>i</code>, est placée dans le compteur de programme.</li>
+</ol>
+
+<p>
+Le processeur a besoin de temps pour effectuer ces différentes actions, donc la première instruction du gestionnaire n'est exécutée que 5 cycles après la détection de l'interruption.
+</p>
+
+<p>
+Par exemple, si à un instant donné, le processeur s'apprête à exécuter l'instruction à l'adresse 1234<sub>16</sub> et <code>IE</code> contient 11110<sub>2</sub>, <code>IF</code> contient 10011<sub>2</sub> et <code>IME</code> est vrai, alors :
+</p>
+
+<ol class="org-ol">
+<li>le processeur détermine que l'interruption 1 (<code>LCD_STAT</code>) doit être gérée,</li>
+<li>il met à 0 le bit 1 de <code>IF</code>, qui vaut maintenant 10001<sub>2</sub>,</li>
+<li>il sauvegarde le compteur de programme actuel, 1234<sub>16</sub>, sur la pile,</li>
+<li>il charge l'adresse 48<sub>16</sub> dans le compteur de programme.</li>
+</ol>
+
+<p>
+Dès lors, la prochaine instruction qui sera exécutée, 5 cycles plus tard, est celle dont l'<i>opcode</i> est à l'adresse 48<sub>16</sub>.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org9701e56" class="outline-4">
+<h4 id="org9701e56"><span class="section-number-4">1.7.4</span> Instructions</h4>
+<div class="outline-text-4" id="text-1-7-4">
+<p>
+Le processeur du Game Boy possède plusieurs instructions liées à la gestion des interruptions. Les deux premières permettent simplement d'activer ou de désactiver globalement les interruptions, en modifiant le registre <code>IME</code> :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>EI</code></td>
+<td class="org-left"><code>11111011</code></td>
+<td class="org-left"><code>IME = true</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>DI</code></td>
+<td class="org-left"><code>11110011</code></td>
+<td class="org-left"><code>IME = false</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+La dernière combine les effets des instructions <code>EI</code> et <code>RET</code>. Son but est d'être utilisée à la place d'une instruction <code>RET</code> normale à la fin d'un gestionnaire d'interruption, pour simultanément réactiver les interruptions et poursuivre l'exécution là où l'interruption l'avait interrompue.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>RETI</code></td>
+<td class="org-left"><code>11011001</code></td>
+<td class="org-left"><code>IME = true; PC = pop()</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgcf72ee5" class="outline-3">
+<h3 id="orgcf72ee5"><span class="section-number-3">1.8</span> Instructions d'arrêt</h3>
+<div class="outline-text-3" id="text-1-8">
+<p>
+Deux instructions permettent d'arrêter temporairement le Game Boy, dans le but d'économiser de l'énergie :
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>HALT</code></td>
+<td class="org-left"><code>01110110</code></td>
+<td class="org-left"><i>arrête le processeur</i></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>STOP</code></td>
+<td class="org-left"><code>00010000</code></td>
+<td class="org-left"><i>arrête le système</i></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+En pratique, <code>STOP</code> n'est presque jamais utilisée, donc nous ne prendrons même pas la peine de la simuler.
+</p>
+
+<p>
+L'instruction <code>HALT</code> a pour effet d'arrêter le processeur du Game Boy, qui n'exécute alors plus aucune instruction. Il reste dans cet état jusqu'à ce qu'une interruption dont le bit vaut 1 dans <code>IE</code> soit levée, même si <code>IME</code> est faux.
+</p>
+
+<p>
+En d'autres termes, si le processeur est à l'arrêt suite à une instruction <code>HALT</code>, le fait qu'il existe au moins un bit valant 1 à la fois dans <code>IE</code> et dans <code>IF</code> provoquera son réveil, quelle que soit la valeur du fanion <code>IME</code>. Une fois réveillé, le processeur exécutera :
+</p>
+
+<ul class="org-ul">
+<li>la première instruction du gestionnaire d'interruption, si <code>IME</code> est vrai, ou</li>
+<li>l'instruction qui suit le <code>HALT</code>, si <code>IME</code> est faux.</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org50b942a" class="outline-2">
+<h2 id="org50b942a"><span class="section-number-2">2</span> Mise en œuvre Java</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+La mise en œuvre de cette étape consiste à terminer la classe <code>Cpu</code> et à compléter la classe <code>GameBoy</code>.
+</p>
+</div>
+
+<div id="outline-container-org220c52d" class="outline-3">
+<h3 id="org220c52d"><span class="section-number-3">2.1</span> Classe <code>Cpu</code></h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+L'interface publique de la classe <code>Cpu</code> doit être augmentée pour offrir la possibilité à ses utilisateurs de lever des interruptions. Cela implique l'ajout d'une énumération pour décrire les interruptions, et d'une méthode pour en lever une.
+</p>
+
+<p>
+L'énumération est nommée <code>Interrupt</code> et implémente l'interface <code>Bit</code> car à chaque interruption correspond un bit dans chacun des registres <code>IE</code> et <code>IF</code>. Elle est déclarée ainsi :
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">public</span></span> <span class="hljs-keyword"><span class="hljs-keyword">enum</span></span> Interrupt implements Bit {
+  VBLANK, LCD_STAT, TIMER, SERIAL, JOYPAD
+}
+</pre>
+</div>
+
+<p>
+La méthode permettant de lever une interruption est quant à elle :
+</p>
+
+<ul class="org-ul">
+<li><code>void requestInterrupt(Interrupt i)</code>, qui lève l'interruption donnée, c-à-d met à 1 le bit correspondant dans le registre <code>IF</code>.</li>
+</ul>
+
+<p>
+En plus de ces ajouts à l'interface publique de la classe <code>Cpu</code>, il faut modifier les méthodes <code>read</code> et <code>write</code>, qui étaient vides jusqu'à présent. En effet, elles doivent désormais donner accès à la mémoire haute et aux registres <code>IE</code> et <code>IF</code>. Pour mémoire, ces différents éléments ont des addresses qui sont données par des constantes du fichier <code>AddressMap</code> fourni et qui sont :
+</p>
+
+<ul class="org-ul">
+<li><code>AddressMap.REG_IE</code> pour le registre <code>IE</code>,</li>
+<li><code>AddressMap.REG_IF</code> pour le registre <code>IF</code>,</li>
+<li><code>AddressMap.HIGH_RAM_START</code> et <code>AddressMap.HIGH_RAM_END</code> pour la mémoire haute (n'oubliez pas que la première valeur est inclusive, alors que la seconde est exclusive).</li>
+</ul>
+
+<p>
+N'oubliez pas que les méthodes <code>read</code> et <code>write</code> doivent vérifier la validité de leurs arguments !
+</p>
+
+<p>
+Notez que nous vous conseillons de ne <i>pas</i> utiliser un contrôleur mémoire (<code>RamController</code>) pour la mémoire haute, car cela ne fait que compliquer le code. La classe <code>RamController</code> n'est destinée à être utilisée que pour les mémoires connectées directement sur le bus, pas celles contenues dans d'autres composants.
+</p>
+</div>
+
+<div id="outline-container-org294bc9e" class="outline-4">
+<h4 id="org294bc9e"><span class="section-number-4">2.1.1</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-1-1">
+</div>
+<ol class="org-ol">
+<li><a id="orga30b844"></a>Augmentation de la méthode <code>dispatch</code><br>
+<div class="outline-text-5" id="text-2-1-1-1">
+<p>
+Comme pour l'étape précédente, il convient d'augmenter le <code>switch</code> de la méthode <code>dispatch</code> avec les cas correspondants aux familles des instructions décrites plus haut. Pour faciliter votre travail, nous vous fournissons une fois encore la liste des cas à traiter pour cette étape sous la forme de code Java que vous pouvez simplement copier dans votre projet.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-comment"><span class="hljs-comment">// Jumps</span></span>
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> JP_HL: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> JP_N16: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> JP_CC_N16: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> JR_E8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> JR_CC_E8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+
+<span class="hljs-comment"><span class="hljs-comment">// Calls and returns</span></span>
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> CALL_N16: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> CALL_CC_N16: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> RST_U3: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> RET: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> RET_CC: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+
+<span class="hljs-comment"><span class="hljs-comment">// Interrupts</span></span>
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> EDI: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> RETI: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+
+<span class="hljs-comment"><span class="hljs-comment">// Misc control</span></span>
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> HALT: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> STOP:
+  <span class="hljs-keyword"><span class="hljs-keyword">throw</span></span> <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> Error(<span class="hljs-string"><span class="hljs-string">"STOP is not implemented"</span></span>);
+</pre>
+</div>
+
+<p>
+Notez que comme le simulateur ne gérera pas l'instruction <code>STOP</code>, le cas correspondant lève simplement une exception.
+</p>
+</div>
+</li>
+
+<li><a id="org3812715"></a>Familles<br>
+<div class="outline-text-5" id="text-2-1-1-2">
+<p>
+La correspondance entre les familles que nous avons choisies et les instructions est triviale pour cette étape, et résumée dans la table ci-dessous.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Famille</th>
+<th scope="col" class="org-left">Instruction(s) en assembleur</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>JP_HL</code></td>
+<td class="org-left"><code>JP HL</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>JP_N16</code></td>
+<td class="org-left"><code>JP 0</code> / <code>JP 1</code> / … / <code>JP $FFFF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>JP_CC_N16</code></td>
+<td class="org-left"><code>JP NZ, 0</code> / <code>JP Z, 0</code> / … / <code>JP C, $FFFF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>JR_E8</code></td>
+<td class="org-left"><code>JR -128</code> / <code>JR -127</code> / … / <code>JR 127</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>JR_CC_E8</code></td>
+<td class="org-left"><code>JR NZ, -128</code> / <code>JR Z, -128</code> / … / <code>JR C, 127</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CALL_N16</code></td>
+<td class="org-left"><code>CALL 0</code> / <code>CALL 1</code> / … / <code>CALL $FFFF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CALL_CC_N16</code></td>
+<td class="org-left"><code>CALL NZ, 0</code> / <code>CALL Z, 0</code> / … / <code>CALL C, $FFFF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RST_U3</code></td>
+<td class="org-left"><code>RST 0</code> / <code>RST 1</code> / … / <code>RST 7</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RET</code></td>
+<td class="org-left"><code>RET</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RET_CC</code></td>
+<td class="org-left"><code>RET NZ</code> / <code>RET Z</code> / <code>RET NC</code> / <code>RET C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>EDI</code></td>
+<td class="org-left"><code>EI</code> / <code>DI</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RETI</code></td>
+<td class="org-left"><code>RETI</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>HALT</code></td>
+<td class="org-left"><code>HALT</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Notez juste le fait que les instructions <code>EI</code> et <code>DI</code> ont été groupées dans une unique famille, car elles ont un effet très similaire.
+</p>
+</div>
+</li>
+
+<li><a id="orgc9f03ea"></a>Instructions conditionnelles<br>
+<div class="outline-text-5" id="text-2-1-1-3">
+<p>
+Lors du traitement des instructions conditionnelles, il faut déterminer si la condition qui leur est associée est vraie ou fausse. Or en examinant l'encodage des différentes instructions conditionnelles, vous verrez que leur condition est toujours stockée dans les bits 3 et 4 de leur <i>opcode</i>. Il vaut donc la peine de définir une méthode privée auxiliaire capable d'extraire la condition d'un <i>opcode</i> et de tester si elle est vraie en consultant le fanion correspondant du registre <code>F</code>.
+</p>
+
+<p>
+De plus, rappelez-vous que toutes les instructions conditionnelles s'exécutent en un nombre de cycle qui dépend de si la condition est vraie ou fausse. Il faut bien entendu en tenir compte lors de la simulation, ce qui est simplifié par le fait que l'attribut <code>additionalCycles</code> du type <code>Opcode</code> contient le nombre de cycles <i>supplémentaires</i> nécessaires à l'exécution de l'instruction correspondante si la condition est vraie.
+</p>
+</div>
+</li>
+
+<li><a id="orga9f283d"></a>Gestion des interruptions<br>
+<div class="outline-text-5" id="text-2-1-1-4">
+<p>
+Une difficulté de cette étape est de gérer correctement les interruptions. Nous vous conseillons pour ce faire de découper la méthode <code>cycle</code> de votre classe <code>Cpu</code> en deux parties :
+</p>
+
+<ol class="org-ol">
+<li>la méthode <code>cycle</code> elle-même, qui ne fait rien d'autre que déterminer si oui ou non le processeur doit faire quelque chose durant ce cycle, et si oui appelle la méthode <code>reallyCycle</code> ci-dessous, et si non retourne simplement,</li>
+
+<li>la méthode <code>reallyCycle</code>, qui regarde si les interruptions sont activées (c-à-d si <code>IME</code> est vrai) et si une interruption est en attente, auquel cas elle la gère comme décrit plus haut ; sinon, elle exécute normalement la prochaine instruction.</li>
+</ol>
+
+<p>
+Pour déterminer le numéro de l'interruption à gérer, les méthodes <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/Integer.html#lowestOneBit-int-"><code>lowestOneBit</code></a> et <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/Integer.html#numberOfLeadingZeros-int-"><code>numberOfLeadingZeros</code></a> de la classe <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/Integer.html"><code>Integer</code></a> peuvent être utiles.
+</p>
+
+<p>
+D'autre part, pour déterminer l'adresse du gestionnaire correspondant à une interruption, sachez que l'interface <code>AddressMap</code> offre un tableau nommé <code>INTERRUPTS</code> et contenant les adresses des gestionnaires d'interruption. Ce tableau doit être indexé par le numéro de l'interruption (0 pour <code>VBLANK</code>, 1 pour <code>LCD_STAT</code>, etc.).
+</p>
+</div>
+</li>
+
+<li><a id="org47c8484"></a>Instruction <code>HALT</code><br>
+<div class="outline-text-5" id="text-2-1-1-5">
+<p>
+L'instruction <code>HALT</code> est un peu problématique car elle arrête le processeur pour une durée indéterminée. Pour mémoire, après avoir exécuté une instruction <code>HALT</code>, le processeur ne continuera à exécuter des instructions que si une interruption est levée, et si celle-ci est activée, c-à-d que le bit correspondant du registre <code>IE</code> vaut 1.
+</p>
+
+<p>
+Pour gérer cela, nous vous conseillons de procéder ainsi :
+</p>
+
+<ol class="org-ol">
+<li>lors de l'exécution de l'instruction <code>HALT</code>, donnez à <code>nextNonIdleCycle</code> la valeur maximale possible (<code>Long.MAX_VALUE</code>),</li>
+
+<li>dans la méthode <code>cycle</code>, si <code>nextNonIdleCycle</code> vaut cette valeur maximale, et qu'une interruption est en attente, forcez <code>nextNonIdleCycle</code> à la valeur de l'argument passé à la méthode, puis appelez <code>reallyCycle</code>.</li>
+</ol>
+</div>
+</li>
+
+<li><a id="org39dd173"></a>Instruction <code>RST</code><br>
+<div class="outline-text-5" id="text-2-1-1-6">
+<p>
+L'instruction <code>RST</code> fait un appel de fonction à une adresse qui est déterminé par la valeur de 3 bits stockée dans son <i>opcode</i>, comme décrit ci-dessus.
+</p>
+
+<p>
+L'interface <code>AddressMap</code> contient un tableau nommé <code>RESETS</code>, similaire à <code>INTERRUPTS</code>, qui contient l'adresse du début des 8 fonctions que l'instructions <code>RST</code> peut appeler.
+</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org192a921" class="outline-3">
+<h3 id="org192a921"><span class="section-number-3">2.2</span> Classe <code>GameBoy</code></h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+Etant donné que vous avez maintenant terminé la classe modélisant le processeur, il est temps de modifier la classe <code>GameBoy</code> pour ajouter une instance du processeur au système.
+</p>
+
+<p>
+Cela implique premièrement de modifier le constructeur de cette classe pour qu'il crée un processeur (c-à-d une instance de <code>Cpu</code>) et l'attache au bus.
+</p>
+
+<p>
+D'autre part, il faut fournir une méthode publique permettant d'obtenir le processeur du Game Boy :
+</p>
+
+<ul class="org-ul">
+<li><code>Cpu cpu()</code>, qui retourne le processeur du Game Boy.</li>
+</ul>
+
+<p>
+De plus, étant donné que votre Game Boy simulé contient désormais un composant piloté par l'horloge (le processeur), il convient d'ajouter une méthode permettant de faire avancer la simulation, et une autre permettant de connaître le nombre de cycles déjà simulés :
+</p>
+
+<ul class="org-ul">
+<li><code>void runUntil(long cycle)</code>, qui simule le fonctionnement du GameBoy jusqu'au cycle donné moins 1, ou lève l'exception <code>IllegalArgumentException</code> si un nombre (strictement) supérieur de cycles a déjà été simulé,</li>
+
+<li><code>long cycles()</code>, qui retourne le nombre de cycles déjà simulés.</li>
+</ul>
+
+<p>
+Pour simuler le fonctionnement du Game Boy, la méthode <code>runUntil</code> ne fait rien d'autre qu'appeler de manière répétée la méthode <code>cycle</code> de tous les composants pilotés par une horloge existant dans le système. A l'heure actuelle, le seul composant de ce type est le processeur.
+</p>
+
+<p>
+Au moyen de cette nouvelle version de la classe <code>GameBoy</code>, il devient possible d'effectuer une simulation jusqu'à un certain cycle, p.ex. 2 dans l'exemple ci-dessous :
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs">GameBoy g = <span class="hljs-keyword"><span class="hljs-keyword">new</span></span> GameBoy(<span class="hljs-keyword"><span class="hljs-keyword">null</span></span>);
+g.runUntil(<span class="hljs-number"><span class="hljs-number">2</span></span>);
+System.out.println(g.cycles());
+</pre>
+</div>
+<p>
+L'appel à <code>runUntil</code> a pour effet d'appeler la méthode <code>cycle</code> du processeur du Game Boy deux fois de suite : la première fois avec l'argument 0, la seconde avec l'argument 1. Ensuite, la valeur affichée à l'écran par la dernière ligne est 2.
+</p>
+
+<p>
+(Notez bien qu'à l'heure actuelle aucun programme n'est disponible à l'adresse 0, donc en pratique cet exemple de simulation ne fait rien d'intéressant. Son seul but est d'illustrer l'utilisation des méthodes <code>runUntil</code> et <code>cycles</code>. Il vous faudra encore attendre une étape avant de pouvoir simuler des programmes en utilisant uniquement la classe <code>GameBoy</code>.)
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgedcc1b6" class="outline-3">
+<h3 id="orgedcc1b6"><span class="section-number-3">2.3</span> Tests</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+Comme d'habitude, nous vous fournissons un fichier de vérification de signatures contenu dans <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_sigchecks_5.zip">une archive Zip</a> à importer dans votre projet.
+</p>
+
+<p>
+De plus, pour vous aider à débuter vos tests, nous vous fournissons ci-dessous la déclaration d'un tableau Java contenant l'encodage du programme de calcul de Fibonacci<sup><a id="fnr.1" class="footref" href="https://cs108.epfl.ch/archive/18/p/05_cpu_control.html#fn.1">1</a></sup> récursif présenté à la §<a href="https://cs108.epfl.ch/archive/18/p/05_cpu_control.html#orgc1ec161">1.6.1</a>.
+</p>
+
+<p>
+En plaçant son premier octet à l'adresse 0 et en simulant ensuite l'exécution du programme qu'il contient jusqu'à ce que le <code>PC</code> vaille 8 — adresse de l'instruction <code>HALT</code> —, vous devriez constater qu'à ce moment le registre <code>A</code> contient 89, comme attendu.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">new</span></span> <span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>[] {
+  (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x31</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0xFF</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0xFF</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x3E</span></span>,
+  (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x0B</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0xCD</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x0A</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x00</span></span>,
+  (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x76</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x00</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0xFE</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x02</span></span>,
+  (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0xD8</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0xC5</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x3D</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x47</span></span>,
+  (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0xCD</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x0A</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x00</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x4F</span></span>,
+  (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x78</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x3D</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0xCD</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x0A</span></span>,
+  (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x00</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0x81</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0xC1</span></span>, (<span class="hljs-keyword"><span class="hljs-keyword">byte</span></span>)<span class="hljs-number"><span class="hljs-number">0xC9</span></span>,
+};
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgfd854d7" class="outline-2">
+<h2 id="orgfd854d7"><span class="section-number-2">3</span> Résumé</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Pour cette étape, vous devez :
+</p>
+
+<ul class="org-ul">
+<li>terminer la classe <code>Cpu</code> en lui ajoutant la gestion de la mémoire haute, des instructions de contrôle et des interruptions, et compléter la classe <code>GameBoy</code> en lui ajoutant le processeur et la méthode <code>runUntil</code>, comme décrit ci-dessus,</li>
+
+<li>documenter la totalité des entités publiques que vous avez définies,</li>
+
+<li>rendre votre code au plus tard le <b>23 mars 2018 à 16h30</b>, via <a href="https://cs108.epfl.ch/archive/18/p/submit.html">le système de rendu</a>.</li>
+</ul>
+
+<p>
+Ce rendu est un rendu testé, auquel 18 points sont attribués, au prorata des tests unitaires passés avec succès. Notez que la documentation de votre code ne sera <i>pas</i> évaluée avant le rendu intermédiaire. Dès lors, si vous êtes en retard, ne vous en préoccupez pas pour l'instant.
+</p>
+
+<div class="cs108warning">
+<p>
+N'attendez surtout pas le dernier moment pour effectuer votre rendu, car vous n'êtes pas à l'abri d'imprévus. <b>Souvenez-vous qu'aucun retard, aussi insignifiant soit-il, ne sera toléré !</b>
+</p>
+
+</div>
+</div>
+</div>
+<div id="footnotes">  <h2 class="footnotes">Notes de bas de page</h2>  <div id="text-footnotes">
+<div class="footdef"><sup><a id="fn.1" class="footnum" href="https://cs108.epfl.ch/archive/18/p/05_cpu_control.html#fnr.1">1</a></sup> <div class="footpara"><p class="footpara">
+En réalité, cet encodage ne correspond pas tout à fait au programme donné plus haut, car un <code>NOP</code> y apparaît juste après l'instruction <code>HALT</code>. Cette instruction a été insérée automatiquement par <a href="https://rednex.github.io/rgbds/">l'assembleur utilisé</a>, pour contourner un bug du processeur du Game Boy. Elle n'a toutefois aucune influence sur le comportement du programme.
+</p></div></div>
+
+</div></div></div>
+
+
+</body></html>

@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<!-- saved from url=(0050)https://cs108.epfl.ch/archive/18/p/04_cpu_alu.html -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- 2018-03-13 Mar 15:52 -->
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Instructions arithmétiques et logiques</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Michel Schinz">
+<link rel="stylesheet" href="./Instructions arithmétiques et logiques_files/cs108.min.css" type="text/css">
+<link rel="stylesheet" href="./Instructions arithmétiques et logiques_files/github.min.css">
+<script src="./Instructions arithmétiques et logiques_files/highlight.min.js.download"></script>
+<script>
+hljs.configure({ languages: [ 'java' ] });
+function orgHighlight() {
+var blocks = document.querySelectorAll('pre.src');
+Array.prototype.forEach.call(blocks, hljs.highlightBlock);
+}
+addEventListener('DOMContentLoaded', orgHighlight, false);
+addEventListener('load', orgHighlight, false);
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Instructions arithmétiques et logiques
+<br>
+<span class="subtitle">Gameboj – Étape 4</span>
+</h1>
+
+<div id="outline-container-org23a6b71" class="outline-2">
+<h2 id="org23a6b71"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Le but de cette étape est de continuer l'écriture de la classe modélisant le processeur du Game Boy en ajoutant la gestion de toutes les instructions arithmétiques et logiques.
+</p>
+
+<p>
+Par rapport aux instructions examinées à l'étape précédente, celles de cette étape ont deux particularités : d'une part, certaines d'entre elles sont encodées au moyen d'un préfixe, et d'autre part, elles modifient toutes les fanions du processeur stockés dans le registre <code>F</code>. Il convient donc de décrire rapidement ces deux aspects.
+</p>
+</div>
+
+<div id="outline-container-org80ae8e2" class="outline-3">
+<h3 id="org80ae8e2"><span class="section-number-3">1.1</span> Instructions préfixées</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Dans la description de l'encodage des instructions à l'étape précédente, il était dit que le premier octet de l'encodage d'une instruction, nommé son <i>opcode</i>, suffisait à lui seul pour identifier l'instruction.
+</p>
+
+<p>
+Cela n'est toutefois pas exact, car il existe une catégorie d'instructions, qu'on appelle les instructions préfixées, dont l'<i>opcode</i> est constitué de deux octets :
+</p>
+
+<ol class="org-ol">
+<li>un premier octet qui constitue le préfixe, qui est le même pour toutes les instructions préfixées et vaut CB<sub>16</sub>,</li>
+
+<li>un second octet qui constitue le véritable <i>opcode</i> de l'instruction.</li>
+</ol>
+
+<p>
+Toutes les instructions préfixées s'encodent au moyen de deux octets exactement. En d'autres termes, elles ne sont jamais suivies d'arguments 8 ou 16 bits comme certaines des instructions non-préfixées.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org86609ed" class="outline-3">
+<h3 id="org86609ed"><span class="section-number-3">1.2</span> Fanions</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Nous l'avons vu, le processeur stocke les fanions de l'UAL (<code>Z</code>, <code>N</code>, <code>H</code> et <code>C</code>) dans les 4 bits de poids fort du registre <code>F</code>, dont les 4 bits de poids faible valent toujours 0.
+</p>
+
+<p>
+De manière générale, les fanions stockés dans le registre <code>F</code> sont ceux produits par la dernière instruction arithmétique ou logique exécutée par le processeur. Par exemple, lorsqu'une instruction d'addition (<code>ADD</code>) est exécutée, les 4 fanions produits par l'UAL sont copiés dans le registre <code>F</code>. Les autres instructions, p.ex. celles de chargement et de stockage présentées à l'étape précédente, n'ont aucun effet sur les fanions.
+</p>
+
+<p>
+Malheureusement, il existe aussi des instructions dont le comportement est plus complexe, et consiste à modifier seulement un sous-ensemble des fanions contenus dans le registre <code>F</code>, les autres étant laissés tels quels.
+</p>
+
+<p>
+Dès lors, l'effet de chacune des instructions sur les fanions stockés dans le registre <code>F</code> est spécifié au moyen d'une extension de la notation utilisée à l'étape 2. La valeur de chacun des fanions après l'exécution d'une instruction est donnée par une lettre, selon la convention suivante :
+</p>
+
+<ul class="org-ul">
+<li>un <code>0</code> signifie que le fanion vaut toujours 0,</li>
+<li>un <code>1</code> signifie que le fanion vaut toujours 1,</li>
+<li>un <code>-</code> (tiret) signifie que le fanion ne change pas de valeur,</li>
+<li>une lettre (<code>Z</code>, <code>N</code>, <code>H</code> ou <code>C</code>) signifie que le fanion est modifié en fonction de la valeur retournée par l'UAL.</li>
+</ul>
+
+<p>
+Par exemple, l'effet de l'instruction de décrémentation (<code>DEC</code>) sur les fanions stockés dans le registre <code>F</code> est spécifié comme étant <code>Z1H-</code>, qui signifie que :
+</p>
+
+<ul class="org-ul">
+<li>les fanions <code>Z</code> et <code>H</code> sont déterminés en fonction des fanions produits par l'UAL,</li>
+<li>le fanion <code>N</code> est mis à 1,</li>
+<li>le fanion <code>C</code> ne change pas.</li>
+</ul>
+
+<p>
+Au passage, il faut noter que même si <code>DEC</code> effectue une soustraction, son effet sur les fanions stockés dans le registre <code>F</code> n'est pas tout à fait le même que celui de l'instruction de soustraction <code>SUB</code>. Il faut donc bien prêter attention aux spécifications données plus bas, car elles réservent certaines surprises !
+</p>
+</div>
+</div>
+
+<div id="outline-container-org780de38" class="outline-3">
+<h3 id="org780de38"><span class="section-number-3">1.3</span> Instructions arithmétiques et logiques</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+Dans la description de la syntaxe, les mêmes conventions que celles de l'étape précédente sont utilisées, auxquelles s'ajoutent :
+</p>
+
+<dl class="org-dl">
+<dt><code>e8</code></dt><dd>représente une valeur <i>signée</i> de 8 bits, c-à-d interprétée en complément à deux,</dd>
+
+<dt><code>n3</code></dt><dd>représente une valeur de 3 bits.</dd>
+</dl>
+
+<p>
+Dans la description de l'effet, les mêmes conventions que celles de l'étape précédente sont utilisées, auxquelles s'ajoute :
+</p>
+
+<dl class="org-dl">
+<dt><code>e</code></dt><dd>représente la valeur 8 bits suivant l'<i>opcode</i> de l'instruction, mais interprétée en complément à deux.</dd>
+</dl>
+
+<p>
+Les différentes instructions à traiter dans cette étape sont décrites dans les sections qui suivent.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org25d855e" class="outline-3">
+<h3 id="org25d855e"><span class="section-number-3">1.4</span> Additions</h3>
+<div class="outline-text-3" id="text-1-4">
+<p>
+Les instructions d'addition 8 bits, données dans la table ci-dessous, ont un comportement assez évident et ne sont donc pas décrites plus en détail. Notez juste que <code>ADC</code> représente une addition avec retenue, cette dernière provenant du fanion <code>C</code>.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>ADD A, n8</code></td>
+<td class="org-left"><code>11000110</code></td>
+<td class="org-left"><code>A += n</code></td>
+<td class="org-left"><code>Z0HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ADD A, r8</code></td>
+<td class="org-left"><code>10000rrr</code></td>
+<td class="org-left"><code>A += r</code></td>
+<td class="org-left"><code>Z0HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ADD A, [HL]</code></td>
+<td class="org-left"><code>10000110</code></td>
+<td class="org-left"><code>A += BUS[HL]</code></td>
+<td class="org-left"><code>Z0HC</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>ADC A, n8</code></td>
+<td class="org-left"><code>11001110</code></td>
+<td class="org-left"><code>A += n + C</code></td>
+<td class="org-left"><code>Z0HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ADC A, r8</code></td>
+<td class="org-left"><code>10001rrr</code></td>
+<td class="org-left"><code>A += r + C</code></td>
+<td class="org-left"><code>Z0HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ADC A, [HL]</code></td>
+<td class="org-left"><code>10001110</code></td>
+<td class="org-left"><code>A += BUS[HL] + C</code></td>
+<td class="org-left"><code>Z0HC</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>INC r8</code></td>
+<td class="org-left"><code>00rrr100</code></td>
+<td class="org-left"><code>r += 1</code></td>
+<td class="org-left"><code>Z0H-</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>INC [HL]</code></td>
+<td class="org-left"><code>00110100</code></td>
+<td class="org-left"><code>BUS[HL] += 1</code></td>
+<td class="org-left"><code>Z0H-</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Les deux instructions de la table qui suit permettent d'ajouter une valeur 16 bits à une paire de registres. Notez que pour ces deux instructions, si les bits <code>rr</code> encodant la paire de registres valent <code>11</code>, alors c'est le registre <code>SP</code> qui est modifié, et <i>pas</i> la paire <code>AF</code>. D'autre part, les fanions <code>H</code> et <code>C</code> produits par la première instruction correspondent à l'addition des 8 bits de poids <i>fort</i>.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>ADD HL, r16</code></td>
+<td class="org-left"><code>00rr1001</code></td>
+<td class="org-left"><code>HL += r</code></td>
+<td class="org-left"><code>-0HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>INC r16</code></td>
+<td class="org-left"><code>00rr0011</code></td>
+<td class="org-left"><code>r += 1</code></td>
+<td class="org-left"><code>----</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Les deux instructions qui suivent permettent d'additioner une valeur <i>signée</i> au pointeur de pile (<code>SP</code>) et de stocker le résultat dans <code>SP</code> lui-même ou dans la paire <code>HL</code>. Notez que dans ce cas, et contrairement au cas précédent, les fanions <code>H</code> et <code>C</code> produits correspondent à l'addition des 8 bits de poids <i>faible</i>.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>ADD SP, e8</code></td>
+<td class="org-left"><code>11101000</code></td>
+<td class="org-left"><code>SP = SP + e</code></td>
+<td class="org-left"><code>00HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>LD HL, SP + e8</code></td>
+<td class="org-left"><code>11111000</code></td>
+<td class="org-left"><code>HL = SP + e</code></td>
+<td class="org-left"><code>00HC</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Notez que la seconde de ces instructions est nommée <code>LD</code>, mais dans la mesure où elle effectue une addition et que son comportement est quasi-identique à celui de la première de ces instructions, nous avons décidé de la traiter ici.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgbc77949" class="outline-3">
+<h3 id="orgbc77949"><span class="section-number-3">1.5</span> Soustractions et comparaisons</h3>
+<div class="outline-text-3" id="text-1-5">
+<p>
+Les instructions de soustraction et de décrémentation 8 bits ne réservent pas non plus de surprise particulière. Là encore, il convient de noter l'existence de l'instruction <code>SBC</code> qui effectue une soustraction avec emprunt, ce dernier provenant du fanion <code>C</code>.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>SUB A, n8</code></td>
+<td class="org-left"><code>11010110</code></td>
+<td class="org-left"><code>A -= n</code></td>
+<td class="org-left"><code>Z1HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SUB A, r8</code></td>
+<td class="org-left"><code>10010rrr</code></td>
+<td class="org-left"><code>A -= r</code></td>
+<td class="org-left"><code>Z1HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SUB A, [HL]</code></td>
+<td class="org-left"><code>10010110</code></td>
+<td class="org-left"><code>A -= BUS[HL]</code></td>
+<td class="org-left"><code>Z1HC</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>SBC A, n8</code></td>
+<td class="org-left"><code>11011110</code></td>
+<td class="org-left"><code>A -= n + C</code></td>
+<td class="org-left"><code>Z1HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SBC A, r8</code></td>
+<td class="org-left"><code>10011rrr</code></td>
+<td class="org-left"><code>A -= r + C</code></td>
+<td class="org-left"><code>Z1HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SBC A, [HL]</code></td>
+<td class="org-left"><code>10011110</code></td>
+<td class="org-left"><code>A -= BUS[HL] + C</code></td>
+<td class="org-left"><code>Z1HC</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>DEC r8</code></td>
+<td class="org-left"><code>00rrr101</code></td>
+<td class="org-left"><code>r -= 1</code></td>
+<td class="org-left"><code>Z1H-</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>DEC [HL]</code></td>
+<td class="org-left"><code>00110101</code></td>
+<td class="org-left"><code>BUS[HL] -= 1</code></td>
+<td class="org-left"><code>Z1H-</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Les instructions de comparaison listées dans la table qui suit sont totalement équivalentes aux instructions de soustraction correspondantes, la seule différence étant que le résultat de l'opération est ignoré, seuls les fanions étant gardés.
+</p>
+
+<p>
+Par exemple, les deux instructions suivantes :
+</p>
+<pre class="example">SUB A, 5
+CP A, 5
+</pre>
+<p>
+effectuent <i>exactement</i> le même calcul, la seule différence est que la première modifie le registre <code>A</code> et les fanions, alors que la seconde ne modifie que les fanions, le contenu du registre <code>A</code> restant inchangé.
+</p>
+
+<p>
+L'idée des instructions de comparaison est que les fanions produits par une soustraction donnent des informations au sujet de la relation qui existe entre les deux valeurs soustraites. Ainsi, dans l'exemple ci-dessus, le fanion <code>Z</code> sera vrai ssi <code>A</code> contient 5, tandis que le fanion <code>C</code> sera vrai ssi <code>A</code> contient une valeur strictement plus petite que 5.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>CP A, n8</code></td>
+<td class="org-left"><code>11111110</code></td>
+<td class="org-left"><i>aucun</i></td>
+<td class="org-left"><code>Z1HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CP A, r8</code></td>
+<td class="org-left"><code>10111rrr</code></td>
+<td class="org-left"><i>aucun</i></td>
+<td class="org-left"><code>Z1HC</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CP A, [HL]</code></td>
+<td class="org-left"><code>10111110</code></td>
+<td class="org-left"><i>aucun</i></td>
+<td class="org-left"><code>Z1HC</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+L'instruction de la table qui suit permet de décrémenter une paire de registres contenant une valeur 16 bits. Notez que si les deux bits <code>rr</code> encodant la paire valent <code>11</code>, alors c'est le registre <code>SP</code> qui est décrémenté, et <i>pas</i> la paire <code>AF</code>.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>DEC r16</code></td>
+<td class="org-left"><code>00rr1011</code></td>
+<td class="org-left"><code>r -= 1</code></td>
+<td class="org-left"><code>----</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-org011ca9c" class="outline-3">
+<h3 id="org011ca9c"><span class="section-number-3">1.6</span> Opérations bit à bit</h3>
+<div class="outline-text-3" id="text-1-6">
+<p>
+Les opérations bit à bit, listées dans la table ci-dessous, fonctionnent exactement comme en Java et ne sont donc pas décrites en plus de détails.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>AND A, n8</code></td>
+<td class="org-left"><code>11100110</code></td>
+<td class="org-left"><code>A &amp;= n</code></td>
+<td class="org-left"><code>Z010</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>AND A, r8</code></td>
+<td class="org-left"><code>10100rrr</code></td>
+<td class="org-left"><code>A &amp;= r</code></td>
+<td class="org-left"><code>Z010</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>AND A, [HL]</code></td>
+<td class="org-left"><code>10100110</code></td>
+<td class="org-left"><code>A &amp;= BUS[HL]</code></td>
+<td class="org-left"><code>Z010</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>OR A, n8</code></td>
+<td class="org-left"><code>11110110</code></td>
+<td class="org-left"><code>A |= n</code></td>
+<td class="org-left"><code>Z000</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>OR A, r8</code></td>
+<td class="org-left"><code>10110rrr</code></td>
+<td class="org-left"><code>A |= r</code></td>
+<td class="org-left"><code>Z000</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>OR A, [HL]</code></td>
+<td class="org-left"><code>10110110</code></td>
+<td class="org-left"><code>A |= BUS[HL]</code></td>
+<td class="org-left"><code>Z000</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>XOR A, n8</code></td>
+<td class="org-left"><code>11101110</code></td>
+<td class="org-left"><code>A ^= n</code></td>
+<td class="org-left"><code>Z000</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>XOR A, r8</code></td>
+<td class="org-left"><code>10101rrr</code></td>
+<td class="org-left"><code>A ^= r</code></td>
+<td class="org-left"><code>Z000</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>XOR A, [HL]</code></td>
+<td class="org-left"><code>10101110</code></td>
+<td class="org-left"><code>A ^= BUS[HL]</code></td>
+<td class="org-left"><code>Z000</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>CPL</code></td>
+<td class="org-left"><code>00101111</code></td>
+<td class="org-left"><code>A = ~A</code></td>
+<td class="org-left"><code>-11-</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-org27ca208" class="outline-3">
+<h3 id="org27ca208"><span class="section-number-3">1.7</span> Décalages</h3>
+<div class="outline-text-3" id="text-1-7">
+<p>
+Les opérations de décalage, listées dans la table ci-dessous, fonctionnent également comme les opérateurs Java correspondants.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>SLA r8</code></td>
+<td class="org-left"><code>00100rrr</code></td>
+<td class="org-left"><code>r &lt;&lt;= 1</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SLA [HL]</code></td>
+<td class="org-left"><code>00100110</code></td>
+<td class="org-left"><code>BUS[HL] &lt;&lt;= 1</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>SRA r8</code></td>
+<td class="org-left"><code>00101rrr</code></td>
+<td class="org-left"><code>r &gt;&gt;= 1</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SRA [HL]</code></td>
+<td class="org-left"><code>00101110</code></td>
+<td class="org-left"><code>BUS[HL] &gt;&gt;= 1</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>SRL r8</code></td>
+<td class="org-left"><code>00111rrr</code></td>
+<td class="org-left"><code>r &gt;&gt;&gt;= 1</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SRL [HL]</code></td>
+<td class="org-left"><code>00111110</code></td>
+<td class="org-left"><code>BUS[HL] &gt;&gt;&gt;= 1</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-org72beaeb" class="outline-3">
+<h3 id="org72beaeb"><span class="section-number-3">1.8</span> Rotations</h3>
+<div class="outline-text-3" id="text-1-8">
+<p>
+Le processeur du Game Boy offre deux groupes d'instructions de rotation, chacun décrit par une table ci-dessous.
+</p>
+
+<p>
+Prenez garde au fait que les noms officiels de ces instructions ont été terriblement mal choisis ! En effet, les instructions qui effectuent une rotation à travers la retenue (<i>rotate through carry</i>) n'ont <b>pas</b> de préfixe <code>C</code>, tandis que les autres ont un préfixe <code>C</code>.
+</p>
+
+<p>
+Par exemple, l'instruction <code>RL</code> effectue une rotation à gauche, à travers la retenue, tandis que l'instruction <code>RLC</code> effectue aussi une rotation à gauche, mais <i>pas</i> à travers la retenue. Gardez bien cela en tête !
+</p>
+
+<p>
+Le premier groupe d'instructions de rotation est constitué d'instructions non préfixées, travaillant exclusivement sur l'accumulateur. La fonction <code>rot</code> utilisée dans la description de leur effet correspond à la fonction <code>rotate</code> de la classe <code>Alu</code>.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>RLCA</code></td>
+<td class="org-left"><code>00000111</code></td>
+<td class="org-left"><code>A = rot(←, A)</code></td>
+<td class="org-left"><code>000C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RRCA</code></td>
+<td class="org-left"><code>00001111</code></td>
+<td class="org-left"><code>A = rot(→, A)</code></td>
+<td class="org-left"><code>000C</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>RLA</code></td>
+<td class="org-left"><code>00010111</code></td>
+<td class="org-left"><code>A = rot(←, A, C)</code></td>
+<td class="org-left"><code>000C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RRA</code></td>
+<td class="org-left"><code>00011111</code></td>
+<td class="org-left"><code>A = rot(→, A, C)</code></td>
+<td class="org-left"><code>000C</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Le second groupe d'instructions de rotation est constitué d'instructions préfixées qui travaillent sur un registre 8 bits quelconque ou sur une valeur en mémoire.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>RLC r8</code></td>
+<td class="org-left"><code>00000rrr</code></td>
+<td class="org-left"><code>r = rot(←, r)</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RLC [HL]</code></td>
+<td class="org-left"><code>00000110</code></td>
+<td class="org-left"><code>BUS[HL] = rot(←, BUS[HL])</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RRC r8</code></td>
+<td class="org-left"><code>00001rrr</code></td>
+<td class="org-left"><code>r = rot(→, r)</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RRC [HL]</code></td>
+<td class="org-left"><code>00001110</code></td>
+<td class="org-left"><code>BUS[HL] = rot(→, BUS[HL])</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>RL r8</code></td>
+<td class="org-left"><code>00010rrr</code></td>
+<td class="org-left"><code>r = rot(←, r, C)</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RL [HL]</code></td>
+<td class="org-left"><code>00010110</code></td>
+<td class="org-left"><code>BUS[HL] = rot(←, BUS[HL], C)</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RR r8</code></td>
+<td class="org-left"><code>00011rrr</code></td>
+<td class="org-left"><code>r = rot(→, r, C)</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RR [HL]</code></td>
+<td class="org-left"><code>00011110</code></td>
+<td class="org-left"><code>BUS[HL] = rot(→, BUS[HL], C)</code></td>
+<td class="org-left"><code>Z00C</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>SWAP r8</code></td>
+<td class="org-left"><code>00110rrr</code></td>
+<td class="org-left"><code>r = swap(r)</code></td>
+<td class="org-left"><code>Z000</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SWAP [HL]</code></td>
+<td class="org-left"><code>00110110</code></td>
+<td class="org-left"><code>BUS[HL] = swap(BUS[HL])</code></td>
+<td class="org-left"><code>Z000</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Notez que comme ces instructions sont préfixées, la valeur donnée dans la colonne Opcode est celle du <i>second</i> octet de leur encodage, le premier étant toujours égal au préfixe (CB<sub>16</sub>).
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgfb5ab2c" class="outline-3">
+<h3 id="orgfb5ab2c"><span class="section-number-3">1.9</span> Opérations sur les bits</h3>
+<div class="outline-text-3" id="text-1-9">
+<p>
+Trois instructions permettent de travailler sur les bits individuels d'une valeur 8 bits contenue dans un registre ou en mémoire. Là aussi, il s'agit d'instructions préfixées.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>BIT n3, r8</code></td>
+<td class="org-left"><code>01nnnrrr</code></td>
+<td class="org-left"><i>aucun</i></td>
+<td class="org-left"><code>Z01-</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>BIT n3, [HL]</code></td>
+<td class="org-left"><code>01nnn110</code></td>
+<td class="org-left"><i>aucun</i></td>
+<td class="org-left"><code>Z01-</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>SET n3, r8</code></td>
+<td class="org-left"><code>11nnnrrr</code></td>
+<td class="org-left"><code>r |= 1 &lt;&lt; n</code></td>
+<td class="org-left"><code>----</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SET n3, [HL]</code></td>
+<td class="org-left"><code>11nnn110</code></td>
+<td class="org-left"><code>BUS[HL] |= 1 &lt;&lt; n</code></td>
+<td class="org-left"><code>----</code></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="org-left"><code>RES n3, r8</code></td>
+<td class="org-left"><code>10nnnrrr</code></td>
+<td class="org-left"><code>r &amp;= ~(1 &lt;&lt; n)</code></td>
+<td class="org-left"><code>----</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>RES n3, [HL]</code></td>
+<td class="org-left"><code>10nnn110</code></td>
+<td class="org-left"><code>BUS[HL] &amp;= ~(1 &lt;&lt; n)</code></td>
+<td class="org-left"><code>----</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Notez que l'instruction <code>BIT</code> teste si un bit d'index donné vaut 0 ou 1 et stocke le résultat dans le fanion <code>Z</code>, qui vaut 1 ssi le bit en question vaut 0.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org549ff3d" class="outline-3">
+<h3 id="org549ff3d"><span class="section-number-3">1.10</span> Instructions diverses</h3>
+<div class="outline-text-3" id="text-1-10">
+<p>
+L'instruction <code>DAA</code> permet de corriger la valeur de l'accumulateur suite à une opération arithmétique effectuée sur les valeurs décimales codées en binaire.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>DAA</code></td>
+<td class="org-left"><code>00100111</code></td>
+<td class="org-left"><code>A = bcdAdjust(A, N, H, C)</code></td>
+<td class="org-left"><code>Z-0C</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Les instructions <code>SCF</code> et <code>CCF</code> permettent de manipuler le fanion <code>C</code> en le forçant à 1 (pour <code>SCF</code>, qui signifie <i>set carry flag</i>) ou en l'inversant (pour <code>CCF</code>, qui signifie <i>complement carry flag</i>).
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Assembleur</th>
+<th scope="col" class="org-left">Opcode</th>
+<th scope="col" class="org-left">Effet</th>
+<th scope="col" class="org-left"><code>ZNHC</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>SCF</code></td>
+<td class="org-left"><code>00110111</code></td>
+<td class="org-left"><i>aucun</i></td>
+<td class="org-left"><code>-001</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CCF</code></td>
+<td class="org-left"><code>00111111</code></td>
+<td class="org-left"><i>aucun</i></td>
+<td class="org-left"><code>-00C</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Prenez bien garde au fait que le fanion <code>C</code> produit par l'instruction <code>CCF</code> est le <i>complément</i> du fanion <code>C</code> d'origine. C-à-d que si le fanion <code>C</code> vaut 0 avant l'exécution d'une instruction <code>CCF</code>, il faut 1 après, et inversément.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgbac261f" class="outline-2">
+<h2 id="orgbac261f"><span class="section-number-2">2</span> Mise en œuvre Java</h2>
+<div class="outline-text-2" id="text-2">
+</div>
+<div id="outline-container-orgebe2f66" class="outline-3">
+<h3 id="orgebe2f66"><span class="section-number-3">2.1</span> Enumération <code>Opcode</code></h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+Lors de la rédaction de cette étape, nous avons remarqué quelques possibilités d'amélioration de l'énumération <code>Opcode</code>. Pour cette raison, nous vous fournissons <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_opcode.zip">une archive Zip</a> contenant une nouvelle version du fichier <code>Opcode.java</code>. Il vous faut l'importer dans votre projet, en vous assurant que la nouvelle version du fichier remplace la précédente.
+</p>
+
+<p>
+Notez que les changements apportés à l'énumération <code>Opcode</code> concernent uniquement cette étape-ci et n'ont donc aucun impact sur le code de l'étape 3.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org873f8ea" class="outline-3">
+<h3 id="org873f8ea"><span class="section-number-3">2.2</span> Classe <code>Cpu</code></h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+Le code à écrire pour cette étape n'a qu'un seul but : gérer les instructions arithmétiques et logiques décrites plus haut. Il va sans dire que le comportement de presque toutes ces instructions a déjà été mis en œuvre dans la classe <code>Alu</code> écrite à l'étape 2.
+</p>
+
+<p>
+Nous vous donnons une fois encore quelques conseils de programmation. Libre à vous de les suivre ou non, mais pensez à soigner le style de votre programme !
+</p>
+</div>
+
+<div id="outline-container-org49d3cd6" class="outline-4">
+<h4 id="org49d3cd6"><span class="section-number-4">2.2.1</span> Conseils de programmation</h4>
+<div class="outline-text-4" id="text-2-2-1">
+</div>
+<ol class="org-ol">
+<li><a id="org1b2a269"></a>Gestion des instructions préfixées<br>
+<div class="outline-text-5" id="text-2-2-1-1">
+<p>
+Certaines des instructions à traiter dans le cadre de cette étape sont préfixées, c-à-d que leur encodage commence par un octet constant et valant CB<sub>16</sub> (le préfixe) suivi de l'octet qui constitue l'<i>opcode</i> réel de l'instruction.
+</p>
+
+<p>
+Cela complique légèrement le processus de décodage d'une instruction, car il n'est plus possible de l'effectuer uniquement au moyen du premier octet. En effet, si celui-ci est égal au préfixe, il faut utiliser le second octet.
+</p>
+
+<p>
+Cela dit, une fois cette petite distinction faite, il est aussi possible d'utiliser une table pour trouver l'objet <code>Opcode</code> correspondant à une instructions préfixée. En effet, l'énumération <code>Opcode</code> contient également des éléments correspondant aux instructions préfixées, qui sont identifiés par leur sorte (<code>kind</code>), qui vaut <code>PREFIXED</code>. Pour ces instructions, la valeur stockée dans l'attribut <code>encoding</code> est bien entendu le second octet de leur encodage, celui qui suit le préfixe.
+</p>
+
+<p>
+Si vous avez suivi nos conseils de programmation donnés à l'étape précédente, une table dédiée aux instructions préfixées peut se construire très facilement ainsi :
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-keyword"><span class="hljs-keyword">private</span></span> <span class="hljs-keyword"><span class="hljs-keyword">static</span></span> <span class="hljs-keyword"><span class="hljs-keyword">final</span></span> Opcode[] PREFIXED_OPCODE_TABLE =
+  buildOpcodeTable(Opcode.Kind.PREFIXED);
+</pre>
+</div>
+</div>
+</li>
+
+<li><a id="org895f47a"></a>Augmentation de la méthode <code>dispatch</code><br>
+<div class="outline-text-5" id="text-2-2-1-2">
+<p>
+Bien entendu, la gestion des nouvelles instructions se fait en augmentant le <code>switch</code> de la méthode <code>dispatch</code> afin d'y ajouter les familles d'instructions décrites plus bas. Pour faciliter votre travail, nous vous fournissons ci-dessous la liste des cas à traiter pour cette étape sous la forme de code Java que vous pouvez simplement copier dans votre projet.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java hljs"><span class="hljs-comment"><span class="hljs-comment">// Add</span></span>
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> ADD_A_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> ADD_A_N8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> ADD_A_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> INC_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> INC_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> INC_R16SP: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> ADD_HL_R16SP: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> LD_HLSP_S8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+
+<span class="hljs-comment"><span class="hljs-comment">// Subtract</span></span>
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SUB_A_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SUB_A_N8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SUB_A_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> DEC_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> DEC_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> CP_A_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> CP_A_N8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> CP_A_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> DEC_R16SP: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+
+<span class="hljs-comment"><span class="hljs-comment">// And, or, xor, complement</span></span>
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> AND_A_N8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> AND_A_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> AND_A_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> OR_A_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> OR_A_N8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> OR_A_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> XOR_A_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> XOR_A_N8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> XOR_A_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> CPL: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+
+<span class="hljs-comment"><span class="hljs-comment">// Rotate, shift</span></span>
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> ROTCA: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> ROTA: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> ROTC_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> ROT_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> ROTC_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> ROT_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SWAP_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SWAP_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SLA_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SRA_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SRL_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SLA_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SRA_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SRL_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+
+<span class="hljs-comment"><span class="hljs-comment">// Bit test and set</span></span>
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> BIT_U3_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> BIT_U3_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> CHG_U3_R8: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> CHG_U3_HLR: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+
+<span class="hljs-comment"><span class="hljs-comment">// Misc. ALU</span></span>
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> DAA: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+<span class="hljs-keyword"><span class="hljs-keyword">case</span></span> SCCF: {
+} <span class="hljs-keyword"><span class="hljs-keyword">break</span></span>;
+</pre>
+</div>
+</div>
+</li>
+
+<li><a id="orgaec92e5"></a>Familles<br>
+<div class="outline-text-5" id="text-2-2-1-3">
+<p>
+Dans le but de simplifier la mise en œuvre de la classe <code>Cpu</code>, les instructions ont été regroupées en familles, comme cela a été expliqué à l'étape précédente. Les familles qui ne requièrent pas d'explication particulière sont listées dans la table ci-dessous, similaire à celle donnée à l'étape précédente.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Famille</th>
+<th scope="col" class="org-left">Instruction(s) en assembleur</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>INC_R8</code></td>
+<td class="org-left"><code>INC A</code> / <code>INC B</code> / … / <code>INC L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>INC_HLR</code></td>
+<td class="org-left"><code>INC [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>INC_R16SP</code></td>
+<td class="org-left"><code>INC BC</code> / <code>INC DE</code> / <code>INC HL</code> / <code>INC SP</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ADD_HL_R16SP</code></td>
+<td class="org-left"><code>ADD HL, BC</code> / <code>ADD HL, DE</code> / … / <code>ADD HL, SP</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>DEC_R8</code></td>
+<td class="org-left"><code>DEC A</code> / <code>DEC B</code> / … / <code>DEC L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>DEC_HLR</code></td>
+<td class="org-left"><code>DEC [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>DEC_R16SP</code></td>
+<td class="org-left"><code>DEC BC</code> / <code>DEC DE</code> / <code>DEC HL</code> / <code>DEC SP</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CP_A_N8</code></td>
+<td class="org-left"><code>CP A, 0</code> / <code>CP A, 1</code> / … / <code>CP A, $FF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CP_A_R8</code></td>
+<td class="org-left"><code>CP A, A</code> / <code>CP A, B</code> / … / <code>CP A, L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CP_A_HLR</code></td>
+<td class="org-left"><code>CP A, [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>AND_A_N8</code></td>
+<td class="org-left"><code>AND A, 0</code> / <code>AND A, 1</code> / … / <code>AND A, $FF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>AND_A_R8</code></td>
+<td class="org-left"><code>AND A, A</code> / <code>AND A, B</code> / … / <code>AND A, L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>AND_A_HLR</code></td>
+<td class="org-left"><code>AND A, [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>OR_A_N8</code></td>
+<td class="org-left"><code>OR A, 0</code> / <code>OR A, 1</code> / … / <code>OR A, $FF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>OR_A_R8</code></td>
+<td class="org-left"><code>OR A, A</code> / <code>OR A, B</code> / … / <code>OR A, L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>OR_A_HLR</code></td>
+<td class="org-left"><code>OR A, [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>XOR_A_N8</code></td>
+<td class="org-left"><code>XOR A, 0</code> / <code>XOR A, 1</code> / … / <code>XOR A, $FF</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>XOR_A_R8</code></td>
+<td class="org-left"><code>XOR A, A</code> / <code>XOR A, B</code> / … / <code>XOR A, L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>XOR_A_HLR</code></td>
+<td class="org-left"><code>XOR A, [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CPL</code></td>
+<td class="org-left"><code>CPL</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ROTCA</code></td>
+<td class="org-left"><code>RLCA</code> / <code>RRCA</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ROTA</code></td>
+<td class="org-left"><code>RLA</code> / <code>RRA</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ROTC_R8</code></td>
+<td class="org-left"><code>RLC A</code> / <code>RRC A</code> / … / <code>RLC L</code> / <code>RRC L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ROT_R8</code></td>
+<td class="org-left"><code>RL A</code> / <code>RR A</code> / … / <code>RL L</code> / <code>RR L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ROTC_HLR</code></td>
+<td class="org-left"><code>RLC [HL]</code> / <code>RRC [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>ROT_HLR</code></td>
+<td class="org-left"><code>RL [HL]</code> / <code>RR [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SWAP_R8</code></td>
+<td class="org-left"><code>SWAP A</code> / <code>SWAP B</code> / … / <code>SWAP L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SWAP_HLR</code></td>
+<td class="org-left"><code>SWAP [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SLA_R8</code></td>
+<td class="org-left"><code>SLA A</code> / <code>SLA B</code> / … / <code>SLA L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SRA_R8</code></td>
+<td class="org-left"><code>SRA A</code> / <code>SRA B</code> / … / <code>SRA L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SRL_R8</code></td>
+<td class="org-left"><code>SRL A</code> / <code>SRL B</code> / … / <code>SRL L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SLA_HLR</code></td>
+<td class="org-left"><code>SLA [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SRA_HLR</code></td>
+<td class="org-left"><code>SRA [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>SRL_HLR</code></td>
+<td class="org-left"><code>SRL [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>BIT_U3_R8</code></td>
+<td class="org-left"><code>BIT 0, A</code> / <code>BIT 1, A</code> / … / <code>BIT 7, L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>BIT_U3_HLR</code></td>
+<td class="org-left"><code>BIT 0, [HL]</code> / <code>BIT 1, [HL]</code> / … / <code>BIT 7, [HL]</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>DAA</code></td>
+<td class="org-left"><code>DAA</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Les familles restantes sont décrites plus en détail dans les sections suivantes.
+</p>
+</div>
+</li>
+
+<li><a id="orgd9eb870"></a>Familles des additions et soustractions<br>
+<div class="outline-text-5" id="text-2-2-1-4">
+<p>
+Les familles des additions et soustractions contiennent à la fois les instructions d'additions/soustractions « normales » et celles avec retenue/emprunt. Par exemple, la famille <code>ADD_A_N8</code> contient les deux instructions suivantes :
+</p>
+<pre class="example">ADD A, n8
+ADC A, n8
+</pre>
+
+<p>
+La raison de ce choix est que toutes les deux peuvent être mises en œuvre au moyen d'un appel à la méthode <code>add</code> de la classe <code>Alu</code> qui prend trois arguments. La valeur du dernier de ces arguments, qui représente la valeur initiale de la retenue, peut être déterminé au moyen de deux bits : le bit 3 de l'encodage l'<i>opcode</i>, et le fanion <code>C</code>.
+</p>
+
+<p>
+En effet, en comparant l'encodage de l'<i>opcode</i> des deux instructions susmentionnées, vous verrez qu'il ne diffère qu'au niveau du bit 3, qui vaut 0 pour l'instruction <code>ADD</code> et 1 pour l'instruction <code>ADC</code>. Dès lors, la valeur du dernier argument à passer à la méthode <code>add</code> est donnée par la table suivante, où les colonnes représentent les deux valeurs possibles du bit 3 de l'<i>opcode</i> et les lignes représentent les deux valeurs possibles du fanion <code>C</code>.
+</p>
+
+<table border="1" rules="all" frame="border">
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">&nbsp;</th>
+<th scope="col" class="org-right"><b>0</b></th>
+<th scope="col" class="org-right"><b>1</b></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><b>0</b></td>
+<td class="org-right">0</td>
+<td class="org-right">0</td>
+</tr>
+
+<tr>
+<td class="org-left"><b>1</b></td>
+<td class="org-right">0</td>
+<td class="org-right">1</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Cette propriété est également vraie pour les instructions de soustraction et s'applique donc aux familles <code>ADD_A_R8</code>, <code>ADD_A_N8</code>, <code>ADD_A_HLR</code>, <code>SUB_A_R8</code>, <code>SUB_A_N8</code> et <code>SUB_A_HLR</code>.
+</p>
+</div>
+</li>
+
+<li><a id="org51d35b1"></a>Famille des instructions de manipulation du fanion <code>C</code><br>
+<div class="outline-text-5" id="text-2-2-1-5">
+<p>
+Une propriété très similaire à celle des instructions d'addition et de soustraction existe pour les instructions qui manipulent le fanion <code>C</code>, à savoir <code>SCF</code> et <code>CCF</code>. Pour cette raison, elles ont également été regroupées dans une famille, nommée <code>SCCF</code>.
+</p>
+
+<p>
+En comparant l'encodage de leur <i>opcode</i>, vous verrez que la nouvelle valeur du fanion <code>C</code> peut se déterminer en fonction du bit 3 de l'<i>opcode</i> et de la valeur actuelle du fanion <code>C</code>, selon la table suivante :
+</p>
+
+<table border="1" rules="all" frame="border">
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-right">
+
+<col class="org-right">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">&nbsp;</th>
+<th scope="col" class="org-right"><b>0</b></th>
+<th scope="col" class="org-right"><b>1</b></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><b>0</b></td>
+<td class="org-right">1</td>
+<td class="org-right">1</td>
+</tr>
+
+<tr>
+<td class="org-left"><b>1</b></td>
+<td class="org-right">1</td>
+<td class="org-right">0</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+Observez que cette table est l'exact complément de la précédente.
+</p>
+</div>
+</li>
+
+<li><a id="org3fd8a5b"></a>Famille des additions aux pointeur de pile<br>
+<div class="outline-text-5" id="text-2-2-1-6">
+<p>
+La famille <code>LD_HLSP_S8</code> contient les deux instructions suivantes :
+</p>
+<pre class="example">ADD SP, e8
+LD HL, SP + e8
+</pre>
+
+<p>
+On pourrait penser que ces instructions sont totalement différentes, mais ce n'est pas le cas car les deux :
+</p>
+
+<ol class="org-ol">
+<li>lisent la valeur 8 bits suivant leur <i>opcode</i>,</li>
+<li>interprétent cette valeur comme une valeur signée, en complément à deux (!),</li>
+<li>ajoutent cette valeur signée à la valeur actuelle du registre <code>SP</code>,</li>
+<li>modifient les fanions selon le schéma <code>00HC</code>, où la valeur des fanions <code>H</code> et <code>C</code> est celle correspondant à l'addition des 8 bits de poids <i>faible</i> des deux arguments,</li>
+<li>stockent le résultat de cette addition.</li>
+</ol>
+
+<p>
+La seule différence est que l'instruction <code>ADD</code> stocke le résultat dans le registre <code>SP</code>, tandis que <code>LD</code> le stocke dans la paire de registres <code>HL</code>. En comparant l'encodage de l'<i>opcode</i> de ces deux instructions, on constate que le bit 4 permet de déterminer si le résultat doit être stocké dans <code>SP</code> (s'il vaut 0) ou <code>HL</code> (s'il vaut 1).
+</p>
+</div>
+</li>
+
+<li><a id="org595d847"></a>Famille des modifications de bits<br>
+<div class="outline-text-5" id="text-2-2-1-7">
+<p>
+Les instruction <code>RES</code> et <code>SET</code> permettent respectivement de mettre à 0 ou à 1 un bit donné d'une valeur. Vu leur similarité, il paraît raisonnable de les placer dans des familles communes, que nous avons choisi de nommer <code>CHG</code> (pour <i>change</i>). Il existe deux de ces familles, la première qui modifie un bit d'une valeur stockée dans un registre, la seconde qui modifie un bit d'une valeur stockée en mémoire. La table ci-dessous les décrit.
+</p>
+
+<table>
+
+
+<colgroup>
+<col class="org-left">
+
+<col class="org-left">
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Famille</th>
+<th scope="col" class="org-left">Instruction(s) en assembleur</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left"><code>CHG_U3_R8</code></td>
+<td class="org-left"><code>RES 0, A</code> / <code>SET 0, A</code> / … / <code>SET 7, L</code></td>
+</tr>
+
+<tr>
+<td class="org-left"><code>CHG_U3_HLR</code></td>
+<td class="org-left"><code>RES 0, [HL]</code> / <code>SET 0, [HL]</code> / … / <code>SET 7, [HL]</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>
+En examinant l'encodage des instructions <code>RES</code> et <code>SET</code>, vous verrez que le bit 6 de leur <i>opcode</i> est celui qui permet de les distinguer : il vaut 0 pour les instructions <code>RES</code>, 1 pour les instructions <code>SET</code>.
+</p>
+</div>
+</li>
+
+<li><a id="org9d4c875"></a>Gestion des fanions<br>
+<div class="outline-text-5" id="text-2-2-1-8">
+<p>
+La gestion des fanions stockés dans le registre <code>F</code> constitue l'une des principales difficultés de cette étape. En effet, la manière dont les fanions produits par l'UAL doivent être combinés avec ceux stockés dans le registre <code>F</code> est complexe et varie d'une instruction à l'autre.
+</p>
+
+<p>
+Pour mémoire, l'UAL est modélisée dans ce projet par la classe <code>Alu</code> dont les méthodes retournent conceptuellement une paire composée du résultat de l'opération et des 4 fanions. Les éléments de cette paire sont empaquetés dans un entier de type <code>int</code>. Il est donc avantageux d'offrir, dans la classe <code>Cpu</code>, des méthodes privées prenant un tel entier et stockant certains de ses éléments à différents endroits. Les méthodes suivantes couvrent les cas les plus fréquents (l'argument <code>vf</code> est toujours un entier contenant une paire valeur/fanions retournée par l'une des méthodes de la classe <code>Alu</code>) :
+</p>
+
+<ul class="org-ul">
+<li><code>void setRegFromAlu(Reg r, int vf)</code>, qui extrait la valeur stockée dans la paire donnée et la place dans le registre donné,</li>
+
+<li><code>void setFlags(int valueFlags)</code>, qui extrait les fanions stockés dans la paire donnée et les place dans le registre <code>F</code>,</li>
+
+<li><code>void setRegFlags(Reg r, int vf)</code>, qui combine les effets de <code>setRegFromAlu</code> et <code>setFlags</code>,</li>
+
+<li><code>void write8AtHlAndSetFlags(int vf)</code>, qui extrait la valeur stockée dans la paire donnée et l'écrit sur le bus à l'adresse contenue dans la paire de registres <code>HL</code>, puis extrait les fanions stockés dans la paire et les place dans le registre <code>F</code>.</li>
+</ul>
+
+<p>
+Ces méthodes ne sont malheureusement pas utilisables directement pour les instructions qui ne modifient qu'un sous-ensemble des fanions stockés dans le registre <code>F</code>. Pour ces instructions-là, il est utile d'offrir une méthode permettant de combiner arbitrairement les 4 fanions retournés par l'UAL avec ceux stockés dans le registre <code>F</code>, en ayant de plus la possibilité de les forcer à une valeur donnée. Cette méthode pourrait ressembler à :
+</p>
+
+<ul class="org-ul">
+<li><code>void combineAluFlags(int vf, FlagSrc z, FlagSrc n, FlagSrc h, FlagSrc c)</code>, qui combine les fanions stockés dans le registre <code>F</code> avec ceux contenus dans la paire <code>vf</code>, en fonction des quatre derniers paramètres, qui correspondent chacun à un fanion, et stocke le résultat dans le registre <code>F</code>.</li>
+</ul>
+
+<p>
+Le type <code>FlagSrc</code> est un type énuméré contenant 4 valeurs qui correspondent aux 4 sources possible d'un fanion, et qui sont :
+</p>
+
+<ul class="org-ul">
+<li><code>V0</code>, qui force le fanion à 0,</li>
+<li><code>V1</code>, qui force le fanion à 1,</li>
+<li><code>ALU</code>, qui utilise le fanion fourni par l'UAL (contenu dans <code>vf</code>),</li>
+<li><code>CPU</code>, qui utilise le fanion du processeur (contenu dans le registre <code>F</code>).</li>
+</ul>
+
+<p>
+Par exemple l'appel
+</p>
+<div class="org-src-container">
+<pre class="src src-java hljs">combineAluFlags(vf,
+		FlagSrc.ALU,    <span class="hljs-comment"><span class="hljs-comment">// Z</span></span>
+		FlagSrc.V1,     <span class="hljs-comment"><span class="hljs-comment">// N</span></span>
+		FlagSrc.ALU,    <span class="hljs-comment"><span class="hljs-comment">// H</span></span>
+		FlagSrc.CPU);   <span class="hljs-comment"><span class="hljs-comment">// C</span></span>
+</pre>
+</div>
+<p>
+modifie le registre <code>F</code> pour que le fanion <code>N</code> vaille 1, les fanions <code>Z</code> et <code>H</code> soient ceux contenus dans <code>vf</code>, tandis que le fanion <code>C</code> est laissé à sa valeur actuelle. Un tel appel est utile dans la mise en œuvre de toute instruction dont l'effet sur les fanions est décrit par <code>Z1H-</code> selon la notation utilisée plus haut, par exemple <code>DEC [HL]</code>.
+</p>
+</div>
+</li>
+
+<li><a id="orgbb390cd"></a>Extraction de paramètres<br>
+<div class="outline-text-5" id="text-2-2-1-9">
+<p>
+Tout comme pour l'étape précédente, il est conseillé de définir des méthodes permettant d'extraire certains paramètres d'un ou plusieurs bits de l'<i>opcode</i> d'une instruction. Pour les familles d'instructions décrites ci-dessus, des méthodes permettant d'extraire les informations suivantes sont utiles :
+</p>
+
+<ul class="org-ul">
+<li>la direction de rotation (bit 3), pour toutes les familles regroupant des instructions de rotation à gauche et à droite,</li>
+
+<li>l'index du bit à tester ou modifier (bits 3 à 5), pour les instructions <code>BIT</code>, <code>RES</code> et <code>SET</code>,</li>
+
+<li>la valeur à attribuer au bit (bit 6) à modifier, pour les instructions <code>RES</code> et <code>SET</code>.</li>
+</ul>
+
+<p>
+De plus, écrire une fonction permettant de combiner le fanion <code>C</code> et le bit 3 de l'<i>opcode</i> selon l'une des deux tables données plus haut (aux §<a href="https://cs108.epfl.ch/archive/18/p/04_cpu_alu.html#orgd9eb870">2.2.1.4</a> et §<a href="https://cs108.epfl.ch/archive/18/p/04_cpu_alu.html#org51d35b1">2.2.1.5</a>) permet de simplifier la gestion des instructions d'addition, de soustraction et de manipulation du fanion <code>C</code>.
+</p>
+</div>
+</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org4e8902e" class="outline-3">
+<h3 id="org4e8902e"><span class="section-number-3">2.3</span> Tests</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+Comme pour l'étape précédente, nous ne vous fournissons plus de tests mais un fichier de vérification de signatures contenu dans <a href="https://cs108.epfl.ch/archive/18/p/f/gameboj_sigchecks_4.zip">une archive Zip</a> à importer dans votre projet. Comme l'interface publique de la classe <code>Cpu</code> ne change pas, ce fichier de signature sert uniquement à vérifier que vous avez bien importé les fichiers <code>AddressMap</code> et <code>Opcode</code> dans votre projet — ce que nous avions malheureusement oublié de faire précédemment.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgbf085bf" class="outline-2">
+<h2 id="orgbf085bf"><span class="section-number-2">3</span> Résumé</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Pour cette étape, vous devez :
+</p>
+
+<ul class="org-ul">
+<li>augmenter la classe <code>Cpu</code> pour y ajouter la gestion des instructions arithmétiques et logiques, comme décrit plus haut,</li>
+
+<li>rendre votre code au plus tard le <b>16 mars 2018 à 16h30</b>, via <a href="https://cs108.epfl.ch/archive/18/p/submit.html">le système de rendu</a>.</li>
+</ul>
+
+<p>
+Ce rendu est un rendu testé, auquel 18 points sont attribués, au prorata des tests unitaires passés avec succès.
+</p>
+
+<div class="cs108warning">
+<p>
+N'attendez surtout pas le dernier moment pour effectuer votre rendu, car vous n'êtes pas à l'abri d'imprévus. <b>Souvenez-vous qu'aucun retard, aussi insignifiant soit-il, ne sera toléré !</b>
+</p>
+
+</div>
+</div>
+</div>
+</div>
+
+
+</body></html>
